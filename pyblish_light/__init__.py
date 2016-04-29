@@ -1,29 +1,51 @@
 import sys
 
-# Support Qt 4 and 5, PyQt and PySide
-try:
+
+def load_pyqt5():
     import PyQt5.Qt
     sys.modules["Qt"] = PyQt5
-    PyQt5.Signal = PyQt5.pyqtSignal
-    PyQt5.Slot = PyQt5.pyqtSlot
-    PyQt5.Property = PyQt5.pyqtProperty
+    PyQt5.QtCore.Signal = PyQt5.QtCore.pyqtSignal
+    PyQt5.QtCore.Slot = PyQt5.QtCore.pyqtSlot
+    PyQt5.QtCore.Property = PyQt5.QtCore.pyqtProperty
+    print("Loaded PyQt5")
 
-except ImportError:
+
+def load_pyqt4():
     import PyQt4.Qt
     sys.modules["Qt"] = PyQt4
-    PyQt5.Signal = PyQt5.pyqtSignal
-    PyQt5.Slot = PyQt5.pyqtSlot
-    PyQt5.Property = PyQt5.pyqtProperty
+    PyQt4.QtWidgets = PyQt4.QtGui
+    PyQt4.QtCore.Signal = PyQt4.QtCore.pyqtSignal
+    PyQt4.QtCore.Slot = PyQt4.QtCore.pyqtSlot
+    PyQt4.QtCore.Property = PyQt4.QtCore.pyqtProperty
+    print("Loaded PyQt4")
 
-except ImportError:
+
+def load_pyside2():
     import PySide2
     sys.modules["Qt"] = PySide2
+    print("Loaded PySide2")
 
-except ImportError:
+
+def load_pyside():
     import PySide
-    PySide.QtWidgets = PySide.QtGui
+    from PySide import QtGui
+    PySide.QtWidgets = QtGui
     sys.modules["Qt"] = PySide
+    print("Loaded PySide")
 
-except:
-    sys.stderr.write("pyblish-light: Could not find "
-                     "appropriate bindings for Qt\n")
+
+# Support Qt 4 and 5, PyQt and PySide
+try:
+    load_pyqt5()
+except ImportError:
+    try:
+        load_pyside2()
+    except ImportError:
+        try:
+            load_pyside()
+        except ImportError:
+            try:
+                load_pyqt4()
+            except:
+                sys.stderr.write("pyblish-light: Could not find "
+                                 "appropriate bindings for Qt\n")

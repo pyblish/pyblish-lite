@@ -9,7 +9,7 @@ A lightweight alternative to [pyblish-qml](https://github.com/pyblish/pyblish-qm
 
 - PySide
 - PySide2
-- PyQt
+- PyQt4
 - PyQt5
 
 <br>
