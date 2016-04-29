@@ -1,0 +1,96 @@
+/* Global CSS */
+
+* {
+	outline: none;
+	color: "white";
+	font-family: "Open Sans";
+	font-size: 12px;
+	font-weight: 400;
+
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+
+/* General CSS */
+
+QDialog {
+	background: "#555";
+}
+
+QTableView {
+	border: 0px;
+	color: "white";
+	selection-background-color: "steelblue";
+	background: "transparent"
+}
+
+QTableView::item:focus {
+}
+
+QTableView QCheckBox {
+	max-width: 10px;
+}
+
+QTableView QCheckBox::indicator {
+	width: 8px;
+	height: 8px;
+	background: "transparent";
+	border: 1px solid "white";
+}
+
+QTableView QCheckBox::indicator:checked {
+	background: "white";
+}
+
+/* Specific CSS */
+
+#Header {
+	background: "#555";
+	border: 1px solid "#444";
+}
+
+#Header QCheckBox::indicator {
+	width: 60px;
+	height: 40px;
+	border: none;
+	border-right: 1px solid "#333";
+}
+
+#Footer QPushButton {
+	width: 30px;
+	height: 30px;
+	background: "#555";
+	border: 1px solid "#333";
+}
+
+#Footer QPushButton:pressed {
+	background: "#666";
+}
+
+#Header QCheckBox::indicator:checked {
+	background: rgba(255, 255, 255, 0.1);
+	border-bottom: 3px solid "lightblue";
+}
+
+#Body {
+	padding: 10px;
+	border: 1px solid "#333";
+	outline: 1px solid "#333";
+	background: "#444";
+}
+
+#Header #Home {
+	background-image: url("img/logo-white.png");
+}
+
+#Footer #Play {
+	background-image: url("img/button-go.png");
+}
+
+#Footer #Stop {
+	background-image: url("img/button-close.png");
+}
+
+#Footer #Reset {
+	background-image: url("img/button-reset.png");
+}
