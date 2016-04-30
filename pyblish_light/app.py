@@ -4,11 +4,7 @@ import pyblish.api
 import pyblish.util
 import pyblish.logic
 
-from .model import Model
-from .view import TableView
-
-DataRole = QtCore.Qt.UserRole + 0
-StateRole = QtCore.Qt.UserRole + 1
+from . import model, view, util
 
 
 class Window(QtWidgets.QDialog):
@@ -49,8 +45,8 @@ class Window(QtWidgets.QDialog):
 
         body = QtWidgets.QWidget()
 
-        left_view = TableView()
-        right_view = TableView()
+        left_view = view.TableView()
+        right_view = view.TableView()
 
         layout = QtWidgets.QHBoxLayout(body)
         layout.addWidget(left_view)
@@ -85,8 +81,8 @@ class Window(QtWidgets.QDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        instance_model = Model()
-        plugin_model = Model()
+        instance_model = model.TableModel()
+        plugin_model = model.TableModel()
 
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
@@ -181,8 +177,6 @@ class Window(QtWidgets.QDialog):
                 result = pyblish.plugin.process(plug, context, instance)
 
             except Exception as e:
-                print(e)
-                print("Publishing: %s" % plug)
                 raise StopIteration("Unknown error: %s" % e)
 
             else:
@@ -223,15 +217,17 @@ class Window(QtWidgets.QDialog):
         plugins = self.data["state"]["plugins"]
         context = self.data["state"]["context"]
 
-        for result in self.iterator(plugins, context):
+        def on_next(result):
             if isinstance(result, StopIteration):
-                print(result)
-                break
+                return QtCore.QTimer.singleShot(500, self.finish_publish)
 
             instance_model.update_with_result(result)
             plugin_model.update_with_result(result)
 
-        QtCore.QTimer.singleShot(500, self.finish_publish)
+            util.async(iterator.next, callback=on_next)
+
+        iterator = self.iterator(plugins, context)
+        util.async(iterator, callback=on_next)
 
     def finish_publish(self):
         self.data["state"]["isRunning"] = False
@@ -244,11 +240,11 @@ class Window(QtWidgets.QDialog):
     def prepare_reset(self):
         print("About to reset..")
 
-        for model in self.data["models"].values():
-            model.reset()
+        for m in self.data["models"].values():
+            m.reset()
 
-        for button in self.data["buttons"].values():
-            button.hide()
+        for b in self.data["buttons"].values():
+            b.hide()
 
         self.data["buttons"]["stop"].show()
         QtCore.QTimer.singleShot(500, self.reset)
@@ -268,8 +264,8 @@ class Window(QtWidgets.QDialog):
                     QtCore.Qt.EditRole: (
                         QtCore.Qt.Checked if ischecked else
                         QtCore.Qt.Unchecked),
-                    DataRole: Plugin,
-                    StateRole: "idle",
+                    model.DataRole: Plugin,
+                    model.StateRole: "idle",
                 },
                 {   # Column 1 - Label
                     QtCore.Qt.DisplayRole: Plugin.__name__,
@@ -284,8 +280,8 @@ class Window(QtWidgets.QDialog):
                     QtCore.Qt.EditRole: (
                         QtCore.Qt.Checked if ischecked
                         else QtCore.Qt.Unchecked),
-                    DataRole: instance,
-                    StateRole: "idle",
+                    model.DataRole: instance,
+                    model.StateRole: "idle",
                 },
                 {   # Column 1
                     QtCore.Qt.DisplayRole: instance.data["name"],

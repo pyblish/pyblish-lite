@@ -1,9 +1,13 @@
 from Qt import QtCore
 
 
-class Model(QtCore.QAbstractTableModel):
+DataRole = QtCore.Qt.UserRole + 0
+StateRole = QtCore.Qt.UserRole + 1
+
+
+class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, parent=None):
-        super(Model, self).__init__(parent)
+        super(TableModel, self).__init__(parent)
         self.items = list()
 
     def __iter__(self):
