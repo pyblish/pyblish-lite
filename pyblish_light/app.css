@@ -42,6 +42,21 @@ QTableView QCheckBox::indicator:checked {
 	background: "white";
 }
 
+QPushButton {
+	width: 30px;
+	height: 30px;
+	background: "#555";
+	border: 1px solid "#333";
+}
+
+QPushButton:pressed {
+	background: "#777";
+}
+
+QPushButton:hover {
+	background: "#666";
+}
+
 /* Specific CSS */
 
 #Header {
@@ -54,17 +69,6 @@ QTableView QCheckBox::indicator:checked {
 	height: 40px;
 	border: none;
 	border-right: 1px solid "#333";
-}
-
-#Footer QPushButton {
-	width: 30px;
-	height: 30px;
-	background: "#555";
-	border: 1px solid "#333";
-}
-
-#Footer QPushButton:pressed {
-	background: "#666";
 }
 
 #Header QCheckBox::indicator:checked {
@@ -81,16 +85,21 @@ QTableView QCheckBox::indicator:checked {
 
 #Header #Home {
 	background-image: url("img/logo-white.png");
+	background-position: center center;
 }
 
 #Footer #Play {
-	background-image: url("img/button-go.png");
+	background-image: url("img/button-publish.png");
+	background-position: center center;
+	background-repeat: no-repeat;
 }
 
 #Footer #Stop {
 	background-image: url("img/button-close.png");
+	background-position: center center;
 }
 
 #Footer #Reset {
 	background-image: url("img/button-reset.png");
+	background-position: center center;
 }
