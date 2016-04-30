@@ -1,8 +1,9 @@
 from Qt import QtCore
 
-
-DataRole = QtCore.Qt.UserRole + 0
-StateRole = QtCore.Qt.UserRole + 1
+DisplayRole = QtCore.Qt.DisplayRole
+CheckedRole = QtCore.Qt.UserRole + 0
+PluginRole = QtCore.Qt.UserRole + 1
+InstanceRole = QtCore.Qt.UserRole + 2
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -31,8 +32,24 @@ class TableModel(QtCore.QAbstractTableModel):
 
     def setData(self, index, value, role):
         """Set items[`index`] of `role` to `value`"""
-        self.items[index.row()][index.column()][role] = value
-        self.dataChanged.emit(index, index, [role])
+        
+        if role & CheckedRole:
+            item = self.items[index.row()][index.column()]
+            item[role] = value
+            
+            plugin = index.data(PluginRole)
+            instance = index.data(InstanceRole)
+
+            if plugin is not None:
+                plugin.active = value
+
+            if instance is not None:
+                instance.data["publish"] = value
+
+            self.dataChanged.emit(index, index, [role])
+
+        else:
+            return super(TableModel, self).setData(index, value, role)
 
     def rowCount(self, parent=None):
         return len(self.items)
@@ -46,4 +63,7 @@ class TableModel(QtCore.QAbstractTableModel):
         self.endResetModel()
 
     def update_with_result(self, result):
-        print("Updating with result.. %s" % result)
+        print("Processed %s -> %s" % (
+            result["plugin"].__name__,
+            result["instance"] 
+        ))
