@@ -38,12 +38,7 @@ class TableView(QtWidgets.QTableView):
         self.setShowGrid(False)
 
         self.verticalHeader().hide()
-        self.verticalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeToContents)
-
         self.horizontalHeader().hide()
-        self.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeToContents)
 
         self.setSelectionBehavior(self.SelectRows)
         self.setSelectionMode(self.NoSelection)
@@ -53,5 +48,8 @@ class TableView(QtWidgets.QTableView):
         for row in range(start, end + 1):
             index = self.model().createIndex(row, 0)
             self.openPersistentEditor(index)
+
+        self.resizeColumnsToContents()
+        self.resizeRowsToContents()
 
         return super(TableView, self).rowsInserted(parent, start, end)

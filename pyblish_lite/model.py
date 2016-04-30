@@ -46,4 +46,4 @@ class TableModel(QtCore.QAbstractTableModel):
         self.endResetModel()
 
     def update_with_result(self, result):
-        print("Updating with result..")
+        print("Updating with result.. %s" % result)

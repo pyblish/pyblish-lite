@@ -1,3 +1,7 @@
+import os
+import sys
+import contextlib
+
 from Qt import QtCore, QtWidgets, QtGui
 
 import pyblish.api
@@ -217,17 +221,11 @@ class Window(QtWidgets.QDialog):
         plugins = self.data["state"]["plugins"]
         context = self.data["state"]["context"]
 
-        def on_next(result):
-            if isinstance(result, StopIteration):
-                return QtCore.QTimer.singleShot(500, self.finish_publish)
-
+        for result in self.iterator(plugins, context):
             instance_model.update_with_result(result)
             plugin_model.update_with_result(result)
 
-            util.async(iterator.next, callback=on_next)
-
-        iterator = self.iterator(plugins, context)
-        util.async(iterator, callback=on_next)
+        QtCore.QTimer.singleShot(500, self.finish_publish)
 
     def finish_publish(self):
         self.data["state"]["isRunning"] = False
@@ -252,6 +250,10 @@ class Window(QtWidgets.QDialog):
     def reset(self):
         """Discover plug-ins and run collection"""
         plugins = pyblish.api.discover()
+
+        # TODO: This should be using pyblish.logic.Iterator
+        # similar to publish() and visualise the results
+        # as they are happening.
         context = pyblish.util.collect(plugins=plugins)
 
         models = self.data["models"]
@@ -300,3 +302,78 @@ class Window(QtWidgets.QDialog):
         buttons["play"].show()
         buttons["reset"].show()
         buttons["stop"].hide()
+
+
+class MyCollector(pyblish.api.ContextPlugin):
+    order = pyblish.api.CollectorOrder
+
+    def process(self, context):
+        context.create_instance("MyInstance 1", families=["myFamily"])
+        context.create_instance("MyInstance 2", families=["myFamily 2"])
+        context.create_instance(
+            "MyInstance 3",
+            families=["myFamily 2"],
+            publish=False
+        )
+
+
+class MyValidator(pyblish.api.InstancePlugin):
+    order = pyblish.api.ValidatorOrder
+    active = False
+
+    def process(self, instance):
+        self.log.info("Validating: %s" % instance)
+
+
+class MyExtractor(pyblish.api.InstancePlugin):
+    order = pyblish.api.ExtractorOrder
+    families = ["myFamily"]
+
+    def process(self, instance):
+        self.log.info("Extracting: %s" % instance)
+
+
+pyblish.api.register_plugin(MyCollector)
+pyblish.api.register_plugin(MyValidator)
+pyblish.api.register_plugin(MyExtractor)
+
+
+@contextlib.contextmanager
+def application():
+    app = QtWidgets.qApp.instance()
+
+    if not app:
+        app = QtWidgets.QApplication(sys.argv)
+        yield
+        app.exec_()
+    else:
+        yield
+
+
+def install_fonts():
+    fontdir = os.path.join(os.getcwd(), "font", "opensans")
+
+    database = QtGui.QFontDatabase()
+    for font in ("OpenSans-Regular.ttf",
+                 "OpenSans-SemiBold.ttf"):
+        database.addApplicationFont(
+            os.path.join(fontdir, font))
+
+
+def show(parent=None):
+    os.chdir(os.path.dirname(__file__))
+
+    with open("app.css") as f:
+        css = f.read()
+
+    with application():
+        install_fonts()
+
+        window = Window(parent)
+        window.resize(400, 600)
+        window.setStyleSheet(css)
+        window.show()
+
+        window.prepare_reset()
+
+        return window

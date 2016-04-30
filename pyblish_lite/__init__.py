@@ -1,6 +1,15 @@
 import sys
 
 
+VERSION_MAJOR = 0
+VERSION_MINOR = 1
+VERSION_PATCH = 0
+
+version_info = (VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
+version = '%i.%i.%i' % version_info
+__version__ = version
+
+
 def load_pyqt5():
     import PyQt5.Qt
     sys.modules["Qt"] = PyQt5
@@ -36,16 +45,25 @@ def load_pyside():
 
 # Support Qt 4 and 5, PyQt and PySide
 try:
-    load_pyqt5()
+    load_pyside()
 except ImportError:
     try:
-        load_pyside2()
+        load_pyqt4()
     except ImportError:
         try:
-            load_pyside()
+            load_pyside2()
         except ImportError:
             try:
-                load_pyqt4()
+                load_pyqt5()
             except:
-                sys.stderr.write("pyblish-light: Could not find "
+                sys.stderr.write("pyblish-lite: Could not find "
                                  "appropriate bindings for Qt\n")
+
+from .app import show
+
+__all__ = [
+    'show',
+    'version',
+    'version_info',
+    '__version__'
+]
