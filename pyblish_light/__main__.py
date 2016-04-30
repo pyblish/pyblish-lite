@@ -43,7 +43,7 @@ pyblish.api.register_plugin(MyExtractor)
 
 @contextlib.contextmanager
 def application():
-    if QtWidgets.qApp is None:
+    if not QtWidgets.qApp.instance():
         app = QtWidgets.QApplication(sys.argv)
         yield app
         app.exec_()
