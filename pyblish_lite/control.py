@@ -1,3 +1,5 @@
+import traceback
+
 from Qt import QtCore, QtWidgets, QtGui
 
 import pyblish.api
@@ -5,6 +7,8 @@ import pyblish.util
 import pyblish.logic
 
 from . import model, view
+
+defer = QtCore.QTimer.singleShot
 
 
 class Window(QtWidgets.QDialog):
@@ -81,8 +85,8 @@ class Window(QtWidgets.QDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        instance_model = model.TableModel()
-        plugin_model = model.TableModel()
+        instance_model = model.InstanceModel()
+        plugin_model = model.PluginModel()
 
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
@@ -205,24 +209,44 @@ class Window(QtWidgets.QDialog):
             button.hide()
 
         self.data["buttons"]["stop"].show()
-        QtCore.QTimer.singleShot(5, self.publish)
+        self.data["state"]["isRunning"] = True
+        defer(5, self.publish)
 
     def publish(self):
-        self.data["state"]["isRunning"] = True
-
-        instance_model = self.data["models"]["instances"]
-        plugin_model = self.data["models"]["plugins"]
+        models = self.data["models"]
 
         plugins = self.data["state"]["plugins"]
         context = self.data["state"]["context"]
 
-        for result in self.iterator(plugins, context):
-            instance_model.update_with_result(result)
-            plugin_model.update_with_result(result)
+        def on_next():
+            try:
+                result = iterator.next()
+                models["plugins"].update_with_result(result)
+                models["instances"].update_with_result(result)
+                defer(100, on_next)
 
-        QtCore.QTimer.singleShot(500, self.finish_publish)
+            except StopIteration as e:
+                print(e)
+                defer(500, self.finish_publish)
 
-    def finish_publish(self):
+            except Exception as e:
+                stack = traceback.format_exc(e)
+                defer(500, lambda: self.finish_publish(stack))
+
+        plugins = list(
+            p for p in plugins
+            if not pyblish.lib.inrange(
+                p.order,
+                base=pyblish.api.CollectorOrder)
+        )
+
+        iterator = self.iterator(plugins, context)
+        defer(100, on_next)
+
+    def finish_publish(self, error=None):
+        if error is not None:
+            print("An error occurred.\n\n%s" % error)
+
         self.data["state"]["isRunning"] = False
 
         buttons = self.data["buttons"]
@@ -233,6 +257,9 @@ class Window(QtWidgets.QDialog):
     def prepare_reset(self):
         print("About to reset..")
 
+        self.data["state"]["context"] = list()
+        self.data["state"]["plugins"] = list()
+
         for m in self.data["models"].values():
             m.reset()
 
@@ -240,51 +267,56 @@ class Window(QtWidgets.QDialog):
             b.hide()
 
         self.data["buttons"]["stop"].show()
-        QtCore.QTimer.singleShot(500, self.reset)
+        self.data["state"]["isRunning"] = True
+
+        defer(500, self.reset)
 
     def reset(self):
         """Discover plug-ins and run collection"""
-        plugins = pyblish.api.discover()
+        models = self.data["models"]
 
-        # TODO: This should be using pyblish.logic.Iterator
-        # similar to publish() and visualise the results
-        # as they are happening.
-        context = pyblish.util.collect(plugins=plugins)
+        plugins = pyblish.api.discover()
+        context = pyblish.api.Context()
 
         models = self.data["models"]
 
         for Plugin in plugins:
-            ischecked = Plugin.active
+            models["plugins"].append(Plugin)
 
-            models["plugins"].append([
-                {   # Column 0 - Checkbox
-                    model.CheckedRole: ischecked,
-                    model.PluginRole: Plugin,
-                },
-                {   # Column 1 - Label
-                    model.DisplayRole: Plugin.__name__,
-                },
-            ])
+        def on_next():
+            try:
+                result = iterator.next()
+                models["plugins"].update_with_result(result)
+                models["instances"].update_with_result(result)
+                defer(100, on_next)
 
-        for instance in context:
-            ischecked = instance.data.get("publish", True)
+            except StopIteration:
+                for instance in context:
+                    models["instances"].append(instance)
 
-            models["instances"].append([
-                {   # Column 0
-                    model.CheckedRole: ischecked,
-                    model.InstanceRole: instance,
-                },
-                {   # Column 1
-                    model.DisplayRole: instance.data["name"],
-                },
-            ])
+                defer(500, self.finish_reset)
+
+            except Exception as e:
+                stack = traceback.format_exc(e)
+                defer(500, lambda: self.finish_reset(stack))
+
+        collectors = list(
+            p for p in plugins
+            if pyblish.lib.inrange(
+                p.order,
+                base=pyblish.api.CollectorOrder)
+        )
 
         self.data["state"]["context"] = context
         self.data["state"]["plugins"] = plugins
 
-        self.finish_reset()
+        iterator = self.iterator(collectors, context)
+        defer(100, on_next)
 
-    def finish_reset(self):
+    def finish_reset(self, error=None):
+        if error is not None:
+            print("An error occurred.\n\n%s" % error)
+
         print("Finishing up reset..")
 
         buttons = self.data["buttons"]
@@ -299,11 +331,21 @@ class Window(QtWidgets.QDialog):
 
         """
 
+        if self.data["state"]["isClosing"]:
+            print("Good bye")
+            return super(Window, self).closeEvent(event)
+
         print("Closing..")
 
-        if not self.data["state"]["isClosing"]:
-            self.data["state"]["isClosing"] = True
-            QtCore.QTimer.singleShot(500, self.close)
-            return event.ignore()
+        self.data["state"]["isClosing"] = True
 
-        return super(Window, self).closeEvent(event)
+        # Explicitly clear potentially referenced data
+        print("Cleaning up..")
+        for instance in self.data["state"].get("context", []):
+            del(instance)
+
+        for plugin in self.data["state"].get("plugins", []):
+            del(plugin)
+
+        defer(200, self.close)
+        return event.ignore()
