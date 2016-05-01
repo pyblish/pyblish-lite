@@ -7,25 +7,31 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
         if index.column() == 0:
 
-            # Draw hollow square
             rect = QtCore.QRectF(option.rect)
             rect.adjust(8, 8, -8, -8)
-            # rect.setWidth(10)
-            # rect.setHeight(10)
 
             path = QtGui.QPainterPath()
             path.addRect(rect)
 
-            pen = QtGui.QPen(QtCore.Qt.white, 1)
+            color = QtCore.Qt.white
+
+            if index.data(model.IsProcessing) is True:
+                color = QtCore.Qt.green
+
+            elif index.data(model.IsFailed) is True:
+                color = QtCore.Qt.red
+
+            elif index.data(model.IsSucceeded) is True:
+                color = QtCore.Qt.green
+
+            pen = QtGui.QPen(color, 1)
 
             painter.save()
             painter.setPen(pen)
-
             painter.drawPath(path)
 
-            # Fill if checked
-            if index.data(model.CheckedRole):
-                painter.fillPath(path, QtCore.Qt.white)
+            if index.data(model.IsChecked):
+                painter.fillPath(path, color)
 
             painter.restore()
 
@@ -46,8 +52,8 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(10, 10)
 
     def setModelData(self, editor, mdl, index):
-        value = not index.data(model.CheckedRole)
-        mdl.setData(index, value, model.CheckedRole)
+        value = not index.data(model.IsChecked)
+        mdl.setData(index, value, model.IsChecked)
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)

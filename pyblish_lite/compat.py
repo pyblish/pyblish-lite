@@ -7,6 +7,10 @@ def load_pyqt5():
     PyQt5.QtCore.Signal = PyQt5.QtCore.pyqtSignal
     PyQt5.QtCore.Slot = PyQt5.QtCore.pyqtSlot
     PyQt5.QtCore.Property = PyQt5.QtCore.pyqtProperty
+
+    # Preserve reference to binding for conditional logic
+    PyQt5.__binding__ = "PyQt5"
+
     print("Loaded PyQt5")
 
 
@@ -17,12 +21,14 @@ def load_pyqt4():
     PyQt4.QtCore.Signal = PyQt4.QtCore.pyqtSignal
     PyQt4.QtCore.Slot = PyQt4.QtCore.pyqtSlot
     PyQt4.QtCore.Property = PyQt4.QtCore.pyqtProperty
+    PyQt4.__binding__ = "PyQt4"
     print("Loaded PyQt4")
 
 
 def load_pyside2():
     import PySide2
     sys.modules["Qt"] = PySide2
+    PySide2.__binding__ = "PySide2"
     print("Loaded PySide2")
 
 
@@ -31,6 +37,7 @@ def load_pyside():
     from PySide import QtGui
     PySide.QtWidgets = QtGui
     sys.modules["Qt"] = PySide
+    PySide.__binding__ = "PySide"
     print("Loaded PySide")
 
 

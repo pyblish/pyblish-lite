@@ -1,15 +1,22 @@
-from Qt import QtCore
+from Qt import QtCore, __binding__
 
-DisplayRole = QtCore.Qt.DisplayRole
-CheckedRole = QtCore.Qt.UserRole + 0
-PluginRole = QtCore.Qt.UserRole + 1
-InstanceRole = QtCore.Qt.UserRole + 2
+Label = QtCore.Qt.DisplayRole
+IsChecked = QtCore.Qt.UserRole + 0
+IsProcessing = QtCore.Qt.UserRole + 1
+IsFailed = QtCore.Qt.UserRole + 2
+IsSucceeded = QtCore.Qt.UserRole + 3
 
 
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, parent=None):
         super(TableModel, self).__init__(parent)
         self.items = list()
+
+        # Common schema
+        self.schema = {
+            IsSucceeded: "isSucceeded",
+            IsFailed: "isFailed"
+        }
 
     def __iter__(self):
         """Yield each row of model"""
@@ -25,32 +32,6 @@ class TableModel(QtCore.QAbstractTableModel):
         self.items.append(item)
         self.endInsertRows()
 
-    def data(self, index, role):
-        """Return value of item[`index`] of `role`"""
-        item = self.items[index.row()][index.column()]
-        return item.get(role)
-
-    def setData(self, index, value, role):
-        """Set items[`index`] of `role` to `value`"""
-        
-        if role & CheckedRole:
-            item = self.items[index.row()][index.column()]
-            item[role] = value
-            
-            plugin = index.data(PluginRole)
-            instance = index.data(InstanceRole)
-
-            if plugin is not None:
-                plugin.active = value
-
-            if instance is not None:
-                instance.data["publish"] = value
-
-            self.dataChanged.emit(index, index, [role])
-
-        else:
-            return super(TableModel, self).setData(index, value, role)
-
     def rowCount(self, parent=None):
         return len(self.items)
 
@@ -62,8 +43,101 @@ class TableModel(QtCore.QAbstractTableModel):
         self.items[:] = []
         self.endResetModel()
 
+    def update_with_result(self, item, success):
+        pass
+
+
+class PluginModel(TableModel):
+    def __init__(self):
+        super(PluginModel, self).__init__()
+
+        self.schema.update({
+            Label: "__name__",
+            IsChecked: "active",
+        })
+
+    def append(self, item):
+        item.isSucceeded = False
+        item.isFailed = False
+        return super(PluginModel, self).append(item)
+
+    def data(self, index, role):
+        key = self.schema.get(role)
+
+        if key is None:
+            return
+
+        return getattr(self.items[index.row()], key, None)
+
+    def setData(self, index, value, role):
+        item = self.items[index.row()]
+        key = self.schema.get(role)
+
+        if key is None:
+            return
+
+        setattr(item, key, value)
+
+        if __binding__ in ("PyQt4", "PySide"):
+            self.dataChanged.emit(index, index)
+        else:
+            self.dataChanged.emit(index, index, [role])
+
     def update_with_result(self, result):
-        print("Processed %s -> %s" % (
-            result["plugin"].__name__,
-            result["instance"] 
-        ))
+        item = result["plugin"]
+
+        index = self.items.index(item)
+        index = self.createIndex(index, 0)
+        self.setData(index, not result["success"], IsFailed)
+        self.setData(index, result["success"], IsSucceeded)
+
+
+class InstanceModel(TableModel):
+    def __init__(self):
+        super(InstanceModel, self).__init__()
+
+        self.schema.update({
+            Label: "label",
+            IsChecked: "publish",
+        })
+
+    def append(self, item):
+        item.data["isSucceeded"] = False
+        item.data["isFailed"] = False
+        item.data["publish"] = item.data.get("publish", True)
+        item.data["label"] = item.data.get("label", item.data["name"])
+        return super(InstanceModel, self).append(item)
+
+    def data(self, index, role):
+        item = self.items[index.row()]
+        key = self.schema.get(role)
+
+        if not key:
+            return
+
+        return item.data.get(key)
+
+    def setData(self, index, value, role):
+        item = self.items[index.row()]
+        key = self.schema.get(role)
+
+        if key is None:
+            return
+
+        item.data[key] = value
+
+        if __binding__ in ("PyQt4", "PySide"):
+            self.dataChanged.emit(index, index)
+        else:
+            self.dataChanged.emit(index, index, [role])
+
+    def update_with_result(self, result):
+        item = result["instance"]
+
+        if item is None:
+            return
+
+        index = self.items.index(item)
+        index = self.createIndex(index, 0)
+        self.setData(index, not result["success"], IsFailed)
+        self.setData(index, result["success"], IsSucceeded)
