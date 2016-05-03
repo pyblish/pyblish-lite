@@ -145,6 +145,8 @@ class Window(QtWidgets.QDialog):
 
         self.set_defaults()
 
+        right_view.customContextMenuRequested.connect(
+            self.on_plugin_action_menu)
         reset.clicked.connect(self.prepare_reset)
         play.clicked.connect(self.prepare_publish)
 
@@ -323,6 +325,100 @@ class Window(QtWidgets.QDialog):
         buttons["play"].show()
         buttons["reset"].show()
         buttons["stop"].hide()
+
+    def on_plugin_action_menu(self, pos):
+        index = self.data["views"]["right"].indexAt(pos)
+        actions = index.data(model.Actions)
+
+        if not actions:
+            return
+
+        # Context specific actions
+        for action in list(actions):
+            on = action.on
+            if on == "failed" and not index.data(model.HasFailed):
+                actions.remove(action)
+            if on == "succeeded" and not index.data(model.HasSucceeded):
+                actions.remove(action)
+            if on == "processed" and not index.data(model.HasProcessed):
+                actions.remove(action)
+            if on == "notProcessed" and index.data(model.HasProcessed):
+                actions.remove(action)
+
+        # Discard empty groups
+        i = 0
+        try:
+            action = actions[i]
+        except IndexError:
+            pass
+        else:
+            while action:
+                try:
+                    action = actions[i]
+                except IndexError:
+                    break
+
+                isempty = False
+
+                if action.__type__ == "category":
+                    try:
+                        next_ = actions[i + 1]
+                        if next_.__type__ != "action":
+                            isempty = True
+                    except IndexError:
+                        isempty = True
+
+                    if isempty:
+                        actions.pop(i)
+
+                i += 1
+
+        menu = QtWidgets.QMenu(self)
+        plugin = self.data["models"]["plugins"].items[index.row()]
+
+        for action in actions:
+            qaction = QtWidgets.QAction(action.label or action.__name__, self)
+            qaction.triggered.connect(
+                lambda checked, p=plugin, a=action: self.prepare_action(p, a)
+            )
+
+            menu.addAction(qaction)
+
+        menu.popup(self.data["views"]["right"].viewport().mapToGlobal(pos))
+
+    def prepare_action(self, plugin, action):
+        print("Preparing action..")
+
+        for button in self.data["buttons"].values():
+            button.hide()
+
+        self.data["buttons"]["stop"].show()
+        self.data["state"]["isRunning"] = True
+
+        defer(100, lambda: self.run_action(plugin, action))
+
+    def run_action(self, plugin, action):
+        models = self.data["models"]
+        context = self.data["state"]["context"]
+
+        def on_next():
+            result = pyblish.plugin.process(plugin, context, None, action.id)
+            models["plugins"].update_with_result(result)
+            models["instances"].update_with_result(result)
+            defer(500, self.finish_action)
+
+        defer(100, on_next)
+
+    def finish_action(self, error=None):
+        if error is not None:
+            print("An error occurred.\n\n%s" % error)
+
+        self.data["state"]["isRunning"] = False
+
+        buttons = self.data["buttons"]
+        buttons["reset"].show()
+        buttons["stop"].hide()
+        print("Finished")
 
     def closeEvent(self, event):
         """Perform post-flight checks before closing

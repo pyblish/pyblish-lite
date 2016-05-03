@@ -3,8 +3,11 @@ from Qt import QtCore, __binding__
 Label = QtCore.Qt.DisplayRole
 IsChecked = QtCore.Qt.UserRole + 0
 IsProcessing = QtCore.Qt.UserRole + 1
-IsFailed = QtCore.Qt.UserRole + 2
-IsSucceeded = QtCore.Qt.UserRole + 3
+Actions = QtCore.Qt.UserRole + 2
+HasFailed = QtCore.Qt.UserRole + 3
+HasSucceeded = QtCore.Qt.UserRole + 4
+HasProcessed = QtCore.Qt.UserRole + 6
+Id = QtCore.Qt.UserRole + 7
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -14,8 +17,11 @@ class TableModel(QtCore.QAbstractTableModel):
 
         # Common schema
         self.schema = {
-            IsSucceeded: "isSucceeded",
-            IsFailed: "isFailed"
+            IsProcessing: "isProcessing",
+            HasProcessed: "hasProcessed",
+            HasSucceeded: "hasSucceeded",
+            HasFailed: "hasFailed",
+            Actions: "actions",
         }
 
     def __iter__(self):
@@ -43,8 +49,9 @@ class TableModel(QtCore.QAbstractTableModel):
         self.items[:] = []
         self.endResetModel()
 
-    def update_with_result(self, item, success):
-        pass
+    def update_with_result(self, result):
+        for record in result["records"]:
+            print(record.msg)
 
 
 class PluginModel(TableModel):
@@ -54,11 +61,13 @@ class PluginModel(TableModel):
         self.schema.update({
             Label: "__name__",
             IsChecked: "active",
+            Id: "id",
         })
 
     def append(self, item):
-        item.isSucceeded = False
-        item.isFailed = False
+        item.isProcessing = False
+        item.hasSucceeded = False
+        item.hasFailed = False
         return super(PluginModel, self).append(item)
 
     def data(self, index, role):
@@ -88,8 +97,11 @@ class PluginModel(TableModel):
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
-        self.setData(index, not result["success"], IsFailed)
-        self.setData(index, result["success"], IsSucceeded)
+        self.setData(index, not result["success"], HasFailed)
+        self.setData(index, result["success"], HasSucceeded)
+        self.setData(index, True, HasProcessed)
+        self.setData(index, False, IsProcessing)
+        super(PluginModel, self).update_with_result(result)
 
 
 class InstanceModel(TableModel):
@@ -102,8 +114,8 @@ class InstanceModel(TableModel):
         })
 
     def append(self, item):
-        item.data["isSucceeded"] = False
-        item.data["isFailed"] = False
+        item.data["hasSucceeded"] = False
+        item.data["hasFailed"] = False
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
         return super(InstanceModel, self).append(item)
@@ -139,5 +151,8 @@ class InstanceModel(TableModel):
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
-        self.setData(index, not result["success"], IsFailed)
-        self.setData(index, result["success"], IsSucceeded)
+        self.setData(index, not result["success"], HasFailed)
+        self.setData(index, result["success"], HasSucceeded)
+        self.setData(index, True, HasProcessed)
+        self.setData(index, False, IsProcessing)
+        super(InstanceModel, self).update_with_result(result)
