@@ -18,10 +18,10 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
             if index.data(model.IsProcessing) is True:
                 color = QtCore.Qt.green
 
-            elif index.data(model.IsFailed) is True:
+            elif index.data(model.HasFailed) is True:
                 color = QtCore.Qt.red
 
-            elif index.data(model.IsSucceeded) is True:
+            elif index.data(model.HasSucceeded) is True:
                 color = QtCore.Qt.green
 
             pen = QtGui.QPen(color, 1)
@@ -40,8 +40,11 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
 
     def createEditor(self, parent, option, index):
         widget = QtWidgets.QWidget(parent)
-        widget.mousePressEvent = lambda event: self.setModelData(
+        widget.mousePressEvent = lambda event: (self.setModelData(
             widget, index.model(), index)
+            if event.button() & QtCore.Qt.LeftButton
+            else None
+        )
 
         return widget
 
@@ -77,6 +80,8 @@ class TableView(QtWidgets.QTableView):
 
         self.setSelectionBehavior(self.SelectRows)
         self.setSelectionMode(self.NoSelection)
+
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
     def rowsInserted(self, parent, start, end):
         """Enable editable checkbox for each row"""

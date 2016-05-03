@@ -13,6 +13,23 @@
 
 /* General CSS */
 
+QMenu {
+    background-color: #555; /* sets background of the menu */
+    border: 1px solid #222;
+}
+
+QMenu::item {
+    /* sets background of menu item. set this to something non-transparent
+        if you want menu color and menu item color to be different */
+    background-color: transparent;
+    padding: 5px;
+    padding-left: 30px;
+}
+
+QMenu::item:selected { /* when user selects item using mouse or keyboard */
+    background-color: #666;
+}
+
 QDialog {
 	background: "#555";
 }
