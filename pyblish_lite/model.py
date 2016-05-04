@@ -1,13 +1,14 @@
 from Qt import QtCore, __binding__
 
+Id = QtCore.Qt.UserRole + 7
 Label = QtCore.Qt.DisplayRole
+Actions = QtCore.Qt.UserRole + 2
+IsIdle = QtCore.Qt.UserRole + 8
 IsChecked = QtCore.Qt.UserRole + 0
 IsProcessing = QtCore.Qt.UserRole + 1
-Actions = QtCore.Qt.UserRole + 2
 HasFailed = QtCore.Qt.UserRole + 3
 HasSucceeded = QtCore.Qt.UserRole + 4
 HasProcessed = QtCore.Qt.UserRole + 6
-Id = QtCore.Qt.UserRole + 7
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -17,10 +18,12 @@ class TableModel(QtCore.QAbstractTableModel):
 
         # Common schema
         self.schema = {
-            IsProcessing: "isProcessing",
-            HasProcessed: "hasProcessed",
-            HasSucceeded: "hasSucceeded",
-            HasFailed: "hasFailed",
+            Id: "id",
+            IsIdle: "is_idle",
+            IsProcessing: "is_processing",
+            HasProcessed: "has_processed",
+            HasSucceeded: "has_succeeded",
+            HasFailed: "has_failed",
             Actions: "actions",
         }
 
@@ -59,24 +62,75 @@ class PluginModel(TableModel):
         super(PluginModel, self).__init__()
 
         self.schema.update({
-            Label: "__name__",
+            Label: "label",
             IsChecked: "active",
-            Id: "id",
         })
 
     def append(self, item):
-        item.isProcessing = False
-        item.hasSucceeded = False
-        item.hasFailed = False
+        item.is_processing = False
+        item.has_processed = False
+        item.has_succeeded = False
+        item.has_failed = False
+        item.label = item.label or item.__name__
         return super(PluginModel, self).append(item)
 
     def data(self, index, role):
+        item = self.items[index.row()]
         key = self.schema.get(role)
 
         if key is None:
             return
 
-        return getattr(self.items[index.row()], key, None)
+        if role == Actions:
+            actions = list(item.actions)
+
+            # Context specific actions
+            for action in actions:
+                if action.on == "failed" and not item.has_failed:
+                    actions.remove(action)
+                if action.on == "succeeded" and not item.has_succeeded:
+                    actions.remove(action)
+                if action.on == "processed" and not item.has_processed:
+                    actions.remove(action)
+                if action.on == "notProcessed" and item.has_processed:
+                    actions.remove(action)
+
+            # Discard empty groups
+            i = 0
+            try:
+                action = actions[i]
+            except IndexError:
+                pass
+            else:
+                while action:
+                    try:
+                        action = actions[i]
+                    except IndexError:
+                        break
+
+                    isempty = False
+
+                    if action.__type__ == "category":
+                        try:
+                            next_ = actions[i + 1]
+                            if next_.__type__ != "action":
+                                isempty = True
+                        except IndexError:
+                            isempty = True
+
+                        if isempty:
+                            actions.pop(i)
+
+                    i += 1
+
+            return actions
+
+        key = self.schema.get(role)
+
+        if key is None:
+            return
+
+        return getattr(item, key, None)
 
     def setData(self, index, value, role):
         item = self.items[index.row()]
@@ -114,8 +168,9 @@ class InstanceModel(TableModel):
         })
 
     def append(self, item):
-        item.data["hasSucceeded"] = False
-        item.data["hasFailed"] = False
+        item.data["has_succeeded"] = False
+        item.data["has_failed"] = False
+        item.data["is_idle"] = False
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
         return super(InstanceModel, self).append(item)

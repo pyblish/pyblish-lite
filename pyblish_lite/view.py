@@ -55,6 +55,9 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(10, 10)
 
     def setModelData(self, editor, mdl, index):
+        if index.data(model.IsIdle):
+            return
+
         value = not index.data(model.IsChecked)
         mdl.setData(index, value, model.IsChecked)
 

@@ -1,3 +1,4 @@
+import os
 import traceback
 
 from Qt import QtCore, QtWidgets, QtGui
@@ -7,8 +8,6 @@ import pyblish.util
 import pyblish.logic
 
 from . import model, view
-
-defer = QtCore.QTimer.singleShot
 
 
 class Window(QtWidgets.QDialog):
@@ -138,7 +137,7 @@ class Window(QtWidgets.QDialog):
             "state": {
                 "context": list(),
                 "plugins": list(),
-                "isRunning": False,
+                "is_running": False,
                 "isClosing": False,
             }
         }
@@ -165,13 +164,14 @@ class Window(QtWidgets.QDialog):
             "ordersWithError": set()
         }
 
+
         for plug, instance in pyblish.logic.Iterator(plugins, context):
             if not plug.active:
                 continue
 
             state["nextOrder"] = plug.order
 
-            if not self.data["state"]["isRunning"]:
+            if not self.data["state"]["is_running"]:
                 raise StopIteration("Stopped")
 
             if test(**state):
@@ -211,10 +211,10 @@ class Window(QtWidgets.QDialog):
             button.hide()
 
         self.data["buttons"]["stop"].show()
-        self.data["state"]["isRunning"] = True
         defer(5, self.publish)
 
     def publish(self):
+        self.data["state"]["is_running"] = True
         models = self.data["models"]
 
         plugins = self.data["state"]["plugins"]
@@ -249,7 +249,11 @@ class Window(QtWidgets.QDialog):
         if error is not None:
             print("An error occurred.\n\n%s" % error)
 
-        self.data["state"]["isRunning"] = False
+        self.data["state"]["is_running"] = False
+
+        plugin_model = self.data["models"]["plugins"]
+        for index in plugin_model:
+            plugin_model.setData(index, model.IsIdle, False)
 
         buttons = self.data["buttons"]
         buttons["reset"].show()
@@ -269,12 +273,13 @@ class Window(QtWidgets.QDialog):
             b.hide()
 
         self.data["buttons"]["stop"].show()
-        self.data["state"]["isRunning"] = True
 
         defer(500, self.reset)
 
     def reset(self):
         """Discover plug-ins and run collection"""
+        self.data["state"]["is_running"] = True
+
         models = self.data["models"]
 
         plugins = pyblish.api.discover()
@@ -333,46 +338,6 @@ class Window(QtWidgets.QDialog):
         if not actions:
             return
 
-        # Context specific actions
-        for action in list(actions):
-            on = action.on
-            if on == "failed" and not index.data(model.HasFailed):
-                actions.remove(action)
-            if on == "succeeded" and not index.data(model.HasSucceeded):
-                actions.remove(action)
-            if on == "processed" and not index.data(model.HasProcessed):
-                actions.remove(action)
-            if on == "notProcessed" and index.data(model.HasProcessed):
-                actions.remove(action)
-
-        # Discard empty groups
-        i = 0
-        try:
-            action = actions[i]
-        except IndexError:
-            pass
-        else:
-            while action:
-                try:
-                    action = actions[i]
-                except IndexError:
-                    break
-
-                isempty = False
-
-                if action.__type__ == "category":
-                    try:
-                        next_ = actions[i + 1]
-                        if next_.__type__ != "action":
-                            isempty = True
-                    except IndexError:
-                        isempty = True
-
-                    if isempty:
-                        actions.pop(i)
-
-                i += 1
-
         menu = QtWidgets.QMenu(self)
         plugin = self.data["models"]["plugins"].items[index.row()]
 
@@ -393,7 +358,7 @@ class Window(QtWidgets.QDialog):
             button.hide()
 
         self.data["buttons"]["stop"].show()
-        self.data["state"]["isRunning"] = True
+        self.data["state"]["is_running"] = True
 
         defer(100, lambda: self.run_action(plugin, action))
 
@@ -413,7 +378,7 @@ class Window(QtWidgets.QDialog):
         if error is not None:
             print("An error occurred.\n\n%s" % error)
 
-        self.data["state"]["isRunning"] = False
+        self.data["state"]["is_running"] = False
 
         buttons = self.data["buttons"]
         buttons["reset"].show()
@@ -445,3 +410,20 @@ class Window(QtWidgets.QDialog):
 
         defer(200, self.close)
         return event.ignore()
+
+
+def defer(delay, func):
+    """Append artificial delay to `func`
+
+    Arguments:
+        delay (float): Delay multiplier; default 1, 0 means no delay
+        func (callable): Any callable
+
+    """
+
+    delay *= float(os.getenv("PYBLISH_DELAY", 1))
+    if delay > 0:
+        return QtCore.QTimer.singleShot(delay, func)
+    else:
+        return func()
+
