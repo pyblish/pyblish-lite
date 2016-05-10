@@ -17,7 +17,7 @@ class Window(QtWidgets.QDialog):
         self.setWindowTitle("Pyblish")
         self.setWindowIcon(QtGui.QIcon("img/logo-extrasmall.png"))
 
-        """
+        """General layout
          __________________
         |                  |
         |      Header      |
@@ -49,8 +49,12 @@ class Window(QtWidgets.QDialog):
 
         body = QtWidgets.QWidget()
 
-        left_view = view.TableView()
-        right_view = view.TableView()
+        left_view = view.ItemView()
+        right_view = view.ItemView()
+
+        delegate = view.CheckBoxDelegate()
+        left_view.setItemDelegate(delegate)
+        right_view.setItemDelegate(delegate)
 
         layout = QtWidgets.QHBoxLayout(body)
         layout.addWidget(left_view)
@@ -90,6 +94,20 @@ class Window(QtWidgets.QDialog):
 
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
+
+        """Setup
+              ___
+             |   |
+          /\/     \/\
+         /     _     \
+         \    / \    /
+          |   | |   |
+         /    \_/    \
+         \           /
+          \/\     /\/
+             |___|
+
+        """
 
         names = {
             # Main
@@ -143,12 +161,33 @@ class Window(QtWidgets.QDialog):
             }
         }
 
-        self.set_defaults()
+        # Defaults
+        home.setCheckState(QtCore.Qt.Checked)
 
-        right_view.customContextMenuRequested.connect(
-            self.on_plugin_action_menu)
+        """Signals
+         ________     ________
+        |________|-->|________|
+                         |
+                         |
+                      ___v____
+                     |________|
+
+        """
+
+        delegate.toggled.connect(self.on_toggled)
         reset.clicked.connect(self.prepare_reset)
         play.clicked.connect(self.prepare_publish)
+        right_view.customContextMenuRequested.connect(
+            self.on_plugin_action_menu)
+
+    def on_toggled(self, index):
+        """An item is requesting to be toggled"""
+        if index.data(model.HasProcessed):
+            print("Cannot toggle")
+            return
+
+        value = not index.data(model.IsChecked)
+        index.model().setData(index, value, model.IsChecked)
 
     def iterator(self, plugins, context):
         """Primary iterator
@@ -192,17 +231,6 @@ class Window(QtWidgets.QDialog):
                     state["ordersWithError"].add(plug.order)
 
             yield result
-
-    def set_defaults(self):
-        """Initialise elements of the GUI
-
-        TODO: This will quickly get messy.
-            Manage this via a statemachine instead.
-
-        """
-
-        tabs = self.data["tabs"]
-        tabs["home"].setCheckState(QtCore.Qt.Checked)
 
     def prepare_publish(self):
         print("Preparing publish..")
@@ -326,6 +354,8 @@ class Window(QtWidgets.QDialog):
         buttons["reset"].show()
         buttons["stop"].hide()
 
+        self.data["state"]["isRunning"] = False
+
     def on_plugin_action_menu(self, pos):
         index = self.data["views"]["right"].indexAt(pos)
         actions = index.data(model.Actions)
@@ -431,6 +461,10 @@ class Window(QtWidgets.QDialog):
             print("Good bye")
             return super(Window, self).closeEvent(event)
 
+        if self.data["state"]["isRunning"]:
+            print("Cannot close while running.\n")
+            return event.ignore()
+
         print("Closing..")
 
         self.data["state"]["isClosing"] = True
@@ -444,4 +478,4 @@ class Window(QtWidgets.QDialog):
             del(plugin)
 
         defer(200, self.close)
-        return event.ignore()
+        return

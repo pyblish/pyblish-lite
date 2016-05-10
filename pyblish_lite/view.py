@@ -4,82 +4,72 @@ from . import model
 
 
 class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
+    toggled = QtCore.Signal("QModelIndex")
+
     def paint(self, painter, option, index):
-        if index.column() == 0:
 
-            rect = QtCore.QRectF(option.rect)
-            rect.adjust(8, 8, -8, -8)
+        rect = QtCore.QRectF(option.rect)
+        rect.setWidth(rect.height())
+        rect.adjust(4, 4, -4, -4)
 
-            path = QtGui.QPainterPath()
-            path.addRect(rect)
+        path = QtGui.QPainterPath()
+        path.addRect(rect)
 
-            color = QtCore.Qt.white
+        color = QtCore.Qt.white
 
-            if index.data(model.IsProcessing) is True:
-                color = QtCore.Qt.green
+        if index.data(model.IsProcessing) is True:
+            color = QtCore.Qt.green
 
-            elif index.data(model.HasFailed) is True:
-                color = QtCore.Qt.red
+        elif index.data(model.HasFailed) is True:
+            color = QtCore.Qt.red
 
-            elif index.data(model.HasSucceeded) is True:
-                color = QtCore.Qt.green
+        elif index.data(model.HasSucceeded) is True:
+            color = QtCore.Qt.green
 
-            pen = QtGui.QPen(color, 1)
+        pen = QtGui.QPen(color, 1)
+        font = QtWidgets.QApplication.instance().font()
 
-            painter.save()
-            painter.setPen(pen)
-            painter.drawPath(path)
+        # Maintan reference to state, so we can restore it once we're done
+        painter.save()
 
-            if index.data(model.IsChecked):
-                painter.fillPath(path, color)
+        # Draw text
+        painter.setFont(font)
+        rect = option.rect.adjusted(rect.width() + 10, 2, 0, -2)
+        painter.drawText(rect, index.data(model.Label))
 
-            painter.restore()
+        # Draw checkbox
+        painter.setPen(pen)
+        painter.drawPath(path)
 
-        else:
-            return super(CheckBoxDelegate, self).paint(painter, option, index)
+        if index.data(model.IsChecked):
+            painter.fillPath(path, color)
+
+        # Ok, we're done, tidy up.
+        painter.restore()
 
     def createEditor(self, parent, option, index):
+        """Handle events, such as mousePressEvent"""
         widget = QtWidgets.QWidget(parent)
-        widget.mousePressEvent = lambda event: (self.setModelData(
-            widget, index.model(), index)
+
+        # At the moment, clicking anywhere on the item triggers a toggle
+        # TODO(marcus): Distinguish when a user is pressing on a potential
+        # icon other than the main label or checkbox.
+        widget.mouseReleaseEvent = lambda event: (
+            self.toggled.emit(index)
             if event.button() & QtCore.Qt.LeftButton
             else None
         )
 
         return widget
 
-    def sizeHint(self, option, index):
-        if index.column() != 0:
-            return super(CheckBoxDelegate, self).sizeHint(option, index)
-
-        return QtCore.QSize(10, 10)
-
-    def setModelData(self, editor, mdl, index):
-        value = not index.data(model.IsChecked)
-        mdl.setData(index, value, model.IsChecked)
-
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
 
 
-class TableView(QtWidgets.QTableView):
+class ItemView(QtWidgets.QListView):
 
     def __init__(self, parent=None):
-        super(TableView, self).__init__(parent)
-
-        delegate = CheckBoxDelegate()
-        self.setItemDelegate(delegate)
-
-        self.horizontalHeader().setStretchLastSection(True)
-
-        self.setShowGrid(False)
-
-        self.verticalHeader().hide()
-        self.horizontalHeader().hide()
-        self.horizontalScrollBar().hide()
-
-        self.setSelectionBehavior(self.SelectRows)
-        self.setSelectionMode(self.NoSelection)
+        super(ItemView, self).__init__(parent)
 
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
@@ -88,8 +78,3 @@ class TableView(QtWidgets.QTableView):
         for row in range(start, end + 1):
             index = self.model().createIndex(row, 0)
             self.openPersistentEditor(index)
-
-        self.resizeColumnsToContents()
-        self.resizeRowsToContents()
-
-        return super(TableView, self).rowsInserted(parent, start, end)

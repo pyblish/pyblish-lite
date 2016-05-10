@@ -29,6 +29,9 @@ class TableModel(QtCore.QAbstractTableModel):
         for index in range(len(self.items)):
             yield self.createIndex(index, 0)
 
+    def data(self, index, role):
+        pass
+
     def append(self, item):
         """Append item to end of model"""
         self.beginInsertRows(QtCore.QModelIndex(),
@@ -71,6 +74,8 @@ class PluginModel(TableModel):
         return super(PluginModel, self).append(item)
 
     def data(self, index, role):
+        super(PluginModel, self).data(index, role)
+
         key = self.schema.get(role)
 
         if key is None:
@@ -121,6 +126,8 @@ class InstanceModel(TableModel):
         return super(InstanceModel, self).append(item)
 
     def data(self, index, role):
+        super(InstanceModel, self).data(index, role)
+
         item = self.items[index.row()]
         key = self.schema.get(role)
 
