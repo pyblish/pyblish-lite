@@ -24,7 +24,7 @@ def install_fonts():
 
     database = QtGui.QFontDatabase()
     for font in ("OpenSans-Regular.ttf",
-                 "OpenSans-SemiBold.ttf"):
+                 "OpenSans-Semibold.ttf"):
         database.addApplicationFont(
             os.path.join(fontdir, font))
 

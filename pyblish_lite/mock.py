@@ -17,6 +17,7 @@ class MyOtherAction(pyblish.api.Action):
 
 
 class MyCollector(pyblish.api.ContextPlugin):
+    label = "My Collector"
     order = pyblish.api.CollectorOrder
 
     def process(self, context):
@@ -32,7 +33,7 @@ class MyCollector(pyblish.api.ContextPlugin):
 class MyValidator(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder
     active = False
-
+    label = "My Validator"
     actions = [MyAction,
                MyOtherAction]
 
@@ -43,6 +44,7 @@ class MyValidator(pyblish.api.InstancePlugin):
 class MyExtractor(pyblish.api.InstancePlugin):
     order = pyblish.api.ExtractorOrder
     families = ["myFamily"]
+    label = "My Extractor"
 
     def process(self, instance):
         self.log.info("Extracting: %s" % instance)
