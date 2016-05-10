@@ -11,6 +11,8 @@ from . import model, view
 
 
 class Window(QtWidgets.QDialog):
+    finished = QtCore.Signal()
+
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
         self.setWindowTitle("Pyblish")
@@ -156,7 +158,8 @@ class Window(QtWidgets.QDialog):
                 "context": list(),
                 "plugins": list(),
                 "is_running": False,
-                "isClosing": False,
+                "is_closing": False,
+                "close_requested": False
             }
         }
 
@@ -202,7 +205,6 @@ class Window(QtWidgets.QDialog):
             "nextOrder": None,
             "ordersWithError": set()
         }
-
 
         for plug, instance in pyblish.logic.Iterator(plugins, context):
             if not plug.active:
@@ -286,6 +288,8 @@ class Window(QtWidgets.QDialog):
         buttons = self.data["buttons"]
         buttons["reset"].show()
         buttons["stop"].hide()
+
+        self.finished.emit()
         print("Finished")
 
     def prepare_reset(self):
@@ -359,7 +363,8 @@ class Window(QtWidgets.QDialog):
         buttons["reset"].show()
         buttons["stop"].hide()
 
-        self.data["state"]["isRunning"] = False
+        self.data["state"]["is_running"] = False
+        self.finished.emit()
 
     def on_plugin_action_menu(self, pos):
         index = self.data["views"]["right"].indexAt(pos)
@@ -422,17 +427,19 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        if self.data["state"]["isClosing"]:
+        if self.data["state"]["is_closing"]:
             print("Good bye")
             return super(Window, self).closeEvent(event)
 
-        if self.data["state"]["isRunning"]:
-            print("Cannot close while running.\n")
-            return event.ignore()
-
         print("Closing..")
 
-        self.data["state"]["isClosing"] = True
+        if self.data["state"]["is_running"]:
+            print("..as soon as processing is finished..")
+            self.data["state"]["is_running"] = False
+            self.finished.connect(self.close)
+            return event.ignore()
+
+        self.data["state"]["is_closing"] = True
 
         # Explicitly clear potentially referenced data
         print("Cleaning up..")
@@ -460,4 +467,3 @@ def defer(delay, func):
         return QtCore.QTimer.singleShot(delay, func)
     else:
         return func()
-

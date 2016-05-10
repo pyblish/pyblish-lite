@@ -34,30 +34,14 @@ QDialog {
 	background: "#555";
 }
 
-QTableView {
+QListView {
 	border: 0px;
-	color: #DDD;
-	selection-background-color: "steelblue";
 	background: "transparent"
 }
 
-QTableView::item:focus {
+/*QListView::item:focus {
 }
-
-QTableView QCheckBox {
-	max-width: 10px;
-}
-
-QTableView QCheckBox::indicator {
-	width: 8px;
-	height: 8px;
-	background: "transparent";
-	border: 1px solid "white";
-}
-
-QTableView QCheckBox::indicator:checked {
-	background: "white";
-}
+*/
 
 QPushButton {
 	width: 30px;

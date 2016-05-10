@@ -7,6 +7,7 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
     toggled = QtCore.Signal("QModelIndex")
 
     def paint(self, painter, option, index):
+        print("painting")
 
         rect = QtCore.QRectF(option.rect)
         rect.setWidth(rect.height())
@@ -47,6 +48,9 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         # Ok, we're done, tidy up.
         painter.restore()
 
+    def sizeHint(self, option, index):
+        return QtCore.QSize(option.rect.width(), 20)
+
     def createEditor(self, parent, option, index):
         """Handle events, such as mousePressEvent"""
         widget = QtWidgets.QWidget(parent)
@@ -64,13 +68,14 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
+        return super(CheckBoxDelegate, self).updateEditorGeometry(
+            editor, option, index)
 
 
 class ItemView(QtWidgets.QListView):
 
     def __init__(self, parent=None):
         super(ItemView, self).__init__(parent)
-
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
     def rowsInserted(self, parent, start, end):
@@ -78,3 +83,5 @@ class ItemView(QtWidgets.QListView):
         for row in range(start, end + 1):
             index = self.model().createIndex(row, 0)
             self.openPersistentEditor(index)
+
+        return super(ItemView, self).rowsInserted(parent, start, end)
