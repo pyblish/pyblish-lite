@@ -7,7 +7,11 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
     toggled = QtCore.Signal("QModelIndex")
 
     def paint(self, painter, option, index):
-        print("painting")
+        """Paint checkbox and text
+         _
+        |_|  My label
+
+        """
 
         rect = QtCore.QRectF(option.rect)
         rect.setWidth(rect.height())
@@ -29,14 +33,18 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
 
         pen = QtGui.QPen(color, 1)
         font = QtWidgets.QApplication.instance().font()
+        metrics = painter.fontMetrics()
+
+        rect = option.rect.adjusted(rect.width() + 10, 2, 0, -2)
+        label = index.data(model.Label)
+        label = metrics.elidedText(label, QtCore.Qt.ElideRight, rect.width())
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
-        # Draw text
+        # Draw label
         painter.setFont(font)
-        rect = option.rect.adjusted(rect.width() + 10, 2, 0, -2)
-        painter.drawText(rect, index.data(model.Label))
+        painter.drawText(rect, label)
 
         # Draw checkbox
         painter.setPen(pen)
@@ -76,6 +84,8 @@ class ItemView(QtWidgets.QListView):
 
     def __init__(self, parent=None):
         super(ItemView, self).__init__(parent)
+
+        self.verticalScrollBar().hide()
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
     def rowsInserted(self, parent, start, end):

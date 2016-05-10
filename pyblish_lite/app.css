@@ -31,6 +31,7 @@ QMenu::item:selected { /* when user selects item using mouse or keyboard */
 }
 
 QDialog {
+	min-width: 300;
 	background: "#555";
 }
 
@@ -39,9 +40,10 @@ QListView {
 	background: "transparent"
 }
 
-/*QListView::item:focus {
+QListView QScrollBar {
+	height: 0px;
+	width: 0px;
 }
-*/
 
 QPushButton {
 	width: 30px;
