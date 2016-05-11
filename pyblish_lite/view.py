@@ -23,27 +23,26 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         red = QtGui.QColor("#EE2222")
         green = QtGui.QColor("#77AE24")
         blue = QtGui.QColor("#99CEEE")
-        fill = False
 
         check_color = QtCore.Qt.white
 
         if index.data(model.IsProcessing) is True:
             check_color = blue
-            fill = True
 
         elif index.data(model.HasFailed) is True:
             check_color = red
-            fill = True
 
         elif index.data(model.HasSucceeded) is True:
             check_color = green
-            fill = True
 
         elif index.data(model.HasProcessed) is True:
             check_color = green
-            fill = True
 
-        font = QtWidgets.QApplication.instance().font()
+        font = QtGui.QFont()
+        font.setFamily("Open Sans")
+        font.setPointSize(8)
+        font.setWeight(400)
+
         metrics = painter.fontMetrics()
 
         rect = QtCore.QRectF(option.rect.adjusted(rect.width() + 12, 2, 0, -2))

@@ -12,10 +12,12 @@ def application():
     app = QtWidgets.QApplication.instance()
 
     if not app:
+        print("Starting new QApplication..")
         app = QtWidgets.QApplication(sys.argv)
         yield app
         app.exec_()
     else:
+        print("Using existing QApplication..")
         yield app
 
 
@@ -35,20 +37,20 @@ def show(parent=None):
     with open("app.css") as f:
         css = f.read()
 
-    with application() as app:
+    with application():
         install_fonts()
-
-        font = app.font()
-        font.setFamily("Open Sans")
-        font.setPointSize(8)
-        font.setWeight(400)
-
-        app.setFont(font)
-        app.setStyleSheet(css)
 
         window = control.Window(parent)
         window.resize(400, 600)
         window.show()
+
+        font = window.font()
+        font.setFamily("Open Sans")
+        font.setPointSize(8)
+        font.setWeight(400)
+
+        window.setFont(font)
+        window.setStyleSheet(css)
 
         window.prepare_reset()
 
