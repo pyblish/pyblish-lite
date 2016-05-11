@@ -43,12 +43,3 @@ import pyblish_lite
 parent = {o.objectName(): o for o in QtGui.qApp.topLevelWidgets()}["MayaWindow"]
 window = pyblish_lite.show(parent)
 ```
-
-<br>
-<br>
-<br>
-
-### Todo
-
-- Reflect changes in GUI when publishing
-- Terminal in which log records are shown

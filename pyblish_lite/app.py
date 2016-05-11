@@ -9,14 +9,14 @@ from . import control
 
 @contextlib.contextmanager
 def application():
-    app = QtWidgets.qApp.instance()
+    app = QtWidgets.QApplication.instance()
 
     if not app:
         app = QtWidgets.QApplication(sys.argv)
-        yield
+        yield app
         app.exec_()
     else:
-        yield
+        yield app
 
 
 def install_fonts():
@@ -24,7 +24,7 @@ def install_fonts():
 
     database = QtGui.QFontDatabase()
     for font in ("OpenSans-Regular.ttf",
-                 "OpenSans-SemiBold.ttf"):
+                 "OpenSans-Semibold.ttf"):
         database.addApplicationFont(
             os.path.join(fontdir, font))
 
@@ -35,12 +35,19 @@ def show(parent=None):
     with open("app.css") as f:
         css = f.read()
 
-    with application():
+    with application() as app:
         install_fonts()
+
+        font = app.font()
+        font.setFamily("Open Sans")
+        font.setPointSize(8)
+        font.setWeight(400)
+
+        app.setFont(font)
+        app.setStyleSheet(css)
 
         window = control.Window(parent)
         window.resize(400, 600)
-        window.setStyleSheet(css)
         window.show()
 
         window.prepare_reset()

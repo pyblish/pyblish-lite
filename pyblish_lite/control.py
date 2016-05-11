@@ -1,3 +1,4 @@
+import os
 import traceback
 
 from Qt import QtCore, QtWidgets, QtGui
@@ -8,16 +9,17 @@ import pyblish.logic
 
 from . import model, view
 
-defer = QtCore.QTimer.singleShot
-
 
 class Window(QtWidgets.QDialog):
+    finished = QtCore.Signal()
+    about_to_process = QtCore.Signal(object, object)
+
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
         self.setWindowTitle("Pyblish")
         self.setWindowIcon(QtGui.QIcon("img/logo-extrasmall.png"))
 
-        """
+        """General layout
          __________________
         |                  |
         |      Header      |
@@ -49,8 +51,12 @@ class Window(QtWidgets.QDialog):
 
         body = QtWidgets.QWidget()
 
-        left_view = view.TableView()
-        right_view = view.TableView()
+        left_view = view.ItemView()
+        right_view = view.ItemView()
+
+        delegate = view.CheckBoxDelegate()
+        left_view.setItemDelegate(delegate)
+        right_view.setItemDelegate(delegate)
 
         layout = QtWidgets.QHBoxLayout(body)
         layout.addWidget(left_view)
@@ -63,6 +69,13 @@ class Window(QtWidgets.QDialog):
         layout = QtWidgets.QHBoxLayout(container)
         layout.setContentsMargins(5, 5, 5, 0)
         layout.addWidget(body)
+
+        # Placeholder for when GUI is closing
+        closing_placeholder = QtWidgets.QWidget()
+        closing_placeholder.setSizePolicy(
+            QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        closing_placeholder.hide()
+        layout.addWidget(closing_placeholder, 0)
 
         footer = QtWidgets.QWidget()
         spacer = QtWidgets.QWidget()
@@ -91,6 +104,20 @@ class Window(QtWidgets.QDialog):
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
 
+        """Setup
+              ___
+             |   |
+          /\/     \/\
+         /     _     \
+         \    / \    /
+          |   | |   |
+         /    \_/    \
+         \           /
+          \/\     /\/
+             |___|
+
+        """
+
         names = {
             # Main
             "Header": header,
@@ -102,7 +129,10 @@ class Window(QtWidgets.QDialog):
             # Buttons
             "Play": play,
             "Reset": reset,
-            "Stop": stop
+            "Stop": stop,
+
+            # Misc
+            "ClosingPlaceholder": closing_placeholder,
         }
 
         for name, widget in names.items():
@@ -138,240 +168,95 @@ class Window(QtWidgets.QDialog):
             "state": {
                 "context": list(),
                 "plugins": list(),
-                "isRunning": False,
-                "isClosing": False,
+                "is_running": False,
+                "is_closing": False,
+                "close_requested": False,
+                "processing": {
+                    "nextOrder": None,
+                    "ordersWithError": set()
+                }
             }
         }
 
-        self.set_defaults()
+        # Defaults
+        home.setCheckState(QtCore.Qt.Checked)
 
+        """Signals
+         ________     ________
+        |________|-->|________|
+                         |
+                         |
+                      ___v____
+                     |________|
+
+        """
+
+        # NOTE: Listeners to this signal are run in the main thread
+        self.about_to_process.connect(self.on_about_to_process,
+                                      QtCore.Qt.DirectConnection)
+
+        delegate.toggled.connect(self.on_delegate_toggled)
+        reset.clicked.connect(self.on_reset_clicked)
+        play.clicked.connect(self.on_play_clicked)
+        stop.clicked.connect(self.on_stop_clicked)
         right_view.customContextMenuRequested.connect(
-            self.on_plugin_action_menu)
-        reset.clicked.connect(self.prepare_reset)
-        play.clicked.connect(self.prepare_publish)
+            self.on_plugin_action_menu_requested)
 
-    def iterator(self, plugins, context):
-        """Primary iterator
+    def on_play_clicked(self):
+        self.prepare_publish()
 
-        This is the brains of publishing. It handles logic related
-        to which plug-in to process with which Instance or Context,
-        in addition to stopping when necessary.
+    def on_reset_clicked(self):
+        self.prepare_reset()
 
-        """
+    def on_stop_clicked(self):
+        self.info("Stopping..")
+        self.data["state"]["is_running"] = False
 
-        test = pyblish.logic.registered_test()
-        state = {
-            "nextOrder": None,
-            "ordersWithError": set()
-        }
+    def on_delegate_toggled(self, index):
+        """An item is requesting to be toggled"""
+        if not index.data(model.IsIdle):
+            return self.info("Cannot toggle")
 
-        for plug, instance in pyblish.logic.Iterator(plugins, context):
-            if not plug.active:
-                continue
+        if not index.data(model.IsOptional):
+            return self.info("Mandatory plug-in cannot be toggled")
 
-            state["nextOrder"] = plug.order
+        value = not index.data(model.IsChecked)
+        index.model().setData(index, value, model.IsChecked)
 
-            if not self.data["state"]["isRunning"]:
-                raise StopIteration("Stopped")
+    def on_about_to_process(self, plugin, instance):
+        """Reflect currently running pair in GUI"""
 
-            if test(**state):
-                raise StopIteration("Stopped due to %s" % test(**state))
+        if instance is not None:
+            # self.info("Getting: %s" % instance.data["name"])
+            instance_model = self.data["models"]["instances"]
+            index = instance_model.items.index(instance)
+            index = instance_model.createIndex(index, 0)
+            instance_model.setData(index, True, model.IsProcessing)
+            instance_model.setData(index, False, model.IsIdle)
 
-            try:
-                # Notify GUI before commencing remote processing
-                result = pyblish.plugin.process(plug, context, instance)
+        plugin_model = self.data["models"]["plugins"]
+        index = plugin_model.items.index(plugin)
+        index = plugin_model.createIndex(index, 0)
+        plugin_model.setData(index, True, model.IsProcessing)
+        plugin_model.setData(index, False, model.IsIdle)
 
-            except Exception as e:
-                raise StopIteration("Unknown error: %s" % e)
-
-            else:
-                # Make note of the order at which the
-                # potential error error occured.
-                has_error = result["error"] is not None
-                if has_error:
-                    state["ordersWithError"].add(plug.order)
-
-            yield result
-
-    def set_defaults(self):
-        """Initialise elements of the GUI
-
-        TODO: This will quickly get messy.
-            Manage this via a statemachine instead.
+    def on_plugin_action_menu_requested(self, pos):
+        """The user right-clicked on a plug-in
+         __________
+        |          |
+        | Action 1 |
+        | Action 2 |
+        | Action 3 |
+        |          |
+        |__________|
 
         """
 
-        tabs = self.data["tabs"]
-        tabs["home"].setCheckState(QtCore.Qt.Checked)
-
-    def prepare_publish(self):
-        print("Preparing publish..")
-
-        for button in self.data["buttons"].values():
-            button.hide()
-
-        self.data["buttons"]["stop"].show()
-        self.data["state"]["isRunning"] = True
-        defer(5, self.publish)
-
-    def publish(self):
-        models = self.data["models"]
-
-        plugins = self.data["state"]["plugins"]
-        context = self.data["state"]["context"]
-
-        def on_next():
-            try:
-                result = iterator.next()
-                models["plugins"].update_with_result(result)
-                models["instances"].update_with_result(result)
-                defer(100, on_next)
-
-            except StopIteration as e:
-                print(e)
-                defer(500, self.finish_publish)
-
-            except Exception as e:
-                stack = traceback.format_exc(e)
-                defer(500, lambda: self.finish_publish(stack))
-
-        plugins = list(
-            p for p in plugins
-            if not pyblish.lib.inrange(
-                p.order,
-                base=pyblish.api.CollectorOrder)
-        )
-
-        iterator = self.iterator(plugins, context)
-        defer(100, on_next)
-
-    def finish_publish(self, error=None):
-        if error is not None:
-            print("An error occurred.\n\n%s" % error)
-
-        self.data["state"]["isRunning"] = False
-
-        buttons = self.data["buttons"]
-        buttons["reset"].show()
-        buttons["stop"].hide()
-        print("Finished")
-
-    def prepare_reset(self):
-        print("About to reset..")
-
-        self.data["state"]["context"] = list()
-        self.data["state"]["plugins"] = list()
-
-        for m in self.data["models"].values():
-            m.reset()
-
-        for b in self.data["buttons"].values():
-            b.hide()
-
-        self.data["buttons"]["stop"].show()
-        self.data["state"]["isRunning"] = True
-
-        defer(500, self.reset)
-
-    def reset(self):
-        """Discover plug-ins and run collection"""
-        models = self.data["models"]
-
-        plugins = pyblish.api.discover()
-        context = pyblish.api.Context()
-
-        models = self.data["models"]
-
-        for Plugin in plugins:
-            models["plugins"].append(Plugin)
-
-        def on_next():
-            try:
-                result = iterator.next()
-                models["plugins"].update_with_result(result)
-                models["instances"].update_with_result(result)
-                defer(100, on_next)
-
-            except StopIteration:
-                for instance in context:
-                    models["instances"].append(instance)
-
-                defer(500, self.finish_reset)
-
-            except Exception as e:
-                stack = traceback.format_exc(e)
-                defer(500, lambda: self.finish_reset(stack))
-
-        collectors = list(
-            p for p in plugins
-            if pyblish.lib.inrange(
-                p.order,
-                base=pyblish.api.CollectorOrder)
-        )
-
-        self.data["state"]["context"] = context
-        self.data["state"]["plugins"] = plugins
-
-        iterator = self.iterator(collectors, context)
-        defer(100, on_next)
-
-    def finish_reset(self, error=None):
-        if error is not None:
-            print("An error occurred.\n\n%s" % error)
-
-        print("Finishing up reset..")
-
-        buttons = self.data["buttons"]
-        buttons["play"].show()
-        buttons["reset"].show()
-        buttons["stop"].hide()
-
-    def on_plugin_action_menu(self, pos):
         index = self.data["views"]["right"].indexAt(pos)
         actions = index.data(model.Actions)
 
         if not actions:
             return
-
-        # Context specific actions
-        for action in list(actions):
-            on = action.on
-            if on == "failed" and not index.data(model.HasFailed):
-                actions.remove(action)
-            if on == "succeeded" and not index.data(model.HasSucceeded):
-                actions.remove(action)
-            if on == "processed" and not index.data(model.HasProcessed):
-                actions.remove(action)
-            if on == "notProcessed" and index.data(model.HasProcessed):
-                actions.remove(action)
-
-        # Discard empty groups
-        i = 0
-        try:
-            action = actions[i]
-        except IndexError:
-            pass
-        else:
-            while action:
-                try:
-                    action = actions[i]
-                except IndexError:
-                    break
-
-                isempty = False
-
-                if action.__type__ == "category":
-                    try:
-                        next_ = actions[i + 1]
-                        if next_.__type__ != "action":
-                            isempty = True
-                    except IndexError:
-                        isempty = True
-
-                    if isempty:
-                        actions.pop(i)
-
-                i += 1
 
         menu = QtWidgets.QMenu(self)
         plugin = self.data["models"]["plugins"].items[index.row()]
@@ -386,14 +271,237 @@ class Window(QtWidgets.QDialog):
 
         menu.popup(self.data["views"]["right"].viewport().mapToGlobal(pos))
 
-    def prepare_action(self, plugin, action):
-        print("Preparing action..")
+    def _iterator(self, plugins, context):
+        """Yield next plug-in and instance to process.
+
+        Arguments:
+            plugins (list): Plug-ins to process
+            context (pyblish.api.Context): Context to process
+            state (dict): Shared state across entire iteration
+
+        """
+
+        state = self.data["state"]["processing"]
+        test = pyblish.logic.registered_test()
+
+        for plug, instance in pyblish.logic.Iterator(plugins, context):
+            if not plug.active:
+                continue
+
+            state["nextOrder"] = plug.order
+
+            if not self.data["state"]["is_running"]:
+                raise StopIteration("Stopped")
+
+            if test(**state):
+                raise StopIteration("Stopped due to %s" % test(**state))
+
+            yield plug, instance
+
+    def _process(self, plugin, instance):
+        """Produce `result` from `plugin` and `instance`
+
+        :func:`_process` shares state with :func:`_iterator` such that
+        an instance/plugin pair can be fetched and processed in isolation.
+
+        """
+
+        context = self.data["state"]["context"]
+
+        state = self.data["state"]["processing"]
+        state["nextOrder"] = plugin.order
+
+        try:
+            result = pyblish.plugin.process(plugin, context, instance)
+
+        except Exception as e:
+            raise Exception("Unknown error: %s" % e)
+
+        else:
+            # Make note of the order at which the
+            # potential error error occured.
+            has_error = result["error"] is not None
+            if has_error:
+                state["ordersWithError"].add(plugin.order)
+
+        return result
+
+    def prepare_reset(self):
+        self.info("About to reset..")
+
+        self.data["state"]["context"] = list()
+        self.data["state"]["plugins"] = list()
+
+        for m in self.data["models"].values():
+            m.reset()
+
+        for b in self.data["buttons"].values():
+            b.hide()
+
+        defer(500, self.reset)
+
+    def reset(self):
+        """Discover plug-ins and run collection"""
+        self.data["state"]["is_running"] = True
+
+        models = self.data["models"]
+
+        plugins = pyblish.api.discover()
+        context = pyblish.api.Context()
+
+        # Store internally
+        self.data["state"]["context"] = context
+        self.data["state"]["plugins"] = plugins
+
+        models = self.data["models"]
+
+        for Plugin in plugins:
+            models["plugins"].append(Plugin)
+
+        collectors = list(
+            p for p in plugins
+            if pyblish.lib.inrange(
+                p.order,
+                base=pyblish.api.CollectorOrder)
+        )
+
+        def on_next():
+            try:
+                plugin, instance = iterator.next()
+                self.about_to_process.emit(plugin, instance)
+
+                defer(100, lambda: on_process(plugin, instance))
+
+            except StopIteration:
+                defer(100, lambda: on_finished(context))
+
+            except Exception as e:
+                # This should never happen; i.e. bug
+                stack = traceback.format_exc(e)
+                defer(500, lambda: self.finish_reset(error=stack))
+
+        def on_process(plugin, instance):
+            try:
+                result = self._process(plugin, instance)
+
+            except Exception as e:
+                return defer(500, lambda: self.finish_reset(error=str(e)))
+
+            else:
+                models["plugins"].update_with_result(result)
+                models["instances"].update_with_result(result)
+
+                defer(10, on_next)
+
+        def on_finished(context):
+            for instance in context:
+                models["instances"].append(instance)
+
+            defer(500, self.finish_reset)
+
+        iterator = self._iterator(collectors, context)
+        defer(10, on_next)
+
+    def finish_reset(self, error=None):
+        if error is not None:
+            self.info("An error occurred.\n\n%s" % error)
+
+        self.info("Finishing up reset..")
+
+        buttons = self.data["buttons"]
+        buttons["play"].show()
+        buttons["reset"].show()
+        buttons["stop"].hide()
+
+        self.data["state"]["is_running"] = False
+        self.finished.emit()
+
+    def prepare_publish(self):
+        self.info("Preparing publish..")
 
         for button in self.data["buttons"].values():
             button.hide()
 
         self.data["buttons"]["stop"].show()
-        self.data["state"]["isRunning"] = True
+        defer(5, self.publish)
+
+    def publish(self):
+        self.data["state"]["is_running"] = True
+
+        models = self.data["models"]
+
+        plugins = self.data["state"]["plugins"]
+        context = self.data["state"]["context"]
+
+        assert plugins is not None, "Must reset first"
+        assert context is not None, "Must reset first"
+
+        plugins = list(
+            p for p in plugins
+            if not pyblish.lib.inrange(
+                p.order,
+                base=pyblish.api.CollectorOrder)
+        )
+
+        def on_next():
+            try:
+                plugin, instance = iterator.next()
+                self.about_to_process.emit(plugin, instance)
+
+                defer(100, lambda: on_process(plugin, instance))
+
+            except StopIteration:
+                defer(100, lambda: on_finished(context))
+
+            except Exception as e:
+                # This should never happen; i.e. bug
+                stack = traceback.format_exc(e)
+                defer(500, lambda: self.finish_publish(error=stack))
+
+        def on_process(plugin, instance):
+            try:
+                result = self._process(plugin, instance)
+
+            except Exception as e:
+                return defer(500, lambda: self.finish_publish(error=str(e)))
+
+            else:
+                models["plugins"].update_with_result(result)
+                models["instances"].update_with_result(result)
+
+                defer(10, on_next)
+
+        def on_finished(context):
+            defer(500, self.finish_publish)
+
+        iterator = self._iterator(plugins, context)
+        defer(10, on_next)
+
+    def finish_publish(self, error=None):
+        if error is not None:
+            self.info("An error occurred.\n\n%s" % error)
+
+        self.data["state"]["is_running"] = False
+
+        plugin_model = self.data["models"]["plugins"]
+        for index in plugin_model:
+            plugin_model.setData(index, model.IsIdle, False)
+
+        buttons = self.data["buttons"]
+        buttons["reset"].show()
+        buttons["stop"].hide()
+
+        self.finished.emit()
+        self.info("Finished")
+
+    def prepare_action(self, plugin, action):
+        self.info("Preparing action..")
+
+        for button in self.data["buttons"].values():
+            button.hide()
+
+        self.data["buttons"]["stop"].show()
+        self.data["state"]["is_running"] = True
 
         defer(100, lambda: self.run_action(plugin, action))
 
@@ -411,14 +519,14 @@ class Window(QtWidgets.QDialog):
 
     def finish_action(self, error=None):
         if error is not None:
-            print("An error occurred.\n\n%s" % error)
+            self.info("An error occurred.\n\n%s" % error)
 
-        self.data["state"]["isRunning"] = False
+        self.data["state"]["is_running"] = False
 
         buttons = self.data["buttons"]
         buttons["reset"].show()
         buttons["stop"].hide()
-        print("Finished")
+        self.info("Finished")
 
     def closeEvent(self, event):
         """Perform post-flight checks before closing
@@ -427,16 +535,30 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        if self.data["state"]["isClosing"]:
-            print("Good bye")
+        if self.data["state"]["is_closing"]:
+            self.info("Good bye")
             return super(Window, self).closeEvent(event)
 
-        print("Closing..")
+        self.info("Closing..")
 
-        self.data["state"]["isClosing"] = True
+        # Display placeholder
+        # TODO(marcus): Make something nice here
+        body = self.findChild(QtWidgets.QWidget, "Body")
+        body.hide()
+
+        placeholder = self.findChild(QtWidgets.QWidget, "ClosingPlaceholder")
+        placeholder.show()
+
+        if self.data["state"]["is_running"]:
+            self.info("..as soon as processing is finished..")
+            self.data["state"]["is_running"] = False
+            self.finished.connect(self.close)
+            return event.ignore()
+
+        self.data["state"]["is_closing"] = True
 
         # Explicitly clear potentially referenced data
-        print("Cleaning up..")
+        self.info("Cleaning up..")
         for instance in self.data["state"].get("context", []):
             del(instance)
 
@@ -445,3 +567,33 @@ class Window(QtWidgets.QDialog):
 
         defer(200, self.close)
         return event.ignore()
+
+    def info(self, message):
+        """Print user-facing information
+
+        At the moment, this simply prints. This is where you would implement
+        a QLabel of sorts and display the information there.
+
+        """
+
+        print(message)
+
+
+def defer(delay, func):
+    """Append artificial delay to `func`
+
+    This aids in keeping the GUI feel responsive, but complicates logic
+    when producing tests. To combat this, the environment variable ensures
+    that every operation is synchonous.
+
+    Arguments:
+        delay (float): Delay multiplier; default 1, 0 means no delay
+        func (callable): Any callable
+
+    """
+
+    delay *= float(os.getenv("PYBLISH_DELAY", 1))
+    if delay > 0:
+        return QtCore.QTimer.singleShot(delay, func)
+    else:
+        return func()

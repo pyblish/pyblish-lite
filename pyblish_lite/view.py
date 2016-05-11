@@ -4,83 +4,115 @@ from . import model
 
 
 class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
+    toggled = QtCore.Signal("QModelIndex")
+
     def paint(self, painter, option, index):
-        if index.column() == 0:
+        """Paint checkbox and text
+         _
+        |_|  My label
 
-            rect = QtCore.QRectF(option.rect)
-            rect.adjust(8, 8, -8, -8)
+        """
 
-            path = QtGui.QPainterPath()
-            path.addRect(rect)
+        rect = QtCore.QRectF(option.rect)
+        rect.setWidth(rect.height())
+        rect.adjust(6, 6, -6, -6)
 
-            color = QtCore.Qt.white
+        path = QtGui.QPainterPath()
+        path.addRect(rect)
 
-            if index.data(model.IsProcessing) is True:
-                color = QtCore.Qt.green
+        red = QtGui.QColor("#EE2222")
+        green = QtGui.QColor("#77AE24")
+        blue = QtGui.QColor("#99CEEE")
+        fill = False
 
-            elif index.data(model.HasFailed) is True:
-                color = QtCore.Qt.red
+        check_color = QtCore.Qt.white
 
-            elif index.data(model.HasSucceeded) is True:
-                color = QtCore.Qt.green
+        if index.data(model.IsProcessing) is True:
+            check_color = blue
+            fill = True
 
-            pen = QtGui.QPen(color, 1)
+        elif index.data(model.HasFailed) is True:
+            check_color = red
+            fill = True
 
-            painter.save()
-            painter.setPen(pen)
+        elif index.data(model.HasSucceeded) is True:
+            check_color = green
+            fill = True
+
+        elif index.data(model.HasProcessed) is True:
+            check_color = green
+            fill = True
+
+        font = QtWidgets.QApplication.instance().font()
+        metrics = painter.fontMetrics()
+
+        rect = QtCore.QRectF(option.rect.adjusted(rect.width() + 12, 2, 0, -2))
+        assert rect.width() > 0
+
+        label = index.data(model.Label)
+        label = metrics.elidedText(label,
+                                   QtCore.Qt.ElideRight,
+                                   rect.width() - 20)
+
+        font_color = QtGui.QColor("#DDD")
+
+        if not index.data(model.IsChecked):
+            font_color = QtGui.QColor("#888")
+
+        # Maintan reference to state, so we can restore it once we're done
+        painter.save()
+
+        # Draw label
+        painter.setFont(font)
+        painter.setPen(QtGui.QPen(font_color))
+        painter.drawText(rect, label)
+
+        # Draw checkbox
+        pen = QtGui.QPen(check_color, 1)
+        painter.setPen(pen)
+
+        if index.data(model.IsOptional):
             painter.drawPath(path)
 
             if index.data(model.IsChecked):
-                painter.fillPath(path, color)
+                painter.fillPath(path, check_color)
 
-            painter.restore()
+        elif not index.data(model.IsIdle) and index.data(model.IsChecked):
+                painter.fillPath(path, check_color)
 
-        else:
-            return super(CheckBoxDelegate, self).paint(painter, option, index)
+        # Ok, we're done, tidy up.
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        return QtCore.QSize(option.rect.width(), 20)
 
     def createEditor(self, parent, option, index):
+        """Handle events, such as mousePressEvent"""
         widget = QtWidgets.QWidget(parent)
-        widget.mousePressEvent = lambda event: (self.setModelData(
-            widget, index.model(), index)
+
+        # At the moment, clicking anywhere on the item triggers a toggle
+        # TODO(marcus): Distinguish when a user is pressing on a potential
+        # icon other than the main label or checkbox.
+        widget.mouseReleaseEvent = lambda event: (
+            self.toggled.emit(index)
             if event.button() & QtCore.Qt.LeftButton
             else None
         )
 
         return widget
 
-    def sizeHint(self, option, index):
-        if index.column() != 0:
-            return super(CheckBoxDelegate, self).sizeHint(option, index)
-
-        return QtCore.QSize(10, 10)
-
-    def setModelData(self, editor, mdl, index):
-        value = not index.data(model.IsChecked)
-        mdl.setData(index, value, model.IsChecked)
-
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
+        return super(CheckBoxDelegate, self).updateEditorGeometry(
+            editor, option, index)
 
 
-class TableView(QtWidgets.QTableView):
+class ItemView(QtWidgets.QListView):
 
     def __init__(self, parent=None):
-        super(TableView, self).__init__(parent)
+        super(ItemView, self).__init__(parent)
 
-        delegate = CheckBoxDelegate()
-        self.setItemDelegate(delegate)
-
-        self.horizontalHeader().setStretchLastSection(True)
-
-        self.setShowGrid(False)
-
-        self.verticalHeader().hide()
-        self.horizontalHeader().hide()
-        self.horizontalScrollBar().hide()
-
-        self.setSelectionBehavior(self.SelectRows)
-        self.setSelectionMode(self.NoSelection)
-
+        self.verticalScrollBar().hide()
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
     def rowsInserted(self, parent, start, end):
@@ -89,7 +121,4 @@ class TableView(QtWidgets.QTableView):
             index = self.model().createIndex(row, 0)
             self.openPersistentEditor(index)
 
-        self.resizeColumnsToContents()
-        self.resizeRowsToContents()
-
-        return super(TableView, self).rowsInserted(parent, start, end)
+        return super(ItemView, self).rowsInserted(parent, start, end)

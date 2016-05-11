@@ -2,7 +2,7 @@
 
 * {
 	outline: none;
-	color: "white";
+	color: #DDD;
 	font-family: "Open Sans";
 	font-size: 12px;
 	font-weight: 400;
@@ -31,32 +31,19 @@ QMenu::item:selected { /* when user selects item using mouse or keyboard */
 }
 
 QDialog {
+	min-width: 300;
 	background: "#555";
 }
 
-QTableView {
+QListView {
 	border: 0px;
-	color: "white";
-	selection-background-color: "steelblue";
 	background: "transparent"
 }
 
-QTableView::item:focus {
-}
-
-QTableView QCheckBox {
-	max-width: 10px;
-}
-
-QTableView QCheckBox::indicator {
-	width: 8px;
-	height: 8px;
-	background: "transparent";
-	border: 1px solid "white";
-}
-
-QTableView QCheckBox::indicator:checked {
-	background: "white";
+/* Hide horizontal scrollbars permanently */
+QListView QScrollBar {
+	height: 0px;
+	width: 0px;
 }
 
 QPushButton {
