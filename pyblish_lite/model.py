@@ -1,14 +1,31 @@
 from Qt import QtCore, __binding__
 
+
+# GENERAL
+
+# The original object; Context, Instance or Plugin
+Item = QtCore.Qt.UserRole + 9
+
+# The internal .id of any item
 Id = QtCore.Qt.UserRole + 7
-Label = QtCore.Qt.DisplayRole
-Actions = QtCore.Qt.UserRole + 2
+
+# The display name of an item
+Label = QtCore.Qt.DisplayRole + 10
+
+# The item has not been used
 IsIdle = QtCore.Qt.UserRole + 8
+
 IsChecked = QtCore.Qt.UserRole + 0
 IsProcessing = QtCore.Qt.UserRole + 1
 HasFailed = QtCore.Qt.UserRole + 3
 HasSucceeded = QtCore.Qt.UserRole + 4
 HasProcessed = QtCore.Qt.UserRole + 6
+
+# PLUGINS
+
+# Available, context-relevant plug-ins
+Actions = QtCore.Qt.UserRole + 2
+
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -33,7 +50,8 @@ class TableModel(QtCore.QAbstractTableModel):
             yield self.createIndex(index, 0)
 
     def data(self, index, role):
-        pass
+        if role == Item:
+            return self.items[index.row()]
 
     def append(self, item):
         """Append item to end of model"""
@@ -70,6 +88,7 @@ class PluginModel(TableModel):
         })
 
     def append(self, item):
+        item.is_idle = True
         item.is_processing = False
         item.has_processed = False
         item.has_succeeded = False
@@ -133,7 +152,12 @@ class PluginModel(TableModel):
         if key is None:
             return
 
-        return getattr(item, key, None)
+        value = getattr(item, key, None)
+
+        if value is None:
+            value = super(PluginModel, self).data(index, role)
+
+        return value
 
     def setData(self, index, value, role):
         item = self.items[index.row()]
@@ -154,10 +178,11 @@ class PluginModel(TableModel):
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
-        self.setData(index, not result["success"], HasFailed)
-        self.setData(index, result["success"], HasSucceeded)
-        self.setData(index, True, HasProcessed)
+        self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
+        self.setData(index, True, HasProcessed)
+        self.setData(index, result["success"], HasSucceeded)
+        self.setData(index, not result["success"], HasFailed)
         super(PluginModel, self).update_with_result(result)
 
 
@@ -173,7 +198,7 @@ class InstanceModel(TableModel):
     def append(self, item):
         item.data["has_succeeded"] = False
         item.data["has_failed"] = False
-        item.data["is_idle"] = False
+        item.data["is_idle"] = True
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
         return super(InstanceModel, self).append(item)
@@ -187,7 +212,12 @@ class InstanceModel(TableModel):
         if not key:
             return
 
-        return item.data.get(key)
+        value = item.data.get(key)
+
+        if value is None:
+            value = super(InstanceModel, self).data(index, role)
+
+        return value
 
     def setData(self, index, value, role):
         item = self.items[index.row()]
@@ -211,8 +241,9 @@ class InstanceModel(TableModel):
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
-        self.setData(index, not result["success"], HasFailed)
-        self.setData(index, result["success"], HasSucceeded)
-        self.setData(index, True, HasProcessed)
+        self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
+        self.setData(index, True, HasProcessed)
+        self.setData(index, result["success"], HasSucceeded)
+        self.setData(index, not result["success"], HasFailed)
         super(InstanceModel, self).update_with_result(result)

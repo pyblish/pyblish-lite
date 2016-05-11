@@ -12,6 +12,7 @@ from . import model, view
 
 class Window(QtWidgets.QDialog):
     finished = QtCore.Signal()
+    about_to_process = QtCore.Signal("QVariant", "QVariant")
 
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
@@ -69,6 +70,13 @@ class Window(QtWidgets.QDialog):
         layout.setContentsMargins(5, 5, 5, 0)
         layout.addWidget(body)
 
+        # Placeholder for when GUI is closing
+        closing_placeholder = QtWidgets.QWidget()
+        closing_placeholder.setSizePolicy(
+            QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        closing_placeholder.hide()
+        layout.addWidget(closing_placeholder, 0)
+
         footer = QtWidgets.QWidget()
         spacer = QtWidgets.QWidget()
         reset = QtWidgets.QPushButton()
@@ -121,7 +129,10 @@ class Window(QtWidgets.QDialog):
             # Buttons
             "Play": play,
             "Reset": reset,
-            "Stop": stop
+            "Stop": stop,
+
+            # Misc
+            "ClosingPlaceholder": closing_placeholder,
         }
 
         for name, widget in names.items():
@@ -176,6 +187,11 @@ class Window(QtWidgets.QDialog):
 
         """
 
+        
+        # NOTE: Listeners to this signal are run in the main thread
+        self.about_to_process.connect(self.on_about_to_process,
+                                      QtCore.Qt.QueuedConnection)
+
         delegate.toggled.connect(self.on_toggled)
         reset.clicked.connect(self.prepare_reset)
         play.clicked.connect(self.prepare_publish)
@@ -184,12 +200,26 @@ class Window(QtWidgets.QDialog):
 
     def on_toggled(self, index):
         """An item is requesting to be toggled"""
-        if index.data(model.HasProcessed):
+        if not index.data(model.IsIdle):
             print("Cannot toggle")
             return
 
         value = not index.data(model.IsChecked)
         index.model().setData(index, value, model.IsChecked)
+
+    def on_about_to_process(self, plugin, instance):
+        """Reflect currently running pair in GUI"""
+
+        if instance is not None:
+            instance_model = self.data["models"]["instances"]
+            index = instance_model.items.index(instance)
+            index = instance_model.createIndex(index, 0)
+            instance_model.setData(index, True, model.IsProcessing)
+
+        plugin_model = self.data["models"]["plugins"]
+        index = plugin_model.items.index(plugin)
+        index = plugin_model.createIndex(index, 0)
+        plugin_model.setData(index, True, model.IsProcessing)
 
     def iterator(self, plugins, context):
         """Primary iterator
@@ -220,6 +250,8 @@ class Window(QtWidgets.QDialog):
 
             try:
                 # Notify GUI before commencing remote processing
+                self.about_to_process.emit(plug, instance)
+
                 result = pyblish.plugin.process(plug, context, instance)
 
             except Exception as e:
@@ -432,6 +464,14 @@ class Window(QtWidgets.QDialog):
             return super(Window, self).closeEvent(event)
 
         print("Closing..")
+
+        # Display placeholder
+        # TODO(marcus): Make something nice here
+        body = self.findChild(QtWidgets.QWidget, "Body")
+        body.hide()
+
+        placeholder = self.findChild(QtWidgets.QWidget, "ClosingPlaceholder")
+        placeholder.show()
 
         if self.data["state"]["is_running"]:
             print("..as soon as processing is finished..")

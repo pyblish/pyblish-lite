@@ -15,29 +15,38 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
 
         rect = QtCore.QRectF(option.rect)
         rect.setWidth(rect.height())
-        rect.adjust(4, 4, -4, -4)
+        rect.adjust(6, 6, -6, -6)
 
         path = QtGui.QPainterPath()
         path.addRect(rect)
 
+        blue = QtGui.QColor("#99CEEE")
+        green = QtGui.QColor("#77AE24")
+        red = QtGui.QColor("#EE2222")
+
         color = QtCore.Qt.white
 
         if index.data(model.IsProcessing) is True:
-            color = QtCore.Qt.green
+            color = blue
 
         elif index.data(model.HasFailed) is True:
-            color = QtCore.Qt.red
+            color = red
 
         elif index.data(model.HasSucceeded) is True:
-            color = QtCore.Qt.green
+            color = green
+
+        elif index.data(model.HasProcessed) is True:
+            color = green
 
         pen = QtGui.QPen(color, 1)
         font = QtWidgets.QApplication.instance().font()
         metrics = painter.fontMetrics()
 
-        rect = option.rect.adjusted(rect.width() + 10, 2, 0, -2)
+        rect = QtCore.QRectF(option.rect.adjusted(rect.width() + 12, 2, 0, -2))
+        assert rect.width() > 0
+
         label = index.data(model.Label)
-        label = metrics.elidedText(label, QtCore.Qt.ElideRight, rect.width())
+        label = metrics.elidedText(label, QtCore.Qt.ElideRight, rect.width() - 20)
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()

@@ -22,6 +22,7 @@ def load_pyqt4():
     PyQt4.QtCore.Slot = PyQt4.QtCore.pyqtSlot
     PyQt4.QtCore.Property = PyQt4.QtCore.pyqtProperty
     PyQt4.__binding__ = "PyQt4"
+
     print("Loaded PyQt4")
 
 

@@ -40,6 +40,7 @@ QListView {
 	background: "transparent"
 }
 
+/* Hide horizontal scrollbars permanently */
 QListView QScrollBar {
 	height: 0px;
 	width: 0px;

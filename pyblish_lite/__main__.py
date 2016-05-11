@@ -13,9 +13,7 @@ if __name__ == '__main__':
         from . import mock
         import pyblish.api
 
-        for Plugin in (mock.MyCollector,
-                       mock.MyValidator,
-                       mock.MyExtractor):
+        for Plugin in mock.plugins:
             pyblish.api.register_plugin(Plugin)
 
     show()
