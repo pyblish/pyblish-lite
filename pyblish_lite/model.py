@@ -16,6 +16,7 @@ Label = QtCore.Qt.DisplayRole + 10
 IsIdle = QtCore.Qt.UserRole + 8
 
 IsChecked = QtCore.Qt.UserRole + 0
+IsOptional = QtCore.Qt.UserRole + 11
 IsProcessing = QtCore.Qt.UserRole + 1
 HasFailed = QtCore.Qt.UserRole + 3
 HasSucceeded = QtCore.Qt.UserRole + 4
@@ -25,7 +26,6 @@ HasProcessed = QtCore.Qt.UserRole + 6
 
 # Available, context-relevant plug-ins
 Actions = QtCore.Qt.UserRole + 2
-
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -42,6 +42,7 @@ class TableModel(QtCore.QAbstractTableModel):
             HasSucceeded: "has_succeeded",
             HasFailed: "has_failed",
             Actions: "actions",
+            IsOptional: "optional"
         }
 
     def __iter__(self):
@@ -199,6 +200,7 @@ class InstanceModel(TableModel):
         item.data["has_succeeded"] = False
         item.data["has_failed"] = False
         item.data["is_idle"] = True
+        item.data["optional"] = item.data.get("optional", True)
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
         return super(InstanceModel, self).append(item)

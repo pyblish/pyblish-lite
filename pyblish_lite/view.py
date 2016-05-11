@@ -20,25 +20,29 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         path = QtGui.QPainterPath()
         path.addRect(rect)
 
-        blue = QtGui.QColor("#99CEEE")
-        green = QtGui.QColor("#77AE24")
         red = QtGui.QColor("#EE2222")
+        green = QtGui.QColor("#77AE24")
+        blue = QtGui.QColor("#99CEEE")
+        fill = False
 
-        color = QtCore.Qt.white
+        check_color = QtCore.Qt.white
 
         if index.data(model.IsProcessing) is True:
-            color = blue
+            check_color = blue
+            fill = True
 
         elif index.data(model.HasFailed) is True:
-            color = red
+            check_color = red
+            fill = True
 
         elif index.data(model.HasSucceeded) is True:
-            color = green
+            check_color = green
+            fill = True
 
         elif index.data(model.HasProcessed) is True:
-            color = green
+            check_color = green
+            fill = True
 
-        pen = QtGui.QPen(color, 1)
         font = QtWidgets.QApplication.instance().font()
         metrics = painter.fontMetrics()
 
@@ -46,21 +50,35 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         assert rect.width() > 0
 
         label = index.data(model.Label)
-        label = metrics.elidedText(label, QtCore.Qt.ElideRight, rect.width() - 20)
+        label = metrics.elidedText(label,
+                                   QtCore.Qt.ElideRight,
+                                   rect.width() - 20)
+
+        font_color = QtGui.QColor("#DDD")
+
+        if not index.data(model.IsChecked):
+            font_color = QtGui.QColor("#888")
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
         # Draw label
         painter.setFont(font)
+        painter.setPen(QtGui.QPen(font_color))
         painter.drawText(rect, label)
 
         # Draw checkbox
+        pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
-        painter.drawPath(path)
 
-        if index.data(model.IsChecked):
-            painter.fillPath(path, color)
+        if index.data(model.IsOptional):
+            painter.drawPath(path)
+
+            if index.data(model.IsChecked):
+                painter.fillPath(path, check_color)
+
+        elif not index.data(model.IsIdle) and index.data(model.IsChecked):
+                painter.fillPath(path, check_color)
 
         # Ok, we're done, tidy up.
         painter.restore()
