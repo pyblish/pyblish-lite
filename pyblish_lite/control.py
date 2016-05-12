@@ -61,7 +61,7 @@ class Window(QtWidgets.QDialog):
         right_view = view.ItemView()
 
         for v in (left_view, right_view):
-            mode = QtGui.QAbstractItemView.ExtendedSelection
+            mode = QtWidgets.QAbstractItemView.ExtendedSelection
             v.setSelectionMode(mode)
 
         delegate = view.CheckBoxDelegate()
@@ -82,12 +82,13 @@ class Window(QtWidgets.QDialog):
 
         # Placeholder for when GUI is closing
         closing_placeholder = QtWidgets.QWidget()
-        closing_placeholder.setSizePolicy(
-            QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        closing_placeholder.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                          QtWidgets.QSizePolicy.Expanding)
         closing_placeholder.hide()
         layout.addWidget(closing_placeholder, 0)
 
         footer = QtWidgets.QWidget()
+        info = QtWidgets.QLabel()
         spacer = QtWidgets.QWidget()
         reset = QtWidgets.QPushButton()
         play = QtWidgets.QPushButton()
@@ -95,6 +96,7 @@ class Window(QtWidgets.QDialog):
 
         layout = QtWidgets.QHBoxLayout(footer)
         layout.setContentsMargins(5, 5, 5, 5)
+        layout.addWidget(info, 0)
         layout.addWidget(spacer, 1)
         layout.addWidget(reset, 0)
         layout.addWidget(play, 0)
@@ -135,6 +137,7 @@ class Window(QtWidgets.QDialog):
             "Container": container,
             "Footer": footer,
             "Home": home,
+            "Info": info,
 
             # Buttons
             "Play": play,
@@ -239,7 +242,7 @@ class Window(QtWidgets.QDialog):
             return self.info("Cannot toggle")
 
         if not index.data(model.IsOptional):
-            return self.info("Mandatory plug-in cannot be toggled")
+            return self.info("This item is mandatory")
 
         if state is None:
             state = not index.data(model.IsChecked)
@@ -261,6 +264,8 @@ class Window(QtWidgets.QDialog):
         index = plugin_model.createIndex(index, 0)
         plugin_model.setData(index, True, model.IsProcessing)
         plugin_model.setData(index, False, model.IsIdle)
+
+        self.info("Processing %s" % (index.data(model.Label)))
 
     def on_plugin_action_menu_requested(self, pos):
         """The user right-clicked on a plug-in
@@ -367,6 +372,8 @@ class Window(QtWidgets.QDialog):
 
     def reset(self):
         """Discover plug-ins and run collection"""
+        self.info("Resetting..")
+
         self.data["state"]["is_running"] = True
 
         models = self.data["models"]
@@ -440,6 +447,7 @@ class Window(QtWidgets.QDialog):
 
         self.data["state"]["is_running"] = False
         self.finished.emit()
+        self.info("Reset finished.")
 
     def prepare_publish(self):
         self.info("Preparing publish..")
@@ -451,6 +459,8 @@ class Window(QtWidgets.QDialog):
         defer(5, self.publish)
 
     def publish(self):
+        self.info("Publishing..")
+
         self.data["state"]["is_running"] = True
 
         models = self.data["models"]
@@ -529,6 +539,7 @@ class Window(QtWidgets.QDialog):
         self.data["state"]["is_running"] = True
 
         defer(100, lambda: self.run_action(plugin, action))
+        self.info("Action prepared.")
 
     def run_action(self, plugin, action):
         models = self.data["models"]
@@ -541,6 +552,7 @@ class Window(QtWidgets.QDialog):
             defer(500, self.finish_action)
 
         defer(100, on_next)
+        self.info("Action running..")
 
     def finish_action(self, error=None):
         if error is not None:
@@ -601,7 +613,41 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        print(message)
+        info = self.findChild(QtWidgets.QLabel, "Info")
+        info.setText(message)
+
+        fade_effect = QtGui.QGraphicsOpacityEffect(info)
+        info.setGraphicsEffect(fade_effect)
+
+        timeline = QtCore.QSequentialAnimationGroup()
+
+        on = QtCore.QPropertyAnimation(fade_effect, "opacity")
+        on.setDuration(0)
+        on.setStartValue(0)
+        on.setEndValue(1)
+
+        off = QtCore.QPropertyAnimation(fade_effect, "opacity")
+        off.setDuration(0)
+        off.setStartValue(1)
+        off.setEndValue(0)
+
+        fade = QtCore.QPropertyAnimation(fade_effect, "opacity")
+        fade.setDuration(500)
+        fade.setStartValue(1.0)
+        fade.setEndValue(0.0)
+
+        timeline.addAnimation(on)
+        timeline.addPause(50)
+        timeline.addAnimation(off)
+        timeline.addPause(50)
+        timeline.addAnimation(on)
+        timeline.addPause(2000)
+        timeline.addAnimation(fade)
+
+        timeline.start(timeline.DeleteWhenStopped)
+
+        # Store reference to prevent garbage collection
+        self.__message_animation = timeline
 
 
 def defer(delay, func):

@@ -88,6 +88,10 @@ QPushButton:hover {
 	background-position: center center;
 }
 
+#Footer {
+	min-height: 47px;
+}
+
 #Footer #Play {
 	background-image: url("img/button-publish.png");
 	background-position: center center;

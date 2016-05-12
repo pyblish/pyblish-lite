@@ -92,10 +92,10 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
                 painter.fillPath(path, check_color)
 
-        if option.state & QtGui.QStyle.State_MouseOver:
+        if option.state & QtWidgets.QStyle.State_MouseOver:
             painter.fillPath(hover, self.colors["hover"])
 
-        if option.state & QtGui.QStyle.State_Selected:
+        if option.state & QtWidgets.QStyle.State_Selected:
             painter.fillPath(hover, self.colors["selected"])
 
         # Ok, we're done, tidy up.
@@ -138,6 +138,9 @@ class ItemView(QtWidgets.QListView):
             return True
 
         return super(ItemView, self).keyPressEvent(event)
+
+    def focusOutEvent(self, event):
+        self.selectionModel().clear()
 
     def mouseReleaseEvent(self, event):
         indexes = self.selectionModel().selectedIndexes()
