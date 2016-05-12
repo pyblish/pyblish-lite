@@ -695,7 +695,7 @@ plugins = [
     PluginWithActions,
     FailingPluginWithActions,
 
-    LongRunningCollector,
+    # LongRunningCollector,
     LongRunningValidator,
 
     RearrangingPlugin,

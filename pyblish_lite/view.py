@@ -21,7 +21,9 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
             "active": QtGui.QColor("#99CEEE"),
             "idle": QtCore.Qt.white,
             "font": QtGui.QColor("#DDD"),
-            "inactive": QtGui.QColor("#888")
+            "inactive": QtGui.QColor("#888"),
+            "hover": QtGui.QColor(255, 255, 255, 10),
+            "selected": QtGui.QColor(255, 255, 255, 20),
         }
 
     def paint(self, painter, option, index):
@@ -66,6 +68,9 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         if not index.data(model.IsChecked):
             font_color = self.colors["inactive"]
 
+        hover = QtGui.QPainterPath()
+        hover.addRect(option.rect.adjusted(0, 0, -1, -1))
+
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
@@ -87,45 +92,57 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
                 painter.fillPath(path, check_color)
 
+        if option.state & QtGui.QStyle.State_MouseOver:
+            painter.fillPath(hover, self.colors["hover"])
+
+        if option.state & QtGui.QStyle.State_Selected:
+            painter.fillPath(hover, self.colors["selected"])
+
         # Ok, we're done, tidy up.
         painter.restore()
 
     def sizeHint(self, option, index):
         return QtCore.QSize(option.rect.width(), 20)
 
-    def createEditor(self, parent, option, index):
-        """Handle events, such as mousePressEvent"""
-        widget = QtWidgets.QWidget(parent)
-
-        # At the moment, clicking anywhere on the item triggers a toggle
-        # TODO(marcus): Distinguish when a user is pressing on a potential
-        # icon other than the main label or checkbox.
-        widget.mouseReleaseEvent = lambda event: (
-            self.toggled.emit(index)
-            if event.button() & QtCore.Qt.LeftButton
-            else None
-        )
-
-        return widget
-
-    def updateEditorGeometry(self, editor, option, index):
-        editor.setGeometry(option.rect)
-        return super(CheckBoxDelegate, self).updateEditorGeometry(
-            editor, option, index)
-
 
 class ItemView(QtWidgets.QListView):
+    toggled = QtCore.Signal("QModelIndex", object)
 
     def __init__(self, parent=None):
         super(ItemView, self).__init__(parent)
 
         self.verticalScrollBar().hide()
+        self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
-    def rowsInserted(self, parent, start, end):
-        """Enable editable checkbox for each row"""
-        for row in range(start, end + 1):
-            index = self.model().createIndex(row, 0)
-            self.openPersistentEditor(index)
+    def event(self, event):
+        if not event.type() == QtCore.QEvent.KeyPress:
+            return super(ItemView, self).event(event)
 
-        return super(ItemView, self).rowsInserted(parent, start, end)
+        if event.key() == QtCore.Qt.Key_Space:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, None)
+
+            return True
+
+        if event.key() == QtCore.Qt.Key_Backspace:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, False)
+
+            return True
+
+        if event.key() == QtCore.Qt.Key_Return:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, True)
+
+            return True
+
+        return super(ItemView, self).keyPressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        indexes = self.selectionModel().selectedIndexes()
+        if len(indexes) <= 1:
+            for index in indexes:
+                self.toggled.emit(index, None)
+
+        return super(ItemView, self).mouseReleaseEvent(event)
