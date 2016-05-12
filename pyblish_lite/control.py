@@ -61,7 +61,7 @@ class Window(QtWidgets.QDialog):
         right_view = view.ItemView()
 
         for v in (left_view, right_view):
-            mode = QtGui.QAbstractItemView.ExtendedSelection
+            mode = QtWidgets.QAbstractItemView.ExtendedSelection
             v.setSelectionMode(mode)
 
         delegate = view.CheckBoxDelegate()
@@ -82,8 +82,8 @@ class Window(QtWidgets.QDialog):
 
         # Placeholder for when GUI is closing
         closing_placeholder = QtWidgets.QWidget()
-        closing_placeholder.setSizePolicy(
-            QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        closing_placeholder.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                          QtWidgets.QSizePolicy.Expanding)
         closing_placeholder.hide()
         layout.addWidget(closing_placeholder, 0)
 
