@@ -27,6 +27,23 @@ HasProcessed = QtCore.Qt.UserRole + 6
 # Available and context-sensitive actions
 Actions = QtCore.Qt.UserRole + 2
 
+# LOG RECORDS
+
+LogThreadName = QtCore.Qt.UserRole + 50
+LogName = QtCore.Qt.UserRole + 51
+LogFilename = QtCore.Qt.UserRole + 52
+LogPath = QtCore.Qt.UserRole + 53
+LogLineNumber = QtCore.Qt.UserRole + 54
+LogMessage = QtCore.Qt.UserRole + 55
+LogMilliseconds = QtCore.Qt.UserRole + 56
+
+# EXCEPTIONS
+
+ExcFname = QtCore.Qt.UserRole + 57
+ExcLineNumber = QtCore.Qt.UserRole + 58
+ExcFunc = QtCore.Qt.UserRole + 59
+ExcExc = QtCore.Qt.UserRole + 60
+
 
 class ItemModel(QtCore.QAbstractListModel):
     def __init__(self, parent=None):
@@ -72,8 +89,7 @@ class ItemModel(QtCore.QAbstractListModel):
         self.endResetModel()
 
     def update_with_result(self, result):
-        for record in result["records"]:
-            print(record.msg)
+        pass
 
 
 class PluginModel(ItemModel):
@@ -246,3 +262,58 @@ class InstanceModel(ItemModel):
         self.setData(index, result["success"], HasSucceeded)
         self.setData(index, not result["success"], HasFailed)
         super(InstanceModel, self).update_with_result(result)
+
+
+class LogModel(QtCore.QAbstractListModel):
+    def __init__(self, parent=None):
+        super(ItemModel, self).__init__(parent)
+        self.items = list()
+
+        # Common schema
+        self.schema = {
+
+            # Records
+            LogThreadName: "threadName",
+            LogName: "name",
+            LogFilename: "filename",
+            LogPath: "pathname",
+            LogLineNumber: "lineno",
+            LogMessage: "msg",
+            LogMilliseconds: "msecs",
+
+            # Exceptions
+            ExcFname: "fname",
+            ExcLineNumber: "line_number",
+            ExcFunc: "func",
+            ExcExc: "exc",
+        }
+
+    def __iter__(self):
+        """Yield each row of model"""
+        for index in range(len(self.items)):
+            yield self.createIndex(index, 0)
+
+    def data(self, index, role):
+        if role == Item:
+            return self.items[index.row()]
+
+    def append(self, item):
+        """Append item to end of model"""
+        self.beginInsertRows(QtCore.QModelIndex(),
+                             self.rowCount(),
+                             self.rowCount())
+
+        self.items.append(item)
+        self.endInsertRows()
+
+    def rowCount(self, parent=None):
+        return len(self.items)
+
+    def reset(self):
+        self.beginResetModel()
+        self.items[:] = []
+        self.endResetModel()
+
+    def update_with_result(self, result):
+        for record in result["records"]:
+            print(record.msg)
