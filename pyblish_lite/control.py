@@ -291,9 +291,8 @@ class Window(QtWidgets.QDialog):
         for action in actions:
             qaction = QtWidgets.QAction(action.label or action.__name__, self)
             qaction.triggered.connect(
-                lambda checked, p=plugin, a=action: self.prepare_action(p, a)
+                lambda p=plugin, a=action: self.prepare_action(p, a)
             )
-
             menu.addAction(qaction)
 
         menu.popup(self.data["views"]["right"].viewport().mapToGlobal(pos))
