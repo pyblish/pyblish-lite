@@ -6,6 +6,24 @@ from . import model
 class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
     toggled = QtCore.Signal("QModelIndex")
 
+    def __init__(self):
+        super(CheckBoxDelegate, self).__init__()
+
+        font = QtGui.QFont()
+        font.setFamily("Open Sans")
+        font.setPointSize(8)
+        font.setWeight(400)
+
+        self.font = font
+        self.colors = {
+            "warning": QtGui.QColor("#EE2222"),
+            "ok": QtGui.QColor("#77AE24"),
+            "active": QtGui.QColor("#99CEEE"),
+            "idle": QtCore.Qt.white,
+            "font": QtGui.QColor("#DDD"),
+            "inactive": QtGui.QColor("#888")
+        }
+
     def paint(self, painter, option, index):
         """Paint checkbox and text
          _
@@ -20,28 +38,19 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         path = QtGui.QPainterPath()
         path.addRect(rect)
 
-        red = QtGui.QColor("#EE2222")
-        green = QtGui.QColor("#77AE24")
-        blue = QtGui.QColor("#99CEEE")
-
-        check_color = QtCore.Qt.white
+        check_color = self.colors["idle"]
 
         if index.data(model.IsProcessing) is True:
-            check_color = blue
+            check_color = self.colors["active"]
 
         elif index.data(model.HasFailed) is True:
-            check_color = red
+            check_color = self.colors["warning"]
 
         elif index.data(model.HasSucceeded) is True:
-            check_color = green
+            check_color = self.colors["ok"]
 
         elif index.data(model.HasProcessed) is True:
-            check_color = green
-
-        font = QtGui.QFont()
-        font.setFamily("Open Sans")
-        font.setPointSize(8)
-        font.setWeight(400)
+            check_color = self.colors["ok"]
 
         metrics = painter.fontMetrics()
 
@@ -53,16 +62,15 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
                                    QtCore.Qt.ElideRight,
                                    rect.width() - 20)
 
-        font_color = QtGui.QColor("#DDD")
-
+        font_color = self.colors["idle"]
         if not index.data(model.IsChecked):
-            font_color = QtGui.QColor("#888")
+            font_color = self.colors["inactive"]
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
         # Draw label
-        painter.setFont(font)
+        painter.setFont(self.font)
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(rect, label)
 
