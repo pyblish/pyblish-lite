@@ -45,16 +45,16 @@ def load_pyside():
 def init():
     # Support Qt 4 and 5, PyQt and PySide
     try:
-        load_pyside()
+        load_pyside2()
     except ImportError:
         try:
-            load_pyqt4()
+            load_pyqt5()
         except ImportError:
             try:
-                load_pyside2()
+                load_pyside()
             except ImportError:
                 try:
-                    load_pyqt5()
+                    load_pyqt4()
                 except:
                     sys.stderr.write("pyblish-lite: Could not find "
                                      "appropriate bindings for Qt\n")
