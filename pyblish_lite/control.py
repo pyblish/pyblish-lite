@@ -288,6 +288,9 @@ class Window(QtWidgets.QDialog):
             if not plug.active:
                 continue
 
+            if instance is not None and instance.data.get("publish") is False:
+                continue
+
             state["nextOrder"] = plug.order
 
             if not self.data["state"]["is_running"]:
