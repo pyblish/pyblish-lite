@@ -139,6 +139,9 @@ class ItemView(QtWidgets.QListView):
 
         return super(ItemView, self).keyPressEvent(event)
 
+    def focusOutEvent(self, event):
+        self.selectionModel().clear()
+
     def mouseReleaseEvent(self, event):
         indexes = self.selectionModel().selectedIndexes()
         if len(indexes) <= 1:
