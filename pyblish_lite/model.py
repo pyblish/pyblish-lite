@@ -24,13 +24,13 @@ HasProcessed = QtCore.Qt.UserRole + 6
 
 # PLUGINS
 
-# Available, context-relevant plug-ins
+# Available and context-sensitive actions
 Actions = QtCore.Qt.UserRole + 2
 
 
-class TableModel(QtCore.QAbstractTableModel):
+class ItemModel(QtCore.QAbstractListModel):
     def __init__(self, parent=None):
-        super(TableModel, self).__init__(parent)
+        super(ItemModel, self).__init__(parent)
         self.items = list()
 
         # Common schema
@@ -66,9 +66,6 @@ class TableModel(QtCore.QAbstractTableModel):
     def rowCount(self, parent=None):
         return len(self.items)
 
-    def columnCount(self, parent):
-        return 2
-
     def reset(self):
         self.beginResetModel()
         self.items[:] = []
@@ -79,7 +76,7 @@ class TableModel(QtCore.QAbstractTableModel):
             print(record.msg)
 
 
-class PluginModel(TableModel):
+class PluginModel(ItemModel):
     def __init__(self):
         super(PluginModel, self).__init__()
 
@@ -187,7 +184,7 @@ class PluginModel(TableModel):
         super(PluginModel, self).update_with_result(result)
 
 
-class InstanceModel(TableModel):
+class InstanceModel(ItemModel):
     def __init__(self):
         super(InstanceModel, self).__init__()
 

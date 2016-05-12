@@ -46,39 +46,42 @@ class Window(QtWidgets.QDialog):
 
         header = QtWidgets.QWidget()
 
-        home = QtWidgets.QCheckBox()
+        overview_tab = QtWidgets.QRadioButton()
+        terminal_tab = QtWidgets.QRadioButton()
         spacer = QtWidgets.QWidget()
 
         layout = QtWidgets.QHBoxLayout(header)
-        layout.addWidget(home, 0)
+        layout.addWidget(overview_tab, 0)
+        layout.addWidget(terminal_tab, 0)
         layout.addWidget(spacer, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        body = QtWidgets.QWidget()
+        overview = QtWidgets.QWidget()
 
         left_view = view.ItemView()
         right_view = view.ItemView()
-
-        for v in (left_view, right_view):
-            mode = QtWidgets.QAbstractItemView.ExtendedSelection
-            v.setSelectionMode(mode)
 
         delegate = view.CheckBoxDelegate()
         left_view.setItemDelegate(delegate)
         right_view.setItemDelegate(delegate)
 
-        layout = QtWidgets.QHBoxLayout(body)
-        layout.addWidget(left_view)
-        layout.addWidget(right_view)
+        layout = QtWidgets.QHBoxLayout(overview)
+        layout.addWidget(left_view, 1)
+        layout.addWidget(right_view, 1)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(0)
 
-        # Add some room between window borders and body
-        container = QtWidgets.QWidget()
-        layout = QtWidgets.QHBoxLayout(container)
+        terminal = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(terminal)
+        layout.setContentsMargins(5, 5, 5, 5)
+
+        # Add some room between window borders and contents
+        body = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(body)
         layout.setContentsMargins(5, 5, 5, 0)
-        layout.addWidget(body)
+        layout.addWidget(overview)
+        layout.addWidget(terminal)
 
         # Placeholder for when GUI is closing
         closing_placeholder = QtWidgets.QWidget()
@@ -104,9 +107,9 @@ class Window(QtWidgets.QDialog):
 
         # Main layout
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(header)
-        layout.addWidget(container)
-        layout.addWidget(footer)
+        layout.addWidget(header, 0)
+        layout.addWidget(body, 1)
+        layout.addWidget(footer, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -134,10 +137,13 @@ class Window(QtWidgets.QDialog):
             # Main
             "Header": header,
             "Body": body,
-            "Container": container,
             "Footer": footer,
-            "Home": home,
+            "Home": overview_tab,
             "Info": info,
+
+            # Tabs
+            "Overview": overview,
+            "Terminal": terminal,
 
             # Buttons
             "Play": play,
@@ -154,7 +160,8 @@ class Window(QtWidgets.QDialog):
         # Enable CSS on plain QWidget objects
         for widget in (header,
                        body,
-                       container,
+                       overview,
+                       terminal,
                        footer,
                        play,
                        stop,
@@ -171,7 +178,8 @@ class Window(QtWidgets.QDialog):
                 "plugins": plugin_model
             },
             "tabs": {
-                "home": home,
+                "overview": overview,
+                "terminal": terminal,
             },
             "buttons": {
                 "play": play,
@@ -202,7 +210,7 @@ class Window(QtWidgets.QDialog):
         }
 
         # Defaults
-        home.setCheckState(QtCore.Qt.Checked)
+        overview_tab.setChecked(True)
 
         """Signals
          ________     ________
@@ -215,6 +223,11 @@ class Window(QtWidgets.QDialog):
         """
 
         # NOTE: Listeners to this signal are run in the main thread
+        overview_tab.released.connect(
+            lambda: self.on_tab_changed("overview"))
+        terminal_tab.released.connect(
+            lambda: self.on_tab_changed("terminal"))
+
         self.about_to_process.connect(self.on_about_to_process,
                                       QtCore.Qt.DirectConnection)
 
@@ -225,6 +238,13 @@ class Window(QtWidgets.QDialog):
         stop.clicked.connect(self.on_stop_clicked)
         right_view.customContextMenuRequested.connect(
             self.on_plugin_action_menu_requested)
+
+    def on_tab_changed(self, target):
+        for tab in self.data["tabs"].values():
+            tab.hide()
+
+        tab = self.data["tabs"][target]
+        tab.show()
 
     def on_play_clicked(self):
         self.prepare_publish()

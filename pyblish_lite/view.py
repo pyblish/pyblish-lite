@@ -114,6 +114,7 @@ class ItemView(QtWidgets.QListView):
         self.verticalScrollBar().hide()
         self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
@@ -149,3 +150,12 @@ class ItemView(QtWidgets.QListView):
                 self.toggled.emit(index, None)
 
         return super(ItemView, self).mouseReleaseEvent(event)
+
+
+class LogView(QtWidgets.QListView):
+    def __init__(self, parent=None):
+        super(LogView, self).__init__(parent)
+
+        self.verticalScrollBar().hide()
+        self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
