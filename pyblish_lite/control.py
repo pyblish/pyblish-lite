@@ -7,17 +7,23 @@ import pyblish.api
 import pyblish.util
 import pyblish.logic
 
-from . import model, view
+from . import model, view, util
 
 
 class Window(QtWidgets.QDialog):
-    finished = QtCore.Signal()
+    # Emitted when the GUI is about to start processing;
+    # e.g. resetting, validating or publishing.
     about_to_process = QtCore.Signal(object, object)
+
+    # Emitted when processing has finished
+    finished = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
         self.setWindowTitle("Pyblish")
-        self.setWindowIcon(QtGui.QIcon("img/logo-extrasmall.png"))
+        self.setWindowIcon(QtGui.QIcon(
+            util.get_asset("img", "logo-extrasmall.png"))
+        )
 
         """General layout
          __________________
@@ -53,6 +59,10 @@ class Window(QtWidgets.QDialog):
 
         left_view = view.ItemView()
         right_view = view.ItemView()
+
+        for v in (left_view, right_view):
+            mode = QtGui.QAbstractItemView.ExtendedSelection
+            v.setSelectionMode(mode)
 
         delegate = view.CheckBoxDelegate()
         left_view.setItemDelegate(delegate)
@@ -166,11 +176,21 @@ class Window(QtWidgets.QDialog):
                 "reset": reset
             },
             "state": {
+                # These are internal caches of the data
+                # visualised by the model. The model then
+                # modified these objects as-is, such as their
+                # "active" attribute or "publish" data.
                 "context": list(),
                 "plugins": list(),
+
+                # Data internal to the GUI itself
                 "is_running": False,
                 "is_closing": False,
                 "close_requested": False,
+
+                # Transient state used during publishing
+                # This is used to track whether or not to continue
+                # processing when, for example, validation has failed.
                 "processing": {
                     "nextOrder": None,
                     "ordersWithError": set()
@@ -195,7 +215,8 @@ class Window(QtWidgets.QDialog):
         self.about_to_process.connect(self.on_about_to_process,
                                       QtCore.Qt.DirectConnection)
 
-        delegate.toggled.connect(self.on_delegate_toggled)
+        left_view.toggled.connect(self.on_delegate_toggled)
+        right_view.toggled.connect(self.on_delegate_toggled)
         reset.clicked.connect(self.on_reset_clicked)
         play.clicked.connect(self.on_play_clicked)
         stop.clicked.connect(self.on_stop_clicked)
@@ -212,7 +233,7 @@ class Window(QtWidgets.QDialog):
         self.info("Stopping..")
         self.data["state"]["is_running"] = False
 
-    def on_delegate_toggled(self, index):
+    def on_delegate_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
         if not index.data(model.IsIdle):
             return self.info("Cannot toggle")
@@ -220,14 +241,15 @@ class Window(QtWidgets.QDialog):
         if not index.data(model.IsOptional):
             return self.info("Mandatory plug-in cannot be toggled")
 
-        value = not index.data(model.IsChecked)
-        index.model().setData(index, value, model.IsChecked)
+        if state is None:
+            state = not index.data(model.IsChecked)
+
+        index.model().setData(index, state, model.IsChecked)
 
     def on_about_to_process(self, plugin, instance):
         """Reflect currently running pair in GUI"""
 
         if instance is not None:
-            # self.info("Getting: %s" % instance.data["name"])
             instance_model = self.data["models"]["instances"]
             index = instance_model.items.index(instance)
             index = instance_model.createIndex(index, 0)

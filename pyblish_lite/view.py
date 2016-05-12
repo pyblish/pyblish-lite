@@ -6,6 +6,26 @@ from . import model
 class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
     toggled = QtCore.Signal("QModelIndex")
 
+    def __init__(self):
+        super(CheckBoxDelegate, self).__init__()
+
+        font = QtGui.QFont()
+        font.setFamily("Open Sans")
+        font.setPointSize(8)
+        font.setWeight(400)
+
+        self.font = font
+        self.colors = {
+            "warning": QtGui.QColor("#EE2222"),
+            "ok": QtGui.QColor("#77AE24"),
+            "active": QtGui.QColor("#99CEEE"),
+            "idle": QtCore.Qt.white,
+            "font": QtGui.QColor("#DDD"),
+            "inactive": QtGui.QColor("#888"),
+            "hover": QtGui.QColor(255, 255, 255, 10),
+            "selected": QtGui.QColor(255, 255, 255, 20),
+        }
+
     def paint(self, painter, option, index):
         """Paint checkbox and text
          _
@@ -20,28 +40,19 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         path = QtGui.QPainterPath()
         path.addRect(rect)
 
-        red = QtGui.QColor("#EE2222")
-        green = QtGui.QColor("#77AE24")
-        blue = QtGui.QColor("#99CEEE")
-
-        check_color = QtCore.Qt.white
+        check_color = self.colors["idle"]
 
         if index.data(model.IsProcessing) is True:
-            check_color = blue
+            check_color = self.colors["active"]
 
         elif index.data(model.HasFailed) is True:
-            check_color = red
+            check_color = self.colors["warning"]
 
         elif index.data(model.HasSucceeded) is True:
-            check_color = green
+            check_color = self.colors["ok"]
 
         elif index.data(model.HasProcessed) is True:
-            check_color = green
-
-        font = QtGui.QFont()
-        font.setFamily("Open Sans")
-        font.setPointSize(8)
-        font.setWeight(400)
+            check_color = self.colors["ok"]
 
         metrics = painter.fontMetrics()
 
@@ -53,16 +64,18 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
                                    QtCore.Qt.ElideRight,
                                    rect.width() - 20)
 
-        font_color = QtGui.QColor("#DDD")
-
+        font_color = self.colors["idle"]
         if not index.data(model.IsChecked):
-            font_color = QtGui.QColor("#888")
+            font_color = self.colors["inactive"]
+
+        hover = QtGui.QPainterPath()
+        hover.addRect(option.rect.adjusted(0, 0, -1, -1))
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
         # Draw label
-        painter.setFont(font)
+        painter.setFont(self.font)
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(rect, label)
 
@@ -79,45 +92,57 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
                 painter.fillPath(path, check_color)
 
+        if option.state & QtGui.QStyle.State_MouseOver:
+            painter.fillPath(hover, self.colors["hover"])
+
+        if option.state & QtGui.QStyle.State_Selected:
+            painter.fillPath(hover, self.colors["selected"])
+
         # Ok, we're done, tidy up.
         painter.restore()
 
     def sizeHint(self, option, index):
         return QtCore.QSize(option.rect.width(), 20)
 
-    def createEditor(self, parent, option, index):
-        """Handle events, such as mousePressEvent"""
-        widget = QtWidgets.QWidget(parent)
-
-        # At the moment, clicking anywhere on the item triggers a toggle
-        # TODO(marcus): Distinguish when a user is pressing on a potential
-        # icon other than the main label or checkbox.
-        widget.mouseReleaseEvent = lambda event: (
-            self.toggled.emit(index)
-            if event.button() & QtCore.Qt.LeftButton
-            else None
-        )
-
-        return widget
-
-    def updateEditorGeometry(self, editor, option, index):
-        editor.setGeometry(option.rect)
-        return super(CheckBoxDelegate, self).updateEditorGeometry(
-            editor, option, index)
-
 
 class ItemView(QtWidgets.QListView):
+    toggled = QtCore.Signal("QModelIndex", object)
 
     def __init__(self, parent=None):
         super(ItemView, self).__init__(parent)
 
         self.verticalScrollBar().hide()
+        self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
-    def rowsInserted(self, parent, start, end):
-        """Enable editable checkbox for each row"""
-        for row in range(start, end + 1):
-            index = self.model().createIndex(row, 0)
-            self.openPersistentEditor(index)
+    def event(self, event):
+        if not event.type() == QtCore.QEvent.KeyPress:
+            return super(ItemView, self).event(event)
 
-        return super(ItemView, self).rowsInserted(parent, start, end)
+        if event.key() == QtCore.Qt.Key_Space:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, None)
+
+            return True
+
+        if event.key() == QtCore.Qt.Key_Backspace:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, False)
+
+            return True
+
+        if event.key() == QtCore.Qt.Key_Return:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, True)
+
+            return True
+
+        return super(ItemView, self).keyPressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        indexes = self.selectionModel().selectedIndexes()
+        if len(indexes) <= 1:
+            for index in indexes:
+                self.toggled.emit(index, None)
+
+        return super(ItemView, self).mouseReleaseEvent(event)
