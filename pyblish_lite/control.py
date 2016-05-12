@@ -90,9 +90,9 @@ class Window(QtWidgets.QDialog):
         footer = QtWidgets.QWidget()
         info = QtWidgets.QLabel()
         spacer = QtWidgets.QWidget()
-        reset = QtWidgets.QPushButton()
-        play = QtWidgets.QPushButton()
-        stop = QtWidgets.QPushButton()
+        reset = QtWidgets.QPushButton(u"\uf021")  # fa-refresh
+        play = QtWidgets.QPushButton(u"\uf04b")   # fa-play
+        stop = QtWidgets.QPushButton(u"\uf04d")   # fa-stop
 
         layout = QtWidgets.QHBoxLayout(footer)
         layout.setContentsMargins(5, 5, 5, 5)

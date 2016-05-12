@@ -48,6 +48,8 @@ QPushButton {
 	height: 30px;
 	background: "#555";
 	border: 1px solid "#333";
+	font-family: "FontAwesome";
+	font-size: 9pt;
 }
 
 QPushButton:pressed {
@@ -90,20 +92,4 @@ QPushButton:hover {
 
 #Footer {
 	min-height: 47px;
-}
-
-#Footer #Play {
-	background-image: url("img/button-publish.png");
-	background-position: center center;
-	background-repeat: no-repeat;
-}
-
-#Footer #Stop {
-	background-image: url("img/button-close.png");
-	background-position: center center;
-}
-
-#Footer #Reset {
-	background-image: url("img/button-reset.png");
-	background-position: center center;
 }

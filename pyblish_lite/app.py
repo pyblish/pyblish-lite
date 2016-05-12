@@ -4,7 +4,7 @@ import contextlib
 
 from Qt import QtWidgets, QtGui
 
-from . import control
+from . import control, util
 
 
 @contextlib.contextmanager
@@ -22,20 +22,25 @@ def application():
 
 
 def install_fonts():
-    fontdir = os.path.join(os.getcwd(), "font", "opensans")
-
     database = QtGui.QFontDatabase()
-    for font in ("OpenSans-Regular.ttf",
-                 "OpenSans-Semibold.ttf"):
-        database.addApplicationFont(
-            os.path.join(fontdir, font))
+
+    for font in (os.path.join("opensans", "OpenSans-Regular.ttf"),
+                 os.path.join("opensans", "OpenSans-Semibold.ttf"),
+                 os.path.join("fontawesome", "fontawesome-webfont.ttf")):
+        path = util.get_asset("font", font)
+
+        if database.addApplicationFont(path) < 0:
+            sys.stderr.write("Could not install %s\n" % path)
+        else:
+            sys.stdout.write("Installed %s\n" % font)
 
 
 def show(parent=None):
-    os.chdir(os.path.dirname(__file__))
-
-    with open("app.css") as f:
+    with open(util.get_asset("app.css")) as f:
         css = f.read()
+
+        # Make relative paths absolute
+        css = css.replace("url(\"", "url(\"%s" % util.get_asset(""))
 
     with application():
         install_fonts()
