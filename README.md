@@ -34,12 +34,61 @@ import pyblish_lite
 pyblish_lite.show()
 ```
 
-**Audodesk Maya**
+**Maya**
 
 ```python
 from PySide import QtGui
+
+import pyblish.api
 import pyblish_lite
+
+pyblish.api.register_host("maya")
 
 parent = {o.objectName(): o for o in QtGui.qApp.topLevelWidgets()}["MayaWindow"]
 window = pyblish_lite.show(parent)
 ```
+
+**Nuke**
+
+```python
+import pyblish.api
+import pyblish_lite
+
+pyblish.api.register_host("nuke")
+
+window = pyblish_lite.show()
+```
+
+**Mari**
+
+```python
+from PySide import QtGui
+
+import mari
+import pyblish.api
+import pyblish_lite
+
+pyblish.api.register_host("mari")
+
+mari.app.activateMainWindow()
+parent = QtGui.qApp.activeWindow()
+
+window = pyblish_lite.show(parent)
+```
+
+**Houdini 15**
+
+ATTENTION: This must be started from a shelf button.
+
+```python
+import hou
+import pyblish.api
+import pyblish_lite
+
+pyblish.api.register_host("houdini")
+
+parent = hou.ui.mainQtWindow()
+window = pyblish_lite.show(parent)
+```
+
+Houdini < 15.0 doesn't have the call to `mainQtWindow` but should work well without it, unless you find a way to grab the window yourself.

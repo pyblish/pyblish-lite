@@ -4,47 +4,48 @@ from Qt import QtCore, __binding__
 # GENERAL
 
 # The original object; Context, Instance or Plugin
-Item = QtCore.Qt.UserRole + 9
+Item = QtCore.Qt.UserRole + 0
 
 # The internal .id of any item
-Id = QtCore.Qt.UserRole + 7
+Id = QtCore.Qt.UserRole + 1
 
 # The display name of an item
-Label = QtCore.Qt.DisplayRole + 10
+Label = QtCore.Qt.DisplayRole
 
 # The item has not been used
-IsIdle = QtCore.Qt.UserRole + 8
+IsIdle = QtCore.Qt.UserRole + 2
 
-IsChecked = QtCore.Qt.UserRole + 0
-IsOptional = QtCore.Qt.UserRole + 11
-IsProcessing = QtCore.Qt.UserRole + 1
-HasFailed = QtCore.Qt.UserRole + 3
-HasSucceeded = QtCore.Qt.UserRole + 4
-HasProcessed = QtCore.Qt.UserRole + 6
+IsChecked = QtCore.Qt.UserRole + 3
+IsOptional = QtCore.Qt.UserRole + 4
+IsProcessing = QtCore.Qt.UserRole + 5
+HasFailed = QtCore.Qt.UserRole + 6
+HasSucceeded = QtCore.Qt.UserRole + 7
+HasProcessed = QtCore.Qt.UserRole + 8
 
 # PLUGINS
 
-# Available, context-relevant plug-ins
-Actions = QtCore.Qt.UserRole + 2
+# Available and context-sensitive actions
+Actions = QtCore.Qt.UserRole + 9
+
+# LOG RECORDS
+
+LogThreadName = QtCore.Qt.UserRole + 50
+LogName = QtCore.Qt.UserRole + 51
+LogFilename = QtCore.Qt.UserRole + 52
+LogPath = QtCore.Qt.UserRole + 53
+LogLineNumber = QtCore.Qt.UserRole + 54
+LogMessage = QtCore.Qt.UserRole + 55
+LogMilliseconds = QtCore.Qt.UserRole + 56
+
+# EXCEPTIONS
+
+ExcFname = QtCore.Qt.UserRole + 57
+ExcLineNumber = QtCore.Qt.UserRole + 58
+ExcFunc = QtCore.Qt.UserRole + 59
+ExcExc = QtCore.Qt.UserRole + 60
 
 
-class TableModel(QtCore.QAbstractTableModel):
-    def __init__(self, parent=None):
-        super(TableModel, self).__init__(parent)
-        self.items = list()
-
-        # Common schema
-        self.schema = {
-            Id: "id",
-            IsIdle: "is_idle",
-            IsProcessing: "is_processing",
-            HasProcessed: "has_processed",
-            HasSucceeded: "has_succeeded",
-            HasFailed: "has_failed",
-            Actions: "actions",
-            IsOptional: "optional"
-        }
-
+class AbstractModel(QtCore.QAbstractListModel):
     def __iter__(self):
         """Yield each row of model"""
         for index in range(len(self.items)):
@@ -66,25 +67,39 @@ class TableModel(QtCore.QAbstractTableModel):
     def rowCount(self, parent=None):
         return len(self.items)
 
-    def columnCount(self, parent):
-        return 2
-
     def reset(self):
         self.beginResetModel()
         self.items[:] = []
         self.endResetModel()
 
     def update_with_result(self, result):
-        for record in result["records"]:
-            print(record.msg)
+        pass
 
 
-class PluginModel(TableModel):
+class ItemModel(AbstractModel):
+    def __init__(self, parent=None):
+        super(ItemModel, self).__init__(parent)
+        self.items = list()
+
+        # Common schema
+        self.schema = {
+            Label: "label",
+            Id: "id",
+            IsIdle: "is_idle",
+            IsProcessing: "is_processing",
+            HasProcessed: "has_processed",
+            HasSucceeded: "has_succeeded",
+            HasFailed: "has_failed",
+            Actions: "actions",
+            IsOptional: "optional"
+        }
+
+
+class PluginModel(ItemModel):
     def __init__(self):
         super(PluginModel, self).__init__()
 
         self.schema.update({
-            Label: "label",
             IsChecked: "active",
         })
 
@@ -187,12 +202,11 @@ class PluginModel(TableModel):
         super(PluginModel, self).update_with_result(result)
 
 
-class InstanceModel(TableModel):
+class InstanceModel(ItemModel):
     def __init__(self):
         super(InstanceModel, self).__init__()
 
         self.schema.update({
-            Label: "label",
             IsChecked: "publish",
         })
 
@@ -206,8 +220,6 @@ class InstanceModel(TableModel):
         return super(InstanceModel, self).append(item)
 
     def data(self, index, role):
-        super(InstanceModel, self).data(index, role)
-
         item = self.items[index.row()]
         key = self.schema.get(role)
 
@@ -249,3 +261,48 @@ class InstanceModel(TableModel):
         self.setData(index, result["success"], HasSucceeded)
         self.setData(index, not result["success"], HasFailed)
         super(InstanceModel, self).update_with_result(result)
+
+
+class LogModel(AbstractModel):
+    def __init__(self, parent=None):
+        super(LogModel, self).__init__(parent)
+        self.items = list()
+
+        # Common schema
+        self.schema = {
+            Label: "msg",
+
+            # Records
+            LogThreadName: "threadName",
+            LogName: "name",
+            LogFilename: "filename",
+            LogPath: "pathname",
+            LogLineNumber: "lineno",
+            LogMessage: "msg",
+            LogMilliseconds: "msecs",
+
+            # Exceptions
+            ExcFname: "fname",
+            ExcLineNumber: "line_number",
+            ExcFunc: "func",
+            ExcExc: "exc",
+        }
+
+    def data(self, index, role):
+        item = self.items[index.row()]
+        key = self.schema.get(role)
+
+        if not key:
+            return
+
+        value = item.get(key)
+
+        if value is None:
+            value = super(LogModel, self).data(index, role)
+
+        return value
+
+    def update_with_result(self, result):
+        for record in result["records"]:
+            # print("Appending %s" % record.__dict__)
+            self.append(record.__dict__)

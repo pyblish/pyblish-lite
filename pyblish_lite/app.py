@@ -29,6 +29,9 @@ def install_fonts():
                  os.path.join("fontawesome", "fontawesome-webfont.ttf")):
         path = util.get_asset("font", font)
 
+        # TODO(marcus): Check if they are already installed first.
+        # In hosts, this will be called each time the GUI is shown,
+        # potentially installing a font each time.
         if database.addApplicationFont(path) < 0:
             sys.stderr.write("Could not install %s\n" % path)
         else:

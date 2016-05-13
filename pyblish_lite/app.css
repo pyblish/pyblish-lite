@@ -67,15 +67,22 @@ QPushButton:hover {
 	border: 1px solid "#444";
 }
 
-#Header QCheckBox::indicator {
-	width: 60px;
-	height: 40px;
-	border: none;
-	border-right: 1px solid "#333";
+#Header QRadioButton {
+	border-right: 1px solid #333;
+	left: 2px;
 }
 
-#Header QCheckBox::indicator:checked {
-	background: rgba(255, 255, 255, 0.1);
+#Header QRadioButton::indicator {
+	width: 50px;
+	height: 40px;
+	border: 0px solid "transparent";
+	border-bottom: 3px solid "transparent";
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+
+#Header QRadioButton:checked {
+	background-color: rgba(255, 255, 255, 20);
 	border-bottom: 3px solid "lightblue";
 }
 
@@ -87,9 +94,16 @@ QPushButton:hover {
 
 #Header #Home {
 	background-image: url("img/logo-white.png");
-	background-position: center center;
+}
+
+#Header #Terminal {
+	background-image: url("img/logo-white.png");
 }
 
 #Footer {
 	min-height: 47px;
+}
+
+#ClosingPlaceholder {
+	background: rgba(0, 0, 0, 50);
 }
