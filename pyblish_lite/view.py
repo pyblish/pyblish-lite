@@ -40,10 +40,11 @@ class Item(QtWidgets.QListView):
         self.selectionModel().clear()
 
     def mouseReleaseEvent(self, event):
-        indexes = self.selectionModel().selectedIndexes()
-        if len(indexes) <= 1:
-            for index in indexes:
-                self.toggled.emit(index, None)
+        if event.button() == QtCore.Qt.LeftButton:
+            indexes = self.selectionModel().selectedIndexes()
+            if len(indexes) <= 1:
+                for index in indexes:
+                    self.toggled.emit(index, None)
 
         return super(Item, self).mouseReleaseEvent(event)
 
@@ -55,3 +56,19 @@ class LogView(QtWidgets.QListView):
         self.verticalScrollBar().hide()
         self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+
+    def rowsInserted(self, parent, start, end):
+        """Enable editable checkbox for each row
+
+        Arguments:
+            parent (QtCore.QModelIndex): The model itself, since this is a list
+            start (int): Start index of item
+            end (int): End index of item
+
+        """
+
+        index = self.model().createIndex(end, 0)
+        self.scrollTo(index)
+
+        return super(LogView, self).rowsInserted(parent, start, end)

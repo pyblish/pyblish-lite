@@ -3,14 +3,15 @@ from Qt import QtCore, __binding__
 
 # GENERAL
 
-# The original object; Context, Instance or Plugin
-Item = QtCore.Qt.UserRole + 0
+# The original object; Instance or Plugin
+Object = QtCore.Qt.UserRole + 0
 
 # The internal .id of any item
 Id = QtCore.Qt.UserRole + 1
+Type = QtCore.Qt.UserRole + 10
 
 # The display name of an item
-Label = QtCore.Qt.DisplayRole
+Label = QtCore.Qt.DisplayRole + 0
 
 # The item has not been used
 IsIdle = QtCore.Qt.UserRole + 2
@@ -45,14 +46,14 @@ ExcFunc = QtCore.Qt.UserRole + 59
 ExcExc = QtCore.Qt.UserRole + 60
 
 
-class AbstractModel(QtCore.QAbstractListModel):
+class Abstract(QtCore.QAbstractListModel):
     def __iter__(self):
         """Yield each row of model"""
         for index in range(len(self.items)):
             yield self.createIndex(index, 0)
 
     def data(self, index, role):
-        if role == Item:
+        if role == Object:
             return self.items[index.row()]
 
     def append(self, item):
@@ -76,9 +77,9 @@ class AbstractModel(QtCore.QAbstractListModel):
         pass
 
 
-class ItemModel(AbstractModel):
+class Item(Abstract):
     def __init__(self, parent=None):
-        super(ItemModel, self).__init__(parent)
+        super(Item, self).__init__(parent)
         self.items = list()
 
         # Common schema
@@ -95,9 +96,9 @@ class ItemModel(AbstractModel):
         }
 
 
-class PluginModel(ItemModel):
+class Plugin(Item):
     def __init__(self):
-        super(PluginModel, self).__init__()
+        super(Plugin, self).__init__()
 
         self.schema.update({
             IsChecked: "active",
@@ -110,7 +111,7 @@ class PluginModel(ItemModel):
         item.has_succeeded = False
         item.has_failed = False
         item.label = item.label or item.__name__
-        return super(PluginModel, self).append(item)
+        return super(Plugin, self).append(item)
 
     def data(self, index, role):
         item = self.items[index.row()]
@@ -120,6 +121,11 @@ class PluginModel(ItemModel):
             return
 
         if role == Actions:
+
+            # Can only run actions on active plug-ins.
+            if not item.active:
+                return
+
             actions = list(item.actions)
 
             # Context specific actions
@@ -171,7 +177,7 @@ class PluginModel(ItemModel):
         value = getattr(item, key, None)
 
         if value is None:
-            value = super(PluginModel, self).data(index, role)
+            value = super(Plugin, self).data(index, role)
 
         return value
 
@@ -199,12 +205,12 @@ class PluginModel(ItemModel):
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
         self.setData(index, not result["success"], HasFailed)
-        super(PluginModel, self).update_with_result(result)
+        super(Plugin, self).update_with_result(result)
 
 
-class InstanceModel(ItemModel):
+class Instance(Item):
     def __init__(self):
-        super(InstanceModel, self).__init__()
+        super(Instance, self).__init__()
 
         self.schema.update({
             IsChecked: "publish",
@@ -217,7 +223,7 @@ class InstanceModel(ItemModel):
         item.data["optional"] = item.data.get("optional", True)
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
-        return super(InstanceModel, self).append(item)
+        return super(Instance, self).append(item)
 
     def data(self, index, role):
         item = self.items[index.row()]
@@ -229,7 +235,7 @@ class InstanceModel(ItemModel):
         value = item.data.get(key)
 
         if value is None:
-            value = super(InstanceModel, self).data(index, role)
+            value = super(Instance, self).data(index, role)
 
         return value
 
@@ -260,17 +266,18 @@ class InstanceModel(ItemModel):
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
         self.setData(index, not result["success"], HasFailed)
-        super(InstanceModel, self).update_with_result(result)
+        super(Instance, self).update_with_result(result)
 
 
-class LogModel(AbstractModel):
+class Terminal(Abstract):
     def __init__(self, parent=None):
-        super(LogModel, self).__init__(parent)
+        super(Terminal, self).__init__(parent)
         self.items = list()
 
         # Common schema
         self.schema = {
-            Label: "msg",
+            Type: "type",
+            Label: "label",
 
             # Records
             LogThreadName: "threadName",
@@ -298,11 +305,25 @@ class LogModel(AbstractModel):
         value = item.get(key)
 
         if value is None:
-            value = super(LogModel, self).data(index, role)
+            value = super(Terminal, self).data(index, role)
 
         return value
 
     def update_with_result(self, result):
         for record in result["records"]:
-            # print("Appending %s" % record.__dict__)
-            self.append(record.__dict__)
+            self.append(dict(record.__dict__, **{
+                "label": str(record.msg),
+                "type": "record"
+            }))
+
+        error = result["error"]
+        if error is not None:
+            fname, line_no, func, exc = error.traceback
+            self.append({
+                "label": str(error),
+                "type": "error",
+                "fname": fname,
+                "line_number": line_no,
+                "func": func,
+                "exc": exc
+            })
