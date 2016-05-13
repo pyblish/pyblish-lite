@@ -1,3 +1,7 @@
+import os
+import time
+import subprocess
+
 import pyblish.api
 
 
@@ -48,12 +52,6 @@ class MyExtractor(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         self.log.info("Extracting: %s" % instance)
-
-import os
-import time
-import subprocess
-
-import pyblish.api
 
 
 class CollectRenamed(pyblish.api.Collector):

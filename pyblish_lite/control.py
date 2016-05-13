@@ -7,7 +7,7 @@ import pyblish.api
 import pyblish.util
 import pyblish.logic
 
-from . import model, view, util
+from . import model, view, util, delegate
 
 
 class Window(QtWidgets.QDialog):
@@ -20,10 +20,9 @@ class Window(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
+        icon = QtGui.QIcon(util.get_asset("img", "logo-extrasmall.png"))
         self.setWindowTitle("Pyblish")
-        self.setWindowIcon(QtGui.QIcon(
-            util.get_asset("img", "logo-extrasmall.png"))
-        )
+        self.setWindowIcon(icon)
 
         """General layout
          __________________
@@ -57,14 +56,26 @@ class Window(QtWidgets.QDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        """Overview
+         ___________________
+        |                  |
+        | o ----- o----    |
+        | o ----  o---     |
+        | o ----  o----    |
+        | o ----  o------  |
+        |                  |
+        |__________________|
+
+        """
+
         overview = QtWidgets.QWidget()
 
-        left_view = view.ItemView()
-        right_view = view.ItemView()
+        left_view = view.Item()
+        right_view = view.Item()
 
-        delegate = view.CheckBoxDelegate()
-        left_view.setItemDelegate(delegate)
-        right_view.setItemDelegate(delegate)
+        item_delegate = delegate.Item()
+        left_view.setItemDelegate(item_delegate)
+        right_view.setItemDelegate(item_delegate)
 
         layout = QtWidgets.QHBoxLayout(overview)
         layout.addWidget(left_view, 1)
@@ -72,8 +83,27 @@ class Window(QtWidgets.QDialog):
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(0)
 
+        """Terminal
+
+         __________________
+        |                  |
+        |  \               |
+        |   \              |
+        |   /              |
+        |  /  ______       |
+        |                  |
+        |__________________|
+
+        """
+
+        terminal_view = view.LogView()
+
+        terminal_delegate = delegate.Terminal()
+        terminal_view.setItemDelegate(terminal_delegate)
+
         terminal = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(terminal)
+        layout.addWidget(terminal_view)
         layout.setContentsMargins(5, 5, 5, 5)
 
         # Add some room between window borders and contents
@@ -83,12 +113,14 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(overview)
         layout.addWidget(terminal)
 
-        # Placeholder for when GUI is closing
-        closing_placeholder = QtWidgets.QWidget()
-        closing_placeholder.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
-                                          QtWidgets.QSizePolicy.Expanding)
-        closing_placeholder.hide()
-        layout.addWidget(closing_placeholder, 0)
+        """Footer
+         ______________________
+        |             ___  ___ |
+        |            | o || > ||
+        |            |___||___||
+        |______________________|
+
+        """
 
         footer = QtWidgets.QWidget()
         info = QtWidgets.QLabel()
@@ -105,19 +137,29 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(play, 0)
         layout.addWidget(stop, 0)
 
+        # Placeholder for when GUI is closing
+        # TODO(marcus): Fade to black and the the user about what's happening
+        closing_placeholder = QtWidgets.QWidget(self)
+        closing_placeholder.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                          QtWidgets.QSizePolicy.Expanding)
+        closing_placeholder.hide()
+
         # Main layout
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(header, 0)
         layout.addWidget(body, 1)
+        layout.addWidget(closing_placeholder, 1)
         layout.addWidget(footer, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
         instance_model = model.InstanceModel()
         plugin_model = model.PluginModel()
+        terminal_model = model.LogModel()
 
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
+        terminal_view.setModel(terminal_model)
 
         """Setup
               ___
@@ -165,17 +207,20 @@ class Window(QtWidgets.QDialog):
                        footer,
                        play,
                        stop,
-                       reset):
+                       reset,
+                       closing_placeholder):
             widget.setAttribute(QtCore.Qt.WA_StyledBackground)
 
         self.data = {
             "views": {
                 "left": left_view,
-                "right": right_view
+                "right": right_view,
+                "terminal": terminal_view,
             },
             "models": {
                 "instances": instance_model,
-                "plugins": plugin_model
+                "plugins": plugin_model,
+                "terminal": terminal_model,
             },
             "tabs": {
                 "overview": overview,
@@ -210,7 +255,7 @@ class Window(QtWidgets.QDialog):
         }
 
         # Defaults
-        overview_tab.setChecked(True)
+        self.on_tab_changed("overview")
 
         """Signals
          ________     ________
@@ -442,6 +487,7 @@ class Window(QtWidgets.QDialog):
             else:
                 models["plugins"].update_with_result(result)
                 models["instances"].update_with_result(result)
+                models["terminal"].update_with_result(result)
 
                 defer(10, on_next)
 
@@ -523,6 +569,7 @@ class Window(QtWidgets.QDialog):
             else:
                 models["plugins"].update_with_result(result)
                 models["instances"].update_with_result(result)
+                models["terminal"].update_with_result(result)
 
                 defer(10, on_next)
 
@@ -539,14 +586,19 @@ class Window(QtWidgets.QDialog):
         self.data["state"]["is_running"] = False
 
         plugin_model = self.data["models"]["plugins"]
+        instance_model = self.data["models"]["instances"]
+
         for index in plugin_model:
-            plugin_model.setData(index, model.IsIdle, False)
+            index.model().setData(index, False, model.IsIdle)
+
+        for index in instance_model:
+            index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
         buttons["reset"].show()
         buttons["stop"].hide()
 
-        self.finished.emit()
+        # self.finished.emit()
         self.info("Finished")
 
     def prepare_action(self, plugin, action):
@@ -598,14 +650,6 @@ class Window(QtWidgets.QDialog):
 
         self.info("Closing..")
 
-        # Display placeholder
-        # TODO(marcus): Make something nice here
-        body = self.findChild(QtWidgets.QWidget, "Body")
-        body.hide()
-
-        placeholder = self.findChild(QtWidgets.QWidget, "ClosingPlaceholder")
-        placeholder.show()
-
         if self.data["state"]["is_running"]:
             self.info("..as soon as processing is finished..")
             self.data["state"]["is_running"] = False
@@ -615,12 +659,24 @@ class Window(QtWidgets.QDialog):
         self.data["state"]["is_closing"] = True
 
         # Explicitly clear potentially referenced data
-        self.info("Cleaning up..")
+        self.info("Cleaning up models..")
+        for v in self.data["views"].values():
+            v.model().deleteLater()
+            v.setModel(None)
+
+        self.info("Cleaning up instances..")
         for instance in self.data["state"].get("context", []):
             del(instance)
 
+        self.info("Cleaning up plugins..")
         for plugin in self.data["state"].get("plugins", []):
             del(plugin)
+
+        self.info("Cleaning up terminal..")
+        for item in self.data["models"]["terminal"].items:
+            del(item)
+
+        self.info("All clean!")
 
         defer(200, self.close)
         return event.ignore()
@@ -669,11 +725,13 @@ class Window(QtWidgets.QDialog):
         # Store reference to prevent garbage collection
         self.__message_animation = timeline
 
+        print(message)
+
 
 def defer(delay, func):
     """Append artificial delay to `func`
 
-    This aids in keeping the GUI feel responsive, but complicates logic
+    This aids in keeping the GUI responsive, but complicates logic
     when producing tests. To combat this, the environment variable ensures
     that every operation is synchonous.
 

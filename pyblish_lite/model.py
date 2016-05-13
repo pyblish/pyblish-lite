@@ -4,28 +4,28 @@ from Qt import QtCore, __binding__
 # GENERAL
 
 # The original object; Context, Instance or Plugin
-Item = QtCore.Qt.UserRole + 9
+Item = QtCore.Qt.UserRole + 0
 
 # The internal .id of any item
-Id = QtCore.Qt.UserRole + 7
+Id = QtCore.Qt.UserRole + 1
 
 # The display name of an item
-Label = QtCore.Qt.DisplayRole + 10
+Label = QtCore.Qt.DisplayRole
 
 # The item has not been used
-IsIdle = QtCore.Qt.UserRole + 8
+IsIdle = QtCore.Qt.UserRole + 2
 
-IsChecked = QtCore.Qt.UserRole + 0
-IsOptional = QtCore.Qt.UserRole + 11
-IsProcessing = QtCore.Qt.UserRole + 1
-HasFailed = QtCore.Qt.UserRole + 3
-HasSucceeded = QtCore.Qt.UserRole + 4
-HasProcessed = QtCore.Qt.UserRole + 6
+IsChecked = QtCore.Qt.UserRole + 3
+IsOptional = QtCore.Qt.UserRole + 4
+IsProcessing = QtCore.Qt.UserRole + 5
+HasFailed = QtCore.Qt.UserRole + 6
+HasSucceeded = QtCore.Qt.UserRole + 7
+HasProcessed = QtCore.Qt.UserRole + 8
 
 # PLUGINS
 
 # Available and context-sensitive actions
-Actions = QtCore.Qt.UserRole + 2
+Actions = QtCore.Qt.UserRole + 9
 
 # LOG RECORDS
 
@@ -45,23 +45,7 @@ ExcFunc = QtCore.Qt.UserRole + 59
 ExcExc = QtCore.Qt.UserRole + 60
 
 
-class ItemModel(QtCore.QAbstractListModel):
-    def __init__(self, parent=None):
-        super(ItemModel, self).__init__(parent)
-        self.items = list()
-
-        # Common schema
-        self.schema = {
-            Id: "id",
-            IsIdle: "is_idle",
-            IsProcessing: "is_processing",
-            HasProcessed: "has_processed",
-            HasSucceeded: "has_succeeded",
-            HasFailed: "has_failed",
-            Actions: "actions",
-            IsOptional: "optional"
-        }
-
+class AbstractModel(QtCore.QAbstractListModel):
     def __iter__(self):
         """Yield each row of model"""
         for index in range(len(self.items)):
@@ -92,12 +76,30 @@ class ItemModel(QtCore.QAbstractListModel):
         pass
 
 
+class ItemModel(AbstractModel):
+    def __init__(self, parent=None):
+        super(ItemModel, self).__init__(parent)
+        self.items = list()
+
+        # Common schema
+        self.schema = {
+            Label: "label",
+            Id: "id",
+            IsIdle: "is_idle",
+            IsProcessing: "is_processing",
+            HasProcessed: "has_processed",
+            HasSucceeded: "has_succeeded",
+            HasFailed: "has_failed",
+            Actions: "actions",
+            IsOptional: "optional"
+        }
+
+
 class PluginModel(ItemModel):
     def __init__(self):
         super(PluginModel, self).__init__()
 
         self.schema.update({
-            Label: "label",
             IsChecked: "active",
         })
 
@@ -205,7 +207,6 @@ class InstanceModel(ItemModel):
         super(InstanceModel, self).__init__()
 
         self.schema.update({
-            Label: "label",
             IsChecked: "publish",
         })
 
@@ -219,8 +220,6 @@ class InstanceModel(ItemModel):
         return super(InstanceModel, self).append(item)
 
     def data(self, index, role):
-        super(InstanceModel, self).data(index, role)
-
         item = self.items[index.row()]
         key = self.schema.get(role)
 
@@ -264,13 +263,14 @@ class InstanceModel(ItemModel):
         super(InstanceModel, self).update_with_result(result)
 
 
-class LogModel(QtCore.QAbstractListModel):
+class LogModel(AbstractModel):
     def __init__(self, parent=None):
-        super(ItemModel, self).__init__(parent)
+        super(LogModel, self).__init__(parent)
         self.items = list()
 
         # Common schema
         self.schema = {
+            Label: "msg",
 
             # Records
             LogThreadName: "threadName",
@@ -288,32 +288,21 @@ class LogModel(QtCore.QAbstractListModel):
             ExcExc: "exc",
         }
 
-    def __iter__(self):
-        """Yield each row of model"""
-        for index in range(len(self.items)):
-            yield self.createIndex(index, 0)
-
     def data(self, index, role):
-        if role == Item:
-            return self.items[index.row()]
+        item = self.items[index.row()]
+        key = self.schema.get(role)
 
-    def append(self, item):
-        """Append item to end of model"""
-        self.beginInsertRows(QtCore.QModelIndex(),
-                             self.rowCount(),
-                             self.rowCount())
+        if not key:
+            return
 
-        self.items.append(item)
-        self.endInsertRows()
+        value = item.get(key)
 
-    def rowCount(self, parent=None):
-        return len(self.items)
+        if value is None:
+            value = super(LogModel, self).data(index, role)
 
-    def reset(self):
-        self.beginResetModel()
-        self.items[:] = []
-        self.endResetModel()
+        return value
 
     def update_with_result(self, result):
         for record in result["records"]:
-            print(record.msg)
+            # print("Appending %s" % record.__dict__)
+            self.append(record.__dict__)

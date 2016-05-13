@@ -103,3 +103,7 @@ QPushButton:hover {
 #Footer {
 	min-height: 47px;
 }
+
+#ClosingPlaceholder {
+	background: rgba(0, 0, 0, 50);
+}
