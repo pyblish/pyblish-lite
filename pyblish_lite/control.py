@@ -153,9 +153,9 @@ class Window(QtWidgets.QDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        instance_model = model.InstanceModel()
-        plugin_model = model.PluginModel()
-        terminal_model = model.LogModel()
+        instance_model = model.Instance()
+        plugin_model = model.Plugin()
+        terminal_model = model.Terminal()
 
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
@@ -643,6 +643,12 @@ class Window(QtWidgets.QDialog):
 
         """
 
+        # Make it snappy, but take care to clean it all up.
+        # TODO(marcus): Enable GUI to return on problem, such
+        # as asking whether or not the user really wants to quit
+        # given there are things currently running.
+        self.hide()
+
         if self.data["state"]["is_closing"]:
             self.info("Good bye")
             return super(Window, self).closeEvent(event)
@@ -691,7 +697,7 @@ class Window(QtWidgets.QDialog):
         info = self.findChild(QtWidgets.QLabel, "Info")
         info.setText(message)
 
-        fade_effect = QtGui.QGraphicsOpacityEffect(info)
+        fade_effect = QtWidgets.QGraphicsOpacityEffect(info)
         info.setGraphicsEffect(fade_effect)
 
         timeline = QtCore.QSequentialAnimationGroup()
@@ -724,6 +730,8 @@ class Window(QtWidgets.QDialog):
         # Store reference to prevent garbage collection
         self.__message_animation = timeline
 
+        # TODO(marcus): Should this be configurable? Do we want
+        # the shell to fill up with these messages?
         print(message)
 
 

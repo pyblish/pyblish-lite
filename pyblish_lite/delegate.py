@@ -2,6 +2,17 @@ from Qt import QtWidgets, QtGui, QtCore
 
 from . import model
 
+colors = {
+    "warning": QtGui.QColor("#ff4a4a"),
+    "ok": QtGui.QColor("#77AE24"),
+    "active": QtGui.QColor("#99CEEE"),
+    "idle": QtCore.Qt.white,
+    "font": QtGui.QColor("#DDD"),
+    "inactive": QtGui.QColor("#888"),
+    "hover": QtGui.QColor(255, 255, 255, 10),
+    "selected": QtGui.QColor(255, 255, 255, 20),
+}
+
 
 class Item(QtWidgets.QStyledItemDelegate):
     def __init__(self):
@@ -13,16 +24,6 @@ class Item(QtWidgets.QStyledItemDelegate):
         font.setWeight(400)
 
         self.font = font
-        self.colors = {
-            "warning": QtGui.QColor("#EE2222"),
-            "ok": QtGui.QColor("#77AE24"),
-            "active": QtGui.QColor("#99CEEE"),
-            "idle": QtCore.Qt.white,
-            "font": QtGui.QColor("#DDD"),
-            "inactive": QtGui.QColor("#888"),
-            "hover": QtGui.QColor(255, 255, 255, 10),
-            "selected": QtGui.QColor(255, 255, 255, 20),
-        }
 
     def paint(self, painter, option, index):
         """Paint checkbox and text
@@ -38,19 +39,19 @@ class Item(QtWidgets.QStyledItemDelegate):
         path = QtGui.QPainterPath()
         path.addRect(rect)
 
-        check_color = self.colors["idle"]
+        check_color = colors["idle"]
 
         if index.data(model.IsProcessing) is True:
-            check_color = self.colors["active"]
+            check_color = colors["active"]
 
         elif index.data(model.HasFailed) is True:
-            check_color = self.colors["warning"]
+            check_color = colors["warning"]
 
         elif index.data(model.HasSucceeded) is True:
-            check_color = self.colors["ok"]
+            check_color = colors["ok"]
 
         elif index.data(model.HasProcessed) is True:
-            check_color = self.colors["ok"]
+            check_color = colors["ok"]
 
         metrics = painter.fontMetrics()
 
@@ -62,9 +63,9 @@ class Item(QtWidgets.QStyledItemDelegate):
                                    QtCore.Qt.ElideRight,
                                    rect.width() - 20)
 
-        font_color = self.colors["idle"]
+        font_color = colors["idle"]
         if not index.data(model.IsChecked):
-            font_color = self.colors["inactive"]
+            font_color = colors["inactive"]
 
         hover = QtGui.QPainterPath()
         hover.addRect(option.rect.adjusted(0, 0, -1, -1))
@@ -91,10 +92,10 @@ class Item(QtWidgets.QStyledItemDelegate):
                 painter.fillPath(path, check_color)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
-            painter.fillPath(hover, self.colors["hover"])
+            painter.fillPath(hover, colors["hover"])
 
         if option.state & QtWidgets.QStyle.State_Selected:
-            painter.fillPath(hover, self.colors["selected"])
+            painter.fillPath(hover, colors["selected"])
 
         # Ok, we're done, tidy up.
         painter.restore()
@@ -113,16 +114,6 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         font.setWeight(400)
 
         self.font = font
-        self.colors = {
-            "warning": QtGui.QColor("#EE2222"),
-            "ok": QtGui.QColor("#77AE24"),
-            "active": QtGui.QColor("#99CEEE"),
-            "idle": QtCore.Qt.white,
-            "font": QtGui.QColor("#DDD"),
-            "inactive": QtGui.QColor("#888"),
-            "hover": QtGui.QColor(255, 255, 255, 10),
-            "selected": QtGui.QColor(255, 255, 255, 20),
-        }
 
     def paint(self, painter, option, index):
         """Paint checkbox and text
@@ -148,7 +139,10 @@ class Terminal(QtWidgets.QStyledItemDelegate):
                                    QtCore.Qt.ElideRight,
                                    rect.width() - 20)
 
-        font_color = self.colors["idle"]
+        font_color = colors["idle"]
+
+        if index.data(model.Type) == "error":
+            font_color = colors["warning"]
 
         hover = QtGui.QPainterPath()
         hover.addRect(option.rect.adjusted(0, 0, -1, -1))
@@ -162,10 +156,10 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         painter.drawText(rect, label)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
-            painter.fillPath(hover, self.colors["hover"])
+            painter.fillPath(hover, colors["hover"])
 
         if option.state & QtWidgets.QStyle.State_Selected:
-            painter.fillPath(hover, self.colors["selected"])
+            painter.fillPath(hover, colors["selected"])
 
         # Ok, we're done, tidy up.
         painter.restore()
