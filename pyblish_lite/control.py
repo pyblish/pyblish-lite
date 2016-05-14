@@ -84,7 +84,8 @@ class Window(QtWidgets.QDialog):
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
         comment_label = QtWidgets.QLabel("Comment")
-        self.comment = QtWidgets.QTextEdit()
+        comment = QtWidgets.QTextEdit()
+        self.comment = comment
 
         layout = QtWidgets.QVBoxLayout(publish)
         layout.addWidget(publish_view, 4)
