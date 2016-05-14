@@ -12,6 +12,7 @@ Type = QtCore.Qt.UserRole + 10
 
 # The display name of an item
 Label = QtCore.Qt.DisplayRole + 0
+Family = QtCore.Qt.DisplayRole + 1
 
 # The item has not been used
 IsIdle = QtCore.Qt.UserRole + 2
@@ -85,6 +86,7 @@ class Item(Abstract):
         # Common schema
         self.schema = {
             Label: "label",
+            Family: "family",
             Id: "id",
             IsIdle: "is_idle",
             IsProcessing: "is_processing",
@@ -223,6 +225,7 @@ class Instance(Item):
         item.data["optional"] = item.data.get("optional", True)
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
+        item.data["family"] = item.data.get("family", "")
         return super(Instance, self).append(item)
 
     def data(self, index, role):

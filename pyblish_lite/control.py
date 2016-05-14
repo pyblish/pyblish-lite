@@ -45,15 +45,53 @@ class Window(QtWidgets.QDialog):
 
         header = QtWidgets.QWidget()
 
+        publish_tab = QtWidgets.QRadioButton()
         overview_tab = QtWidgets.QRadioButton()
         terminal_tab = QtWidgets.QRadioButton()
         spacer = QtWidgets.QWidget()
 
         layout = QtWidgets.QHBoxLayout(header)
+        layout.addWidget(publish_tab, 0)
         layout.addWidget(overview_tab, 0)
         layout.addWidget(terminal_tab, 0)
         layout.addWidget(spacer, 1)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        """Publish
+         ___________________
+        |                  |
+        | o ------------   |
+        | o ------------   |
+        | o ------------   |
+        |------------------|
+        | comment          |
+        |__________________|
+
+        """
+
+        publish = QtWidgets.QWidget()
+
+        publish_view = view.Item()
+
+        item_delegate = delegate.Publish()
+        publish_view.setItemDelegate(item_delegate)
+
+        verticalLine = QtWidgets.QFrame()
+
+        verticalLine.setFrameStyle(QtWidgets.QFrame.HLine)
+        verticalLine.setSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+
+        comment_label = QtWidgets.QLabel("Comment")
+        self.comment = QtWidgets.QTextEdit()
+
+        layout = QtWidgets.QVBoxLayout(publish)
+        layout.addWidget(publish_view, 4)
+        layout.addWidget(verticalLine)
+        layout.addWidget(comment_label)
+        layout.addWidget(self.comment, 1)
+        layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(0)
 
         """Overview
@@ -110,6 +148,7 @@ class Window(QtWidgets.QDialog):
         body = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(body)
         layout.setContentsMargins(5, 5, 5, 0)
+        layout.addWidget(publish)
         layout.addWidget(overview)
         layout.addWidget(terminal)
 
@@ -157,6 +196,7 @@ class Window(QtWidgets.QDialog):
         plugin_model = model.Plugin()
         terminal_model = model.Terminal()
 
+        publish_view.setModel(instance_model)
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
         terminal_view.setModel(terminal_model)
@@ -184,6 +224,7 @@ class Window(QtWidgets.QDialog):
             "Info": info,
 
             # Tabs
+            "Publish": publish,
             "Overview": overview,
             "Terminal": terminal,
 
@@ -202,6 +243,8 @@ class Window(QtWidgets.QDialog):
         # Enable CSS on plain QWidget objects
         for widget in (header,
                        body,
+                       publish,
+                       comment,
                        overview,
                        terminal,
                        footer,
@@ -213,6 +256,7 @@ class Window(QtWidgets.QDialog):
 
         self.data = {
             "views": {
+                "publish": publish_view,
                 "left": left_view,
                 "right": right_view,
                 "terminal": terminal_view,
@@ -223,6 +267,7 @@ class Window(QtWidgets.QDialog):
                 "terminal": terminal_model,
             },
             "tabs": {
+                "publish": publish,
                 "overview": overview,
                 "terminal": terminal,
             },
@@ -255,7 +300,7 @@ class Window(QtWidgets.QDialog):
         }
 
         # Defaults
-        self.on_tab_changed("overview")
+        self.on_tab_changed("publish")
 
         """Signals
          ________     ________
@@ -268,6 +313,8 @@ class Window(QtWidgets.QDialog):
         """
 
         # NOTE: Listeners to this signal are run in the main thread
+        publish_tab.released.connect(
+            lambda: self.on_tab_changed("publish"))
         overview_tab.released.connect(
             lambda: self.on_tab_changed("overview"))
         terminal_tab.released.connect(
@@ -276,11 +323,13 @@ class Window(QtWidgets.QDialog):
         self.about_to_process.connect(self.on_about_to_process,
                                       QtCore.Qt.DirectConnection)
 
+        publish_view.toggled.connect(self.on_delegate_toggled)
         left_view.toggled.connect(self.on_delegate_toggled)
         right_view.toggled.connect(self.on_delegate_toggled)
         reset.clicked.connect(self.on_reset_clicked)
         play.clicked.connect(self.on_play_clicked)
         stop.clicked.connect(self.on_stop_clicked)
+        comment.textChanged.connect(self.on_comment_entered)
         right_view.customContextMenuRequested.connect(
             self.on_plugin_action_menu_requested)
 
@@ -300,6 +349,11 @@ class Window(QtWidgets.QDialog):
     def on_stop_clicked(self):
         self.info("Stopping..")
         self.data["state"]["is_running"] = False
+
+    def on_comment_entered(self):
+        comment = self.comment.toPlainText()
+        context = self.data["state"]["context"]
+        context.data['comment'] = comment
 
     def on_delegate_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
@@ -460,6 +514,8 @@ class Window(QtWidgets.QDialog):
                 p.order,
                 base=pyblish.api.CollectorOrder)
         )
+
+        self.on_comment_entered()
 
         def on_next():
             try:

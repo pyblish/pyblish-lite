@@ -52,6 +52,14 @@ QPushButton {
 	font-size: 9pt;
 }
 
+QTextEdit {
+	background: "#555";
+	border: 1px solid "#333";
+	font-family: "FontAwesome";
+	font-size: 9pt;
+	color: "#fff";
+}
+
 QPushButton:pressed {
 	background: "#777";
 }
