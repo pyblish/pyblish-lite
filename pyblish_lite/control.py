@@ -272,6 +272,11 @@ class Window(QtWidgets.QDialog):
                 "overview": overview,
                 "terminal": terminal,
             },
+            "tabs_radio": {
+                "artist": artist_tab,
+                "overview": overview_tab,
+                "terminal": terminal_tab,
+            },
             "buttons": {
                 "play": play,
                 "stop": stop,
@@ -341,6 +346,9 @@ class Window(QtWidgets.QDialog):
 
         tab = self.data["tabs"][target]
         tab.show()
+
+        radio = self.data["tabs_radio"][target]
+        radio.setChecked(True)
 
     def on_play_clicked(self):
         self.prepare_publish()
@@ -613,6 +621,8 @@ class Window(QtWidgets.QDialog):
                 defer(100, lambda: on_process(plugin, instance))
 
             except StopIteration:
+                # if there is a error switch to the overview tab.
+                self.on_tab_changed("overview")
                 defer(100, lambda: on_finished(context))
 
             except Exception as e:
