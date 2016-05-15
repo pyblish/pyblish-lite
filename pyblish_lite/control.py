@@ -59,13 +59,17 @@ class Window(QtWidgets.QDialog):
         layout.setSpacing(0)
 
         """Artist Page
-         ___________________
+         __________________
         |                  |
-        | o ------------   |
-        | o ------------   |
-        | o ------------   |
+        | | ------------   |
+        | | -----          |
+        |                  |
+        | | --------       |
+        | | -------        |
+        |                  |
         |------------------|
-        | comment          |
+        |                  |
+        | comment >        |
         |__________________|
 
         """
@@ -74,26 +78,20 @@ class Window(QtWidgets.QDialog):
 
         artist_view = view.Item()
 
-        item_delegate = delegate.Artist()
-        artist_view.setItemDelegate(item_delegate)
+        artist_delegate = delegate.Artist()
+        artist_view.setItemDelegate(artist_delegate)
 
-        vertical_line = QtWidgets.QFrame()
-
-        vertical_line.setFrameStyle(QtWidgets.QFrame.HLine)
-        vertical_line.setSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-
-        comment_label = QtWidgets.QLabel("Comment")
         comment = QtWidgets.QTextEdit()
-        self.comment = comment
+        comment_label = QtWidgets.QLabel(
+            "Enter optional comment here..", comment)
+        comment_label.move(6, 6)
+        comment_label.hide()
 
         layout = QtWidgets.QVBoxLayout(artist)
         layout.addWidget(artist_view, 4)
-        layout.addWidget(vertical_line)
-        layout.addWidget(comment_label)
-        layout.addWidget(self.comment, 1)
-        layout.setContentsMargins(5, 5, 5, 5)
-        layout.setSpacing(0)
+        layout.addWidget(comment, 1)
+        layout.setContentsMargins(0, 0, 0, 5)
+        layout.setSpacing(5)
 
         """Overview Page
          ___________________
@@ -225,7 +223,7 @@ class Window(QtWidgets.QDialog):
             "Info": info,
 
             # Tabs
-            "Publish": artist,
+            "Artist": artist,
             "Overview": overview,
             "Terminal": terminal,
 
@@ -236,6 +234,8 @@ class Window(QtWidgets.QDialog):
 
             # Misc
             "ClosingPlaceholder": closing_placeholder,
+            "Comment": comment,
+            "CommentLabel": comment_label
         }
 
         for name, widget in names.items():
@@ -352,9 +352,13 @@ class Window(QtWidgets.QDialog):
         self.data["state"]["is_running"] = False
 
     def on_comment_entered(self):
-        comment = self.comment.toPlainText()
+        text_edit = self.findChild(QtWidgets.QTextEdit, "Comment")
+        comment = text_edit.toPlainText()
         context = self.data["state"]["context"]
         context.data['comment'] = comment
+
+        label = self.findChild(QtWidgets.QLabel, "CommentLabel")
+        label.setVisible(not comment)
 
     def on_delegate_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
