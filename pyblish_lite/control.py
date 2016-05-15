@@ -45,20 +45,20 @@ class Window(QtWidgets.QDialog):
 
         header = QtWidgets.QWidget()
 
-        publish_tab = QtWidgets.QRadioButton()
+        artist_tab = QtWidgets.QRadioButton()
         overview_tab = QtWidgets.QRadioButton()
         terminal_tab = QtWidgets.QRadioButton()
         spacer = QtWidgets.QWidget()
 
         layout = QtWidgets.QHBoxLayout(header)
-        layout.addWidget(publish_tab, 0)
+        layout.addWidget(artist_tab, 0)
         layout.addWidget(overview_tab, 0)
         layout.addWidget(terminal_tab, 0)
         layout.addWidget(spacer, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        """Publish
+        """Artist Page
          ___________________
         |                  |
         | o ------------   |
@@ -70,32 +70,32 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        publish = QtWidgets.QWidget()
+        artist = QtWidgets.QWidget()
 
-        publish_view = view.Item()
+        artist_view = view.Item()
 
-        item_delegate = delegate.Publish()
-        publish_view.setItemDelegate(item_delegate)
+        item_delegate = delegate.Artist()
+        artist_view.setItemDelegate(item_delegate)
 
-        verticalLine = QtWidgets.QFrame()
+        vertical_line = QtWidgets.QFrame()
 
-        verticalLine.setFrameStyle(QtWidgets.QFrame.HLine)
-        verticalLine.setSizePolicy(
+        vertical_line.setFrameStyle(QtWidgets.QFrame.HLine)
+        vertical_line.setSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
         comment_label = QtWidgets.QLabel("Comment")
         comment = QtWidgets.QTextEdit()
         self.comment = comment
 
-        layout = QtWidgets.QVBoxLayout(publish)
-        layout.addWidget(publish_view, 4)
-        layout.addWidget(verticalLine)
+        layout = QtWidgets.QVBoxLayout(artist)
+        layout.addWidget(artist_view, 4)
+        layout.addWidget(vertical_line)
         layout.addWidget(comment_label)
         layout.addWidget(self.comment, 1)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(0)
 
-        """Overview
+        """Overview Page
          ___________________
         |                  |
         | o ----- o----    |
@@ -149,7 +149,7 @@ class Window(QtWidgets.QDialog):
         body = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(body)
         layout.setContentsMargins(5, 5, 5, 0)
-        layout.addWidget(publish)
+        layout.addWidget(artist)
         layout.addWidget(overview)
         layout.addWidget(terminal)
 
@@ -197,7 +197,7 @@ class Window(QtWidgets.QDialog):
         plugin_model = model.Plugin()
         terminal_model = model.Terminal()
 
-        publish_view.setModel(instance_model)
+        artist_view.setModel(instance_model)
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
         terminal_view.setModel(terminal_model)
@@ -225,7 +225,7 @@ class Window(QtWidgets.QDialog):
             "Info": info,
 
             # Tabs
-            "Publish": publish,
+            "Publish": artist,
             "Overview": overview,
             "Terminal": terminal,
 
@@ -244,7 +244,7 @@ class Window(QtWidgets.QDialog):
         # Enable CSS on plain QWidget objects
         for widget in (header,
                        body,
-                       publish,
+                       artist,
                        comment,
                        overview,
                        terminal,
@@ -257,7 +257,7 @@ class Window(QtWidgets.QDialog):
 
         self.data = {
             "views": {
-                "publish": publish_view,
+                "artist": artist_view,
                 "left": left_view,
                 "right": right_view,
                 "terminal": terminal_view,
@@ -268,7 +268,7 @@ class Window(QtWidgets.QDialog):
                 "terminal": terminal_model,
             },
             "tabs": {
-                "publish": publish,
+                "artist": artist,
                 "overview": overview,
                 "terminal": terminal,
             },
@@ -281,7 +281,7 @@ class Window(QtWidgets.QDialog):
                 # These are internal caches of the data
                 # visualised by the model. The model then
                 # modified these objects as-is, such as their
-                # "active" attribute or "publish" data.
+                # "active" attribute or "artist" data.
                 "context": list(),
                 "plugins": list(),
 
@@ -290,7 +290,7 @@ class Window(QtWidgets.QDialog):
                 "is_closing": False,
                 "close_requested": False,
 
-                # Transient state used during publishing
+                # Transient state used during artisting
                 # This is used to track whether or not to continue
                 # processing when, for example, validation has failed.
                 "processing": {
@@ -301,7 +301,7 @@ class Window(QtWidgets.QDialog):
         }
 
         # Defaults
-        self.on_tab_changed("publish")
+        self.on_tab_changed("artist")
 
         """Signals
          ________     ________
@@ -314,8 +314,8 @@ class Window(QtWidgets.QDialog):
         """
 
         # NOTE: Listeners to this signal are run in the main thread
-        publish_tab.released.connect(
-            lambda: self.on_tab_changed("publish"))
+        artist_tab.released.connect(
+            lambda: self.on_tab_changed("artist"))
         overview_tab.released.connect(
             lambda: self.on_tab_changed("overview"))
         terminal_tab.released.connect(
@@ -324,7 +324,7 @@ class Window(QtWidgets.QDialog):
         self.about_to_process.connect(self.on_about_to_process,
                                       QtCore.Qt.DirectConnection)
 
-        publish_view.toggled.connect(self.on_delegate_toggled)
+        artist_view.toggled.connect(self.on_delegate_toggled)
         left_view.toggled.connect(self.on_delegate_toggled)
         right_view.toggled.connect(self.on_delegate_toggled)
         reset.clicked.connect(self.on_reset_clicked)

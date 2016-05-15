@@ -15,6 +15,8 @@ colors = {
 
 
 class Item(QtWidgets.QStyledItemDelegate):
+    """Generic delegate for model items"""
+
     def __init__(self):
         super(Item, self).__init__()
 
@@ -103,9 +105,12 @@ class Item(QtWidgets.QStyledItemDelegate):
     def sizeHint(self, option, index):
         return QtCore.QSize(option.rect.width(), 20)
 
-class Publish(QtWidgets.QStyledItemDelegate):
+
+class Artist(QtWidgets.QStyledItemDelegate):
+    """Delegate used on Artist page"""
+
     def __init__(self):
-        super(Publish, self).__init__()
+        super(Artist, self).__init__()
 
         font = QtGui.QFont()
         font.setFamily("Open Sans")
@@ -162,8 +167,8 @@ class Publish(QtWidgets.QStyledItemDelegate):
 
         family = index.data(model.Family)
         family = metrics.elidedText(family,
-                                   QtCore.Qt.ElideRight,
-                                   rect.width())
+                                    QtCore.Qt.ElideRight,
+                                    rect.width())
 
         font_color = colors["idle"]
         if not index.data(model.IsChecked):
@@ -214,6 +219,8 @@ class Publish(QtWidgets.QStyledItemDelegate):
 
 
 class Terminal(QtWidgets.QStyledItemDelegate):
+    """Delegate used exclusively for the Terminal"""
+
     def __init__(self):
         super(Terminal, self).__init__()
 
