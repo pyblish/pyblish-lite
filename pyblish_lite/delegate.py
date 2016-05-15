@@ -70,7 +70,7 @@ class Item(QtWidgets.QStyledItemDelegate):
             font_color = colors["inactive"]
 
         hover = QtGui.QPainterPath()
-        hover.addRect(option.rect.adjusted(0, 0, -1, -1))
+        hover.addRect(QtCore.QRectF(option.rect).adjusted(0, 0, -1, -1))
 
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
@@ -175,7 +175,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
             font_color = colors["inactive"]
 
         hover = QtGui.QPainterPath()
-        hover.addRect(option.rect.adjusted(0, 0, -1, -1))
+        hover.addRect(QtCore.QRectF(option.rect).adjusted(0, 0, -1, -1))
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
@@ -185,12 +185,12 @@ class Artist(QtWidgets.QStyledItemDelegate):
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(rect, label)
 
-        rect1 = QtCore.QRectF(option.rect.adjusted(17, 18, 0, -2))
+        rect = QtCore.QRectF(option.rect.adjusted(17, 18, 0, -2))
 
         # Draw family
         painter.setFont(self.font_family)
         painter.setPen(QtGui.QPen(colors["inactive"]))
-        painter.drawText(rect1, family)
+        painter.drawText(rect, family)
 
         # Draw checkbox
         pen = QtGui.QPen(check_color, 1)
@@ -260,8 +260,12 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         if index.data(model.Type) == "error":
             font_color = colors["warning"]
 
+        rect = QtCore.QRectF(option.rect)
+        rect.setWidth(rect.height())
+        rect.adjust(0, 0, -1, -1)
+
         hover = QtGui.QPainterPath()
-        hover.addRect(option.rect.adjusted(0, 0, -1, -1))
+        hover.addRect(rect)
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
