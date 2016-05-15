@@ -115,3 +115,8 @@ QPushButton:hover {
 #ClosingPlaceholder {
 	background: rgba(0, 0, 0, 50);
 }
+
+#Artist #Comment, #Artist #CommentLabel {
+	font-family: Open Sans;
+	font-size: 9pt;
+}

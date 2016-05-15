@@ -15,6 +15,8 @@ colors = {
 
 
 class Item(QtWidgets.QStyledItemDelegate):
+    """Generic delegate for model items"""
+
     def __init__(self):
         super(Item, self).__init__()
 
@@ -68,7 +70,7 @@ class Item(QtWidgets.QStyledItemDelegate):
             font_color = colors["inactive"]
 
         hover = QtGui.QPainterPath()
-        hover.addRect(option.rect.adjusted(0, 0, -1, -1))
+        hover.addRect(QtCore.QRectF(option.rect).adjusted(0, 0, -1, -1))
 
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
@@ -103,9 +105,12 @@ class Item(QtWidgets.QStyledItemDelegate):
     def sizeHint(self, option, index):
         return QtCore.QSize(option.rect.width(), 20)
 
-class Publish(QtWidgets.QStyledItemDelegate):
+
+class Artist(QtWidgets.QStyledItemDelegate):
+    """Delegate used on Artist page"""
+
     def __init__(self):
-        super(Publish, self).__init__()
+        super(Artist, self).__init__()
 
         font = QtGui.QFont()
         font.setFamily("Open Sans")
@@ -162,15 +167,15 @@ class Publish(QtWidgets.QStyledItemDelegate):
 
         family = index.data(model.Family)
         family = metrics.elidedText(family,
-                                   QtCore.Qt.ElideRight,
-                                   rect.width())
+                                    QtCore.Qt.ElideRight,
+                                    rect.width())
 
         font_color = colors["idle"]
         if not index.data(model.IsChecked):
             font_color = colors["inactive"]
 
         hover = QtGui.QPainterPath()
-        hover.addRect(option.rect.adjusted(0, 0, -1, -1))
+        hover.addRect(QtCore.QRectF(option.rect).adjusted(0, 0, -1, -1))
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
@@ -180,12 +185,12 @@ class Publish(QtWidgets.QStyledItemDelegate):
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(rect, label)
 
-        rect1 = QtCore.QRectF(option.rect.adjusted(17, 18, 0, -2))
+        rect = QtCore.QRectF(option.rect.adjusted(17, 18, 0, -2))
 
         # Draw family
         painter.setFont(self.font_family)
         painter.setPen(QtGui.QPen(colors["inactive"]))
-        painter.drawText(rect1, family)
+        painter.drawText(rect, family)
 
         # Draw checkbox
         pen = QtGui.QPen(check_color, 1)
@@ -214,6 +219,8 @@ class Publish(QtWidgets.QStyledItemDelegate):
 
 
 class Terminal(QtWidgets.QStyledItemDelegate):
+    """Delegate used exclusively for the Terminal"""
+
     def __init__(self):
         super(Terminal, self).__init__()
 
@@ -253,8 +260,12 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         if index.data(model.Type) == "error":
             font_color = colors["warning"]
 
+        rect = QtCore.QRectF(option.rect)
+        rect.setWidth(rect.height())
+        rect.adjust(0, 0, -1, -1)
+
         hover = QtGui.QPainterPath()
-        hover.addRect(option.rect.adjusted(0, 0, -1, -1))
+        hover.addRect(rect)
 
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
