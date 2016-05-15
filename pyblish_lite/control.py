@@ -302,6 +302,7 @@ class Window(QtWidgets.QDialog):
 
         # Defaults
         self.on_tab_changed("artist")
+        artist_tab.setChecked(True)
 
         """Signals
          ________     ________
