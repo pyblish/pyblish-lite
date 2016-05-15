@@ -260,14 +260,10 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         if index.data(model.Type) == "error":
             font_color = colors["warning"]
 
-        rect = QtCore.QRectF(option.rect)
-        rect.setWidth(rect.height())
-        rect.adjust(0, 0, -1, -1)
-
         hover = QtGui.QPainterPath()
         hover.addRect(rect)
 
-        # Maintan reference to state, so we can restore it once we're done
+        # Maintain reference to state, so we can restore it once we're done
         painter.save()
 
         # Draw label
