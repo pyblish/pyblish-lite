@@ -68,6 +68,14 @@ QPushButton:hover {
 	background: "#666";
 }
 
+QPushButton:disabled {
+	color: rgba(255, 255, 255, 50);
+}
+
+QPushButton[highlight="true"] {
+	border: 1px solid white;
+}
+
 /* Specific CSS */
 
 #Header {
@@ -100,12 +108,14 @@ QPushButton:hover {
 	background: "#444";
 }
 
-#Header #Home {
+#Header #ArtistTab {
 	background-image: url("img/logo-white.png");
 }
 
-#Header #Terminal {
-	background-image: url("img/logo-white.png");
+#Header #TerminalTab {
+}
+
+#Header #OverviewTab {
 }
 
 #Footer {
@@ -116,7 +126,14 @@ QPushButton:hover {
 	background: rgba(0, 0, 0, 50);
 }
 
-#Artist #Comment, #Artist #CommentLabel {
+#CommentBox, #CommentPlaceholder {
 	font-family: Open Sans;
 	font-size: 9pt;
+	margin: 5px;
+	margin-bottom: 0px;
+	padding: 5px;
+}
+
+#CommentPlaceholder {
+	color: #888
 }
