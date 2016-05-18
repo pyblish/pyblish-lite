@@ -165,10 +165,10 @@ class Artist(QtWidgets.QStyledItemDelegate):
                                    QtCore.Qt.ElideRight,
                                    rect.width())
 
-        family = index.data(model.Family)
-        family = metrics.elidedText(family,
-                                    QtCore.Qt.ElideRight,
-                                    rect.width())
+        families = ", ".join(index.data(model.Families))
+        families = metrics.elidedText(families,
+                                      QtCore.Qt.ElideRight,
+                                      rect.width())
 
         font_color = colors["idle"]
         if not index.data(model.IsChecked):
@@ -187,10 +187,10 @@ class Artist(QtWidgets.QStyledItemDelegate):
 
         rect = QtCore.QRectF(option.rect.adjusted(17, 18, 0, -2))
 
-        # Draw family
+        # Draw families
         painter.setFont(self.font_family)
         painter.setPen(QtGui.QPen(colors["inactive"]))
-        painter.drawText(rect, family)
+        painter.drawText(rect, families)
 
         # Draw checkbox
         pen = QtGui.QPen(check_color, 1)
