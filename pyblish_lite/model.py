@@ -12,7 +12,7 @@ Type = QtCore.Qt.UserRole + 10
 
 # The display name of an item
 Label = QtCore.Qt.DisplayRole + 0
-Family = QtCore.Qt.DisplayRole + 1
+Families = QtCore.Qt.DisplayRole + 1
 
 # The item has not been used
 IsIdle = QtCore.Qt.UserRole + 2
@@ -88,7 +88,7 @@ class Item(Abstract):
         # Common schema
         self.schema = {
             Label: "label",
-            Family: "family",
+            Families: "families",
             Id: "id",
             IsIdle: "is_idle",
             IsProcessing: "is_processing",
@@ -104,13 +104,19 @@ class Item(Abstract):
 
         for index in self:
             label = index.data(Label)
+            families = index.data(Families)
+            uid = "{families}.{label}".format(**locals())
             state = index.data(IsChecked)
-            self.checkstate[label] = state
+            self.checkstate[uid] = state
 
     def restore_checkstate(self):
-        for label, state in self.checkstate.items():
-            for index in self:
-                if label == index.data(Label):
+        for index in self:
+            label = index.data(Label)
+            families = index.data(Families)
+
+            # Does it have a previous state?
+            for uid, state in self.checkstate.items():
+                if uid == "{families}.{label}".format(**locals()):
                     self.setData(index, state, IsChecked)
                     break
 
@@ -128,6 +134,7 @@ class Plugin(Item):
         item.is_processing = False
         item.has_processed = False
         item.has_succeeded = False
+        item.has_failed = False
         item.has_failed = False
         item.label = item.label or item.__name__
         return super(Plugin, self).append(item)
@@ -233,6 +240,9 @@ class Instance(Item):
 
         self.schema.update({
             IsChecked: "publish",
+
+            # Merge copy of both family and families data members
+            Families: "__families__",
         })
 
     def append(self, item):
@@ -242,7 +252,11 @@ class Instance(Item):
         item.data["optional"] = item.data.get("optional", True)
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
-        item.data["family"] = item.data.get("family", "")
+
+        # Merge `family` and `families` for backwards compatibility
+        item.data["__families__"] = ([item.data["family"]] +
+                                     item.data.get("families", []))
+
         return super(Instance, self).append(item)
 
     def data(self, index, role):

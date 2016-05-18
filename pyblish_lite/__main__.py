@@ -1,6 +1,3 @@
-from . import compat
-compat.init()
-
 from .app import show
 
 
