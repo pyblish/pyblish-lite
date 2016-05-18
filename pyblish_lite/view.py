@@ -34,7 +34,7 @@ class Item(QtWidgets.QListView):
 
             return True
 
-        return super(Item, self).keyPressEvent(event)
+        return super(Item, self).event(event)
 
     def focusOutEvent(self, event):
         self.selectionModel().clear()
