@@ -201,6 +201,7 @@ class Window(QtWidgets.QDialog):
         info = QtWidgets.QLabel()
         spacer = QtWidgets.QWidget()
         reset = QtWidgets.QPushButton(u"\uf021")  # fa-refresh
+        validate = QtWidgets.QPushButton(u"\uf0c3")   # fa-flask
         play = QtWidgets.QPushButton(u"\uf04b")   # fa-play
         stop = QtWidgets.QPushButton(u"\uf04d")   # fa-stop
 
@@ -209,6 +210,7 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(info, 0)
         layout.addWidget(spacer, 1)
         layout.addWidget(reset, 0)
+        layout.addWidget(validate, 0)
         layout.addWidget(play, 0)
         layout.addWidget(stop, 0)
 
@@ -348,6 +350,7 @@ class Window(QtWidgets.QDialog):
 
             # Buttons
             "Play": play,
+            "validate": validate,
             "Reset": reset,
             "Stop": stop,
 
@@ -369,6 +372,7 @@ class Window(QtWidgets.QDialog):
                        terminal_page,
                        footer,
                        play,
+                       validate,
                        stop,
                        reset,
                        closing_placeholder):
@@ -398,6 +402,7 @@ class Window(QtWidgets.QDialog):
             },
             "buttons": {
                 "play": play,
+                "validate": validate,
                 "stop": stop,
                 "reset": reset
             },
@@ -471,6 +476,7 @@ class Window(QtWidgets.QDialog):
         left_view.toggled.connect(self.on_delegate_toggled)
         right_view.toggled.connect(self.on_delegate_toggled)
         reset.clicked.connect(self.on_reset_clicked)
+        validate.clicked.connect(self.on_validate_clicked)
         play.clicked.connect(self.on_play_clicked)
         stop.clicked.connect(self.on_stop_clicked)
         comment_box.textChanged.connect(self.on_comment_entered)
@@ -486,6 +492,9 @@ class Window(QtWidgets.QDialog):
 
         tab.show()
         radio.setChecked(True)
+
+    def on_validate_clicked(self):
+        self.prepare_validate()
 
     def on_play_clicked(self):
         if not self.data["state"]["comment_offered"]:
@@ -830,6 +839,7 @@ class Window(QtWidgets.QDialog):
 
             buttons = self.data["buttons"]
             buttons["play"].show()
+            buttons["validate"].show()
             buttons["reset"].show()
             buttons["stop"].hide()
 
@@ -843,6 +853,41 @@ class Window(QtWidgets.QDialog):
 
         self.load()
         self.run(until=pyblish.api.CollectorOrder, on_finished=on_finished)
+
+    def prepare_validate(self):
+        self.info("Preparing validate..")
+
+        for button in self.data["buttons"].values():
+            button.hide()
+
+        self.data["buttons"]["stop"].show()
+        defer(5, self._validate)
+
+
+    def _validate(self):
+        self.info("Validate..")
+
+        self.data["state"]["is_running"] = True
+
+        def on_finished():
+            plugin_model = self.data["models"]["plugins"]
+            instance_model = self.data["models"]["instances"]
+
+            for index in plugin_model:
+                index.model().setData(index, False, model.IsIdle)
+
+            for index in instance_model:
+                index.model().setData(index, False, model.IsIdle)
+
+            buttons = self.data["buttons"]
+            buttons["reset"].show()
+            buttons["play"].show()
+            buttons["stop"].hide()
+
+            defer(500, self.finished.emit)
+
+        self.run(until=pyblish.api.ValidatorOrder, on_finished=on_finished)
+
 
     def prepare_publish(self):
         self.info("Preparing publish..")
