@@ -83,6 +83,8 @@ class Item(Abstract):
         super(Item, self).__init__(parent)
         self.items = list()
 
+        self.checkstate = {}
+
         # Common schema
         self.schema = {
             Label: "label",
@@ -96,6 +98,21 @@ class Item(Abstract):
             Actions: "actions",
             IsOptional: "optional"
         }
+
+    def store_checkstate(self):
+        self.checkstate.clear()
+
+        for index in self:
+            label = index.data(Label)
+            state = index.data(IsChecked)
+            self.checkstate[label] = state
+
+    def restore_checkstate(self):
+        for label, state in self.checkstate.items():
+            for index in self:
+                if label == index.data(Label):
+                    self.setData(index, state, IsChecked)
+                    break
 
 
 class Plugin(Item):

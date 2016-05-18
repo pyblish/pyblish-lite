@@ -232,11 +232,7 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         self.font = font
 
     def paint(self, painter, option, index):
-        """Paint checkbox and text
-         _
-        |_|  My label
-
-        """
+        """Paint text"""
 
         rect = QtCore.QRectF(option.rect)
         rect.setWidth(rect.height())
