@@ -20,6 +20,13 @@ class MyOtherAction(pyblish.api.Action):
         self.log.info("Running!")
 
 
+class CollectComment(pyblish.api.ContextPlugin):
+    order = pyblish.api.CollectorOrder
+
+    def process(self, context):
+        context.data["comment"] = ""
+
+
 class MyCollector(pyblish.api.ContextPlugin):
     label = "My Collector"
     order = pyblish.api.CollectorOrder
@@ -697,7 +704,9 @@ plugins = [
     # LongRunningValidator,
 
     RearrangingPlugin,
-    InactiveInstanceCollectorPlugin
+    InactiveInstanceCollectorPlugin,
+
+    CollectComment,
 ]
 
 pyblish.api.sort_plugins(plugins)

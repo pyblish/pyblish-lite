@@ -1,3 +1,29 @@
+"""Qt models
+
+DESCRIPTION:
+    The model contains the original objects from Pyblish, such as
+    pyblish.api.Instance and pyblish.api.Plugin. The model then
+    provides an interface for reading and writing to those.
+
+GUI DATA:
+    Aside from original data, such as pyblish.api.Plugin.optional,
+    the GUI also hosts data internal to itself, such as whether or
+    not an item has processed such that it may be colored appropriately
+    in the view. This data is prefixed with two underscores (__).
+
+    E.g.
+
+    __has_processed
+
+    This is so that the the GUI-only data doesn't accidentally overwrite
+    or cause confusion with existing data in plug-ins and instances.
+
+Roles:
+    Data is accessed via standard Qt "roles". You can think of a role
+    as the key of a dictionary, except they can only be integers.
+
+"""
+
 from Qt import QtCore, __binding__
 
 
@@ -23,6 +49,7 @@ IsProcessing = QtCore.Qt.UserRole + 5
 HasFailed = QtCore.Qt.UserRole + 6
 HasSucceeded = QtCore.Qt.UserRole + 7
 HasProcessed = QtCore.Qt.UserRole + 8
+Duration = QtCore.Qt.UserRole + 11
 
 # PLUGINS
 
@@ -90,13 +117,16 @@ class Item(Abstract):
             Label: "label",
             Families: "families",
             Id: "id",
-            IsIdle: "is_idle",
-            IsProcessing: "is_processing",
-            HasProcessed: "has_processed",
-            HasSucceeded: "has_succeeded",
-            HasFailed: "has_failed",
             Actions: "actions",
-            IsOptional: "optional"
+            IsOptional: "optional",
+
+            # GUI-only data
+            Duration: "__duration",
+            IsIdle: "__is_idle",
+            IsProcessing: "__is_processing",
+            HasProcessed: "__has_processed",
+            HasSucceeded: "__has_succeeded",
+            HasFailed: "__has_failed",
         }
 
     def store_checkstate(self):
@@ -130,13 +160,15 @@ class Plugin(Item):
         })
 
     def append(self, item):
-        item.is_idle = True
-        item.is_processing = False
-        item.has_processed = False
-        item.has_succeeded = False
-        item.has_failed = False
-        item.has_failed = False
         item.label = item.label or item.__name__
+
+        # GUI-only data
+        item.__is_idle = True
+        item.__is_processing = False
+        item.__has_processed = False
+        item.__has_succeeded = False
+        item.__has_failed = False
+
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
@@ -246,12 +278,14 @@ class Instance(Item):
         })
 
     def append(self, item):
-        item.data["has_succeeded"] = False
-        item.data["has_failed"] = False
-        item.data["is_idle"] = True
         item.data["optional"] = item.data.get("optional", True)
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
+
+        # GUI-only data
+        item.data["__has_succeeded"] = False
+        item.data["__has_failed"] = False
+        item.data["__is_idle"] = True
 
         # Merge `family` and `families` for backwards compatibility
         item.data["__families__"] = ([item.data["family"]] +
