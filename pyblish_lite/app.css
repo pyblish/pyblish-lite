@@ -52,7 +52,7 @@ QPushButton {
 	font-size: 9pt;
 }
 
-QTextEdit {
+QTextEdit, QLineEdit {
 	background: "#555";
 	border: 1px solid "#333";
 	font-family: "FontAwesome";
@@ -128,12 +128,52 @@ QPushButton[highlight="true"] {
 
 #CommentBox, #CommentPlaceholder {
 	font-family: Open Sans;
-	font-size: 9pt;
+	font-size: 8pt;
 	margin: 5px;
 	margin-bottom: 0px;
 	padding: 5px;
 }
 
+#CommentBox {
+	background: #444;
+	selection-background-color: #222;
+}
+
 #CommentPlaceholder {
 	color: #888
+}
+
+#Details {
+	background: #333;
+	border: 1px solid #222;
+}
+
+#Details QLabel {
+	font-size: 8pt;
+}
+
+#Details #Header {
+	background: #444;
+	border: 1px solid #222;
+}
+
+#Details #Body {
+	background: transparent;
+}
+
+#Details #Heading {
+	padding-left: 7px;  /* Leave space for mouse cursor */
+	font-size: 9pt;
+	font-weight: bold;
+}
+
+#Details #Subheading {
+	background: transparent;
+}
+
+#Details #Duration {
+	color: #999;
+}
+
+#Details #Docstring {
 }

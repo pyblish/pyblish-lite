@@ -1,3 +1,29 @@
+"""Qt models
+
+Description:
+    The model contains the original objects from Pyblish, such as
+    pyblish.api.Instance and pyblish.api.Plugin. The model then
+    provides an interface for reading and writing to those.
+
+GUI data:
+    Aside from original data, such as pyblish.api.Plugin.optional,
+    the GUI also hosts data internal to itself, such as whether or
+    not an item has processed such that it may be colored appropriately
+    in the view. This data is prefixed with two underscores (__).
+
+    E.g.
+
+    _has_processed
+
+    This is so that the the GUI-only data doesn't accidentally overwrite
+    or cause confusion with existing data in plug-ins and instances.
+
+Roles:
+    Data is accessed via standard Qt "roles". You can think of a role
+    as the key of a dictionary, except they can only be integers.
+
+"""
+
 from Qt import QtCore, __binding__
 
 
@@ -23,11 +49,13 @@ IsProcessing = QtCore.Qt.UserRole + 5
 HasFailed = QtCore.Qt.UserRole + 6
 HasSucceeded = QtCore.Qt.UserRole + 7
 HasProcessed = QtCore.Qt.UserRole + 8
+Duration = QtCore.Qt.UserRole + 11
 
 # PLUGINS
 
 # Available and context-sensitive actions
 Actions = QtCore.Qt.UserRole + 9
+Docstring = QtCore.Qt.UserRole + 12
 
 # LOG RECORDS
 
@@ -90,13 +118,16 @@ class Item(Abstract):
             Label: "label",
             Families: "families",
             Id: "id",
-            IsIdle: "is_idle",
-            IsProcessing: "is_processing",
-            HasProcessed: "has_processed",
-            HasSucceeded: "has_succeeded",
-            HasFailed: "has_failed",
             Actions: "actions",
-            IsOptional: "optional"
+            IsOptional: "optional",
+
+            # GUI-only data
+            Duration: "_duration",
+            IsIdle: "_is_idle",
+            IsProcessing: "_is_processing",
+            HasProcessed: "_has_processed",
+            HasSucceeded: "_has_succeeded",
+            HasFailed: "_has_failed",
         }
 
     def store_checkstate(self):
@@ -127,24 +158,23 @@ class Plugin(Item):
 
         self.schema.update({
             IsChecked: "active",
+            Docstring: "__doc__",
         })
 
     def append(self, item):
-        item.is_idle = True
-        item.is_processing = False
-        item.has_processed = False
-        item.has_succeeded = False
-        item.has_failed = False
-        item.has_failed = False
         item.label = item.label or item.__name__
+
+        # GUI-only data
+        item._is_idle = True
+        item._is_processing = False
+        item._has_processed = False
+        item._has_succeeded = False
+        item._has_failed = False
+
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
         item = self.items[index.row()]
-        key = self.schema.get(role)
-
-        if key is None:
-            return
 
         if role == Actions:
 
@@ -246,12 +276,14 @@ class Instance(Item):
         })
 
     def append(self, item):
-        item.data["has_succeeded"] = False
-        item.data["has_failed"] = False
-        item.data["is_idle"] = True
         item.data["optional"] = item.data.get("optional", True)
         item.data["publish"] = item.data.get("publish", True)
         item.data["label"] = item.data.get("label", item.data["name"])
+
+        # GUI-only data
+        item.data["_has_succeeded"] = False
+        item.data["_has_failed"] = False
+        item.data["_is_idle"] = True
 
         # Merge `family` and `families` for backwards compatibility
         item.data["__families__"] = ([item.data["family"]] +

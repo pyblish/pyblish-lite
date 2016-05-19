@@ -188,6 +188,39 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(overview_page)
         layout.addWidget(terminal_page)
 
+        """Comment Box
+         ____________________________
+        |> My comment                |
+        |                            |
+        |____________________________|
+
+        """
+
+        comment_box = QtWidgets.QLineEdit()
+        comment_box.hide()
+        comment_placeholder = QtWidgets.QLabel(
+            "Comment..", comment_box)
+        comment_placeholder.move(2, 2)
+
+        """Details View
+         ____________________________
+        |                            |
+        | An Item        Duration:   |
+        | - family                   |
+        |                            |
+        |----------------------------|
+        |                            |
+        | o Record A                 |
+        | o Record B                 |
+        | o Record C                 |
+        | ...                        |
+        |                            |
+        |____________________________|
+
+        """
+
+        details = view.Details(self)
+
         """Footer
          ______________________
         |             ___  ___ |
@@ -221,39 +254,15 @@ class Window(QtWidgets.QDialog):
                                           QtWidgets.QSizePolicy.Expanding)
         closing_placeholder.hide()
 
-        """Comment Box
-         ____________________________
-        |> My comment                |
-        |                            |
-        |____________________________|
-
-        """
-
-        comment_box = QtWidgets.QTextEdit(self)
-        comment_box.verticalScrollBar().hide()
-        comment_placeholder = QtWidgets.QLabel(
-            "Enter optional comment..", comment_box)
-        comment_placeholder.move(6, 6)
-        comment_placeholder.hide()
-        comment_box.hide()
-
         # Main layout
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(header, 0)
         layout.addWidget(body, 3)
         layout.addWidget(closing_placeholder, 1)
+        layout.addWidget(comment_box, 0)
         layout.addWidget(footer, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-
-        instance_model = model.Instance()
-        plugin_model = model.Plugin()
-        terminal_model = model.Terminal()
-
-        artist_view.setModel(instance_model)
-        left_view.setModel(instance_model)
-        right_view.setModel(plugin_model)
-        terminal_view.setModel(terminal_model)
 
         """Animation
            ___
@@ -298,11 +307,6 @@ class Window(QtWidgets.QDialog):
 
         info_animation = timeline
 
-        # Show commentbox
-        comment_animation = QtCore.QPropertyAnimation(comment_box, "geometry")
-        comment_animation.setDuration(200)
-        comment_animation.setEasingCurve(QtCore.QEasingCurve.OutCubic)
-
         # CSS property
         # Highlight is enabled when a comment is requested, to
         # indicate to the user that the button is awaiting further input.
@@ -331,12 +335,24 @@ class Window(QtWidgets.QDialog):
 
         """
 
+        instance_model = model.Instance()
+        plugin_model = model.Plugin()
+        terminal_model = model.Terminal()
+
+        artist_view.setModel(instance_model)
+        left_view.setModel(instance_model)
+        right_view.setModel(plugin_model)
+        terminal_view.setModel(terminal_model)
+
         names = {
             # Main
             "Header": header,
             "Body": body,
             "Footer": footer,
             "Info": info,
+
+            # Modals
+            "Details": details,
 
             # Pages
             "Artist": artist_page,
@@ -374,6 +390,7 @@ class Window(QtWidgets.QDialog):
                        play,
                        validate,
                        stop,
+                       details,
                        reset,
                        closing_placeholder):
             widget.setAttribute(QtCore.Qt.WA_StyledBackground)
@@ -384,6 +401,9 @@ class Window(QtWidgets.QDialog):
                 "left": left_view,
                 "right": right_view,
                 "terminal": terminal_view,
+            },
+            "modals": {
+                "details": details,
             },
             "models": {
                 "instances": instance_model,
@@ -399,6 +419,7 @@ class Window(QtWidgets.QDialog):
                 "artist": artist_page,
                 "overview": overview_page,
                 "terminal": terminal_page,
+                # "perspectve": None,
             },
             "buttons": {
                 "play": play,
@@ -408,7 +429,6 @@ class Window(QtWidgets.QDialog):
             },
             "animation": {
                 "display_info": info_animation,
-                "display_commentbox": comment_animation,
             },
 
             # This is the global application state. It is a shared
@@ -429,7 +449,7 @@ class Window(QtWidgets.QDialog):
                 "is_running": False,
                 "is_closing": False,
                 "close_requested": False,
-                "comment_offered": False,
+                "comment_enabled": False,
 
                 # Transient state used during publishing.
                 "pair_generator": None,        # Active producer of pairs
@@ -443,12 +463,13 @@ class Window(QtWidgets.QDialog):
                     "ordersWithError": set()
                 },
             },
-            "temp": {}  # Stores variables to prevent garbage collection
         }
 
-        # Defaults
+        # Initialise default tab
         self.on_tab_changed("artist")
-        artist_tab.setChecked(True)
+
+        # Pressing Enter defaults to Play
+        play.setFocus()
 
         """Signals
          ________     ________
@@ -472,16 +493,33 @@ class Window(QtWidgets.QDialog):
                                       QtCore.Qt.DirectConnection)
         self.finished.connect(self.on_finished)
 
-        artist_view.toggled.connect(self.on_delegate_toggled)
-        left_view.toggled.connect(self.on_delegate_toggled)
-        right_view.toggled.connect(self.on_delegate_toggled)
+        artist_view.toggled.connect(self.on_item_toggled)
+        left_view.inspected.connect(self.on_item_inspected)
+        right_view.inspected.connect(self.on_item_inspected)
+        left_view.toggled.connect(self.on_item_toggled)
+        right_view.toggled.connect(self.on_item_toggled)
         reset.clicked.connect(self.on_reset_clicked)
         validate.clicked.connect(self.on_validate_clicked)
         play.clicked.connect(self.on_play_clicked)
         stop.clicked.connect(self.on_stop_clicked)
         comment_box.textChanged.connect(self.on_comment_entered)
+        comment_box.returnPressed.connect(self.on_play_clicked)
         right_view.customContextMenuRequested.connect(
             self.on_plugin_action_menu_requested)
+
+    def on_item_inspected(self, index, state):
+        details = self.data["modals"]["details"]
+
+        if state is True:
+            details.move(QtGui.QCursor.pos())
+            details.init({
+                "label": index.data(model.Label),
+                "families": ", ".join(index.data(model.Families)),
+                "duration": str(index.data(model.Duration) or 0) + " ms",
+                "docstring": (index.data(model.Docstring) or "").split("\n")[0]
+            })
+
+        details.setVisible(state)
 
     def on_tab_changed(self, target):
         for tab in self.data["pages"].values():
@@ -497,9 +535,6 @@ class Window(QtWidgets.QDialog):
         self.prepare_validate()
 
     def on_play_clicked(self):
-        if not self.data["state"]["comment_offered"]:
-            return self.offer_commentbox()
-
         self.prepare_publish()
 
     def on_reset_clicked(self):
@@ -511,15 +546,17 @@ class Window(QtWidgets.QDialog):
 
     def on_comment_entered(self):
         """The user has typed a comment"""
-        text_edit = self.findChild(QtWidgets.QTextEdit, "CommentBox")
-        comment = text_edit.toPlainText()
+        text_edit = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment = text_edit.text()
+
+        # Store within context
         context = self.data["state"]["context"]
-        context.data['comment'] = comment
+        context.data["comment"] = comment
 
         placeholder = self.findChild(QtWidgets.QLabel, "CommentPlaceholder")
         placeholder.setVisible(not comment)
 
-    def on_delegate_toggled(self, index, state=None):
+    def on_item_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
         if not index.data(model.IsIdle):
             return self.info("Cannot toggle")
@@ -545,13 +582,11 @@ class Window(QtWidgets.QDialog):
             index = instance_model.items.index(instance)
             index = instance_model.createIndex(index, 0)
             instance_model.setData(index, True, model.IsProcessing)
-            instance_model.setData(index, False, model.IsIdle)
 
         plugin_model = self.data["models"]["plugins"]
         index = plugin_model.items.index(plugin)
         index = plugin_model.createIndex(index, 0)
         plugin_model.setData(index, True, model.IsProcessing)
-        plugin_model.setData(index, False, model.IsIdle)
 
         self.info("Processing %s" % (index.data(model.Label)))
 
@@ -584,51 +619,6 @@ class Window(QtWidgets.QDialog):
             menu.addAction(qaction)
 
         menu.popup(self.data["views"]["right"].viewport().mapToGlobal(pos))
-
-    def offer_commentbox(self):
-        """Provide an option to enter a comment"""
-
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
-        play = self.findChild(QtWidgets.QWidget, "Play")
-        body = self.findChild(QtWidgets.QWidget, "Body")
-
-        # Update geometry for comment
-        ratio = 1.0 / 4  # Cover quarter of body
-        height = body.geometry().height() - body.geometry().height() * ratio
-        end = body.geometry().adjusted(0, height, 0, 0)
-        start = end.adjusted(0, end.height() - 40, 0, 0)
-
-        animation = self.data["animation"]["display_commentbox"]
-        animation.setStartValue(start)
-        animation.setEndValue(end)
-
-        animation.stop()
-        animation.start()
-
-        play.setProperty("highlight", True)
-        play.style().unpolish(play)
-        play.style().polish(play)
-
-        comment_box.raise_()
-        comment_box.show()
-
-        self.data["state"]["comment_offered"] = True
-        self.info("Comment offered")
-
-    def withdraw_comment(self):
-        """Remove comment box"""
-
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
-        comment_box.hide()
-
-        play = self.findChild(QtWidgets.QWidget, "Play")
-        play.setProperty("highlight", False)
-        play.style().unpolish(play)
-        play.style().polish(play)
-
-        self.data["state"]["comment_offered"] = False
-
-        self.info("Comment withdrawn")
 
     def load(self):
         """Initiate new generator and load first pair"""
@@ -676,10 +666,6 @@ class Window(QtWidgets.QDialog):
                 result = self._process(*state["current_pair"])
 
                 if result["error"] is not None:
-
-                    # Log the error to the terminal
-                    self.info(str(result["error"]))
-
                     self.data["state"]["current_error"] = result["error"]
 
                 models["plugins"].update_with_result(result)
@@ -785,7 +771,7 @@ class Window(QtWidgets.QDialog):
         """Prepare GUI for reset"""
         self.info("About to reset..")
 
-        self.withdraw_comment()
+        # self.withdraw_comment()
 
         models = self.data["models"]
 
@@ -846,10 +832,21 @@ class Window(QtWidgets.QDialog):
             models["instances"].restore_checkstate()
             models["plugins"].restore_checkstate()
 
+            # Append placeholder comment from Context
+            # This allows users to inject a comment from elsewhere,
+            # or to perhaps provide a placeholder comment/template
+            # for artists to fill in.
+            comment = self.data["state"]["context"].data.get("comment")
+
+            if comment is not None:
+                comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+                comment_box.setText(comment)
+                comment_box.show()
+
             defer(500, self.finished.emit)
 
         # Initialise comment box
-        self.on_comment_entered()
+        # self.on_comment_entered()
 
         self.load()
         self.run(until=pyblish.api.CollectorOrder, on_finished=on_finished)
@@ -862,7 +859,6 @@ class Window(QtWidgets.QDialog):
 
         self.data["buttons"]["stop"].show()
         defer(5, self._validate)
-
 
     def _validate(self):
         self.info("Validate..")
@@ -888,7 +884,6 @@ class Window(QtWidgets.QDialog):
 
         self.run(until=pyblish.api.ValidatorOrder, on_finished=on_finished)
 
-
     def prepare_publish(self):
         self.info("Preparing publish..")
 
@@ -896,7 +891,6 @@ class Window(QtWidgets.QDialog):
             button.hide()
 
         self.data["buttons"]["stop"].show()
-        self.withdraw_comment()
         defer(5, self._publish)
 
     def _publish(self):
@@ -920,6 +914,9 @@ class Window(QtWidgets.QDialog):
 
             defer(500, self.finished.emit)
 
+        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box.hide()
+
         self.run(until=pyblish.api.IntegratorOrder, on_finished=on_finished)
 
     def on_finished(self):
@@ -928,7 +925,6 @@ class Window(QtWidgets.QDialog):
 
         error = self.data["state"]["current_error"]
         if error is not None:
-            self.info(str(error))
             self.info("Stopped due to error(s), see Terminal.")
         else:
             self.info("Finished successfully!")
@@ -1008,6 +1004,7 @@ class Window(QtWidgets.QDialog):
         def on_problem():
             self.heads_up("Warning", "Had trouble closing down. "
                           "Please tell someone and try again.")
+            self.show()
 
         if self.data["state"]["is_running"]:
             self.info("..as soon as processing is finished..")
@@ -1027,9 +1024,6 @@ class Window(QtWidgets.QDialog):
         if self.data["state"]["is_running"]:
             self.info("Stopping..")
             self.data["state"]["is_running"] = False
-
-        if self.data["state"]["comment_offered"]:
-            self.withdraw_comment()
 
     def info(self, message):
         """Print user-facing information

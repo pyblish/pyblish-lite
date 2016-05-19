@@ -20,6 +20,20 @@ class MyOtherAction(pyblish.api.Action):
         self.log.info("Running!")
 
 
+class CollectComment(pyblish.api.ContextPlugin):
+    """This collector has a very long comment.
+
+    The idea is that this comment should either be elided, or word-
+    wrapped in the corresponding view.
+
+    """
+
+    order = pyblish.api.CollectorOrder
+
+    def process(self, context):
+        context.data["comment"] = ""
+
+
 class MyCollector(pyblish.api.ContextPlugin):
     label = "My Collector"
     order = pyblish.api.CollectorOrder
@@ -697,7 +711,9 @@ plugins = [
     # LongRunningValidator,
 
     RearrangingPlugin,
-    InactiveInstanceCollectorPlugin
+    InactiveInstanceCollectorPlugin,
+
+    CollectComment,
 ]
 
 pyblish.api.sort_plugins(plugins)
