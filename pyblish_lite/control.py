@@ -170,15 +170,50 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        terminal_view = view.LogView()
+        terminal_container = QtWidgets.QWidget()
 
         terminal_delegate = delegate.Terminal()
+        terminal_view = view.LogView()
         terminal_view.setItemDelegate(terminal_delegate)
 
-        terminal_page = QtWidgets.QWidget()
-        layout = QtWidgets.QHBoxLayout(terminal_page)
+        layout = QtWidgets.QVBoxLayout(terminal_container)
         layout.addWidget(terminal_view)
-        layout.setContentsMargins(5, 5, 5, 5)
+
+        terminal_footer = QtWidgets.QWidget()
+
+        search_box = QtWidgets.QLineEdit()
+        instance_combo = QtWidgets.QComboBox()
+        plugin_combo = QtWidgets.QComboBox()
+        show_errors = QtWidgets.QCheckBox()
+        show_records = QtWidgets.QCheckBox()
+        show_debug = QtWidgets.QCheckBox()
+        show_info = QtWidgets.QCheckBox()
+        show_warning = QtWidgets.QCheckBox()
+        show_error = QtWidgets.QCheckBox()
+        show_critical = QtWidgets.QCheckBox()
+
+        layout = QtWidgets.QHBoxLayout(terminal_footer)
+        for w in (search_box,
+                  instance_combo,
+                  plugin_combo,
+                  show_errors,
+                  show_records,
+                  show_debug,
+                  show_info,
+                  show_warning,
+                  show_error,
+                  show_critical):
+            layout.addWidget(w)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(3)
+
+        terminal_page = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(terminal_page)
+        layout.addWidget(terminal_container)
+        layout.addWidget(terminal_footer)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         # Add some room between window borders and contents
         body = QtWidgets.QWidget()
@@ -197,24 +232,21 @@ class Window(QtWidgets.QDialog):
         """
 
         comment_box = QtWidgets.QLineEdit()
-        comment_box.hide()
         comment_placeholder = QtWidgets.QLabel(
             "Comment..", comment_box)
         comment_placeholder.move(2, 2)
+        comment_box.setEnabled(False)
+        comment_box.hide()
 
         """Details View
          ____________________________
         |                            |
-        | An Item        Duration:   |
+        | An Item              23 ms |
         | - family                   |
         |                            |
         |----------------------------|
         |                            |
-        | o Record A                 |
-        | o Record B                 |
-        | o Record C                 |
-        | ...                        |
-        |                            |
+        | Docstring                  |
         |____________________________|
 
         """
@@ -344,6 +376,9 @@ class Window(QtWidgets.QDialog):
         right_view.setModel(plugin_model)
         terminal_view.setModel(terminal_model)
 
+        instance_combo.setModel(instance_model)
+        plugin_combo.setModel(plugin_model)
+
         names = {
             # Main
             "Header": header,
@@ -376,24 +411,24 @@ class Window(QtWidgets.QDialog):
             "ClosingPlaceholder": closing_placeholder,
         }
 
-        for name, widget in names.items():
-            widget.setObjectName(name)
+        for name, w in names.items():
+            w.setObjectName(name)
 
         # Enable CSS on plain QWidget objects
-        for widget in (header,
-                       body,
-                       artist_page,
-                       comment_box,
-                       overview_page,
-                       terminal_page,
-                       footer,
-                       play,
-                       validate,
-                       stop,
-                       details,
-                       reset,
-                       closing_placeholder):
-            widget.setAttribute(QtCore.Qt.WA_StyledBackground)
+        for w in (header,
+                  body,
+                  artist_page,
+                  comment_box,
+                  overview_page,
+                  terminal_page,
+                  footer,
+                  play,
+                  validate,
+                  stop,
+                  details,
+                  reset,
+                  closing_placeholder):
+            w.setAttribute(QtCore.Qt.WA_StyledBackground)
 
         self.data = {
             "views": {
@@ -414,12 +449,12 @@ class Window(QtWidgets.QDialog):
                 "artist": artist_tab,
                 "overview": overview_tab,
                 "terminal": terminal_tab,
+                "current": "artist"
             },
             "pages": {
                 "artist": artist_page,
                 "overview": overview_page,
                 "terminal": terminal_page,
-                # "perspectve": None,
             },
             "buttons": {
                 "play": play,
@@ -465,9 +500,6 @@ class Window(QtWidgets.QDialog):
             },
         }
 
-        # Initialise default tab
-        self.on_tab_changed("artist")
-
         # Pressing Enter defaults to Play
         play.setFocus()
 
@@ -481,17 +513,18 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        # NOTE: Listeners to this signal are run in the main thread
-        artist_tab.released.connect(
+        artist_tab.toggled.connect(
             lambda: self.on_tab_changed("artist"))
-        overview_tab.released.connect(
+        overview_tab.toggled.connect(
             lambda: self.on_tab_changed("overview"))
-        terminal_tab.released.connect(
+        terminal_tab.toggled.connect(
             lambda: self.on_tab_changed("terminal"))
 
+        self.finished.connect(self.on_finished)
+
+        # NOTE: Listeners to this signal are run in the main thread
         self.about_to_process.connect(self.on_about_to_process,
                                       QtCore.Qt.DirectConnection)
-        self.finished.connect(self.on_finished)
 
         artist_view.toggled.connect(self.on_item_toggled)
         left_view.inspected.connect(self.on_item_inspected)
@@ -506,6 +539,17 @@ class Window(QtWidgets.QDialog):
         comment_box.returnPressed.connect(self.on_play_clicked)
         right_view.customContextMenuRequested.connect(
             self.on_plugin_action_menu_requested)
+
+        for box in (show_errors,
+                    show_records,
+                    show_debug,
+                    show_info,
+                    show_warning,
+                    show_error,
+                    show_critical):
+            box.setChecked(True)
+
+        artist_tab.setChecked(True)
 
     def on_item_inspected(self, index, state):
         details = self.data["modals"]["details"]
@@ -522,14 +566,21 @@ class Window(QtWidgets.QDialog):
         details.setVisible(state)
 
     def on_tab_changed(self, target):
-        for tab in self.data["pages"].values():
-            tab.hide()
+        for page in self.data["pages"].values():
+            page.hide()
 
-        tab = self.data["pages"][target]
-        radio = self.data["tabs"][target]
+        page = self.data["pages"][target]
 
-        tab.show()
-        radio.setChecked(True)
+        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+
+        if target == "terminal":
+            comment_box.hide()
+        else:
+            comment_box.setVisible(comment_box.isEnabled())
+
+        page.show()
+
+        self.data["tabs"]["current"] = target
 
     def on_validate_clicked(self):
         self.prepare_validate()
@@ -771,7 +822,8 @@ class Window(QtWidgets.QDialog):
         """Prepare GUI for reset"""
         self.info("About to reset..")
 
-        # self.withdraw_comment()
+        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box.hide()
 
         models = self.data["models"]
 
@@ -838,15 +890,14 @@ class Window(QtWidgets.QDialog):
             # for artists to fill in.
             comment = self.data["state"]["context"].data.get("comment")
 
-            if comment is not None:
-                comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
-                comment_box.setText(comment)
-                comment_box.show()
+            comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+            comment_box.setText(comment or None)
+            comment_box.setEnabled(comment is not None)
+
+            # Refresh tab
+            self.on_tab_changed(self.data["tabs"]["current"])
 
             defer(500, self.finished.emit)
-
-        # Initialise comment box
-        # self.on_comment_entered()
 
         self.load()
         self.run(until=pyblish.api.CollectorOrder, on_finished=on_finished)

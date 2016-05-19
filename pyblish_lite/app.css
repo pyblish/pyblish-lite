@@ -46,8 +46,8 @@ QListView QScrollBar {
 QPushButton {
 	width: 30px;
 	height: 30px;
-	background: "#555";
-	border: 1px solid "#333";
+	background: #555;
+	border: 1px solid #333;
 	font-family: "FontAwesome";
 	font-size: 9pt;
 }
@@ -55,9 +55,49 @@ QPushButton {
 QTextEdit, QLineEdit {
 	background: "#555";
 	border: 1px solid "#333";
-	font-family: "FontAwesome";
 	font-size: 9pt;
 	color: "#fff";
+}
+
+QCheckBox {
+	min-width: 17px;
+	max-width: 17px;
+	border: 1px solid #222;
+	background: transparent;
+}
+
+QCheckBox::indicator {
+	width: 15px;
+	height: 15px;
+	/*background: #444;*/
+	background: transparent;
+	border: 1px solid #555;
+}
+
+QCheckBox::indicator:checked {
+	background: #222;
+}
+
+QComboBox {
+	background: #444;
+	color: #EEE;
+	font-size: 8pt;
+	border: 1px solid #333;
+	padding: 0px;
+}
+
+QComboBox::drop-down {
+	background: transparent;
+}
+
+QComboBox::down-arrow {
+	max-width: 0px;
+	width: 1px;
+	display: none;
+}
+
+QComboBox QAbstractItemView {
+	background: #555;
 }
 
 QPushButton:pressed {
@@ -77,6 +117,10 @@ QPushButton[highlight="true"] {
 }
 
 /* Specific CSS */
+
+#Terminal QComboBox::drop-down {
+	width: 60px;
+}
 
 #Header {
 	background: "#555";

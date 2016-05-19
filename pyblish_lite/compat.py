@@ -37,6 +37,7 @@ def load_pyside():
     import PySide
     from PySide import QtGui
     PySide.QtWidgets = QtGui
+    PySide.QtCore.QSortFilterProxyModel = PySide.QtGui.QSortFilterProxyModel
     sys.modules["Qt"] = PySide
     PySide.__binding__ = "PySide"
     print("Loaded PySide")

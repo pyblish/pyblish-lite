@@ -393,3 +393,162 @@ class Terminal(Abstract):
                 "func": func,
                 "exc": exc
             })
+
+
+class ProxyModel(QtCore.QSortFilterProxyModel):
+    """A QSortFilterProxyModel with custom exclude and include rules
+
+    Role may be either an integer or string, and each
+    role may include multiple values.
+
+    Example:
+        >>> # Exclude any item whose role 123 equals "Abc"
+        >>> model = ProxyModel(None)
+        >>> model.add_exclusion(role=123, value="Abc")
+
+        >>> # Exclude multiple values
+        >>> model.add_exclusion(role="name", value="Pontus")
+        >>> model.add_exclusion(role="name", value="Richard")
+
+        >>> # Exclude amongst includes
+        >>> model.add_inclusion(role="type", value="PluginItem")
+        >>> model.add_exclusion(role="name", value="Richard")
+
+    """
+
+    def __init__(self, source, parent=None):
+        super(ProxyModel, self).__init__(parent)
+        self.setSourceModel(source)
+
+        self.excludes = dict()
+        self.includes = dict()
+
+    def item(self, index):
+        index = self.index(index, 0, QtCore.QModelIndex())
+        index = self.mapToSource(index)
+        model = self.sourceModel()
+        return model.items[index.row()]
+
+    def add_exclusion(self, role, value):
+        """Exclude item if `role` equals `value`
+
+        Attributes:
+            role (int, string): Qt role or name to compare `value` to
+            value (object): Value to exclude
+
+        """
+
+        self._add_rule(self.excludes, role, value)
+
+    def remove_exclusion(self, role, value=None):
+        """Remove exclusion rule
+
+        Arguments:
+            role (int, string): Qt role or name to remove
+            value (object, optional): Value to remove. If none
+                is supplied, the entire role will be removed.
+
+        """
+
+        self._remove_rule(self.excludes, role, value)
+
+    def set_exclusion(self, rules):
+        """Set excludes
+
+        Replaces existing excludes with those in `rules`
+
+        Arguments:
+            rules (list): Tuples of (role, value)
+
+        """
+
+        self._set_rules(self.excludes, rules)
+
+    def clear_exclusion(self):
+        self._clear_group(self.excludes)
+
+    def add_inclusion(self, role, value):
+        """Include item if `role` equals `value`
+
+        Attributes:
+            role (int): Qt role to compare `value` to
+            value (object): Value to exclude
+
+        """
+
+        self._add_rule(self.includes, role, value)
+
+    def remove_inclusion(self, role, value=None):
+        """Remove exclusion rule"""
+        self._remove_rule(self.includes, role, value)
+
+    def set_inclusion(self, rules):
+        self._set_rules(self.includes, rules)
+
+    def clear_inclusion(self):
+        self._clear_group(self.includes)
+
+    def _add_rule(self, group, role, value):
+        """Implementation detail"""
+        if role not in group:
+            group[role] = list()
+
+        group[role].append(value)
+
+        self.invalidate()
+
+    def _remove_rule(self, group, role, value=None):
+        """Implementation detail"""
+        if role not in group:
+            return
+
+        if value is None:
+            group.pop(role, None)
+        else:
+            group[role].remove(value)
+
+        self.invalidate()
+
+    def _set_rules(self, group, rules):
+        """Implementation detail"""
+        group.clear()
+
+        for rule in rules:
+            self._add_rule(group, *rule)
+
+        self.invalidate()
+
+    def _clear_group(self, group):
+        group.clear()
+
+        self.invalidate()
+
+    # Overridden methods
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        """Exclude items in `self.excludes`"""
+        model = self.sourceModel()
+        item = model.items[source_row]
+
+        key = getattr(item, "filter", None)
+        if key is not None:
+            regex = self.filterRegExp()
+            if regex.pattern():
+                match = regex.indexIn(key)
+                return False if match == -1 else True
+
+        for role, values in self.includes.items():
+            data = getattr(item, role, None)
+            if data not in values:
+                return False
+
+        for role, values in self.excludes.items():
+            data = getattr(item, role, None)
+            if data in values:
+                return False
+
+        return super(ProxyModel, self).filterAcceptsRow(
+            source_row, source_parent)
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return super(ProxyModel, self).rowCount(parent)
