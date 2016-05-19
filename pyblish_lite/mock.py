@@ -21,6 +21,13 @@ class MyOtherAction(pyblish.api.Action):
 
 
 class CollectComment(pyblish.api.ContextPlugin):
+    """This collector has a very long comment.
+
+    The idea is that this comment should either be elided, or word-
+    wrapped in the corresponding view.
+
+    """
+
     order = pyblish.api.CollectorOrder
 
     def process(self, context):

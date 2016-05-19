@@ -343,7 +343,6 @@ class Window(QtWidgets.QDialog):
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
         terminal_view.setModel(terminal_model)
-        details.setModel(terminal_model)
 
         names = {
             # Main
@@ -351,6 +350,8 @@ class Window(QtWidgets.QDialog):
             "Body": body,
             "Footer": footer,
             "Info": info,
+
+            # Modals
             "Details": details,
 
             # Pages
@@ -389,6 +390,7 @@ class Window(QtWidgets.QDialog):
                        play,
                        validate,
                        stop,
+                       details,
                        reset,
                        closing_placeholder):
             widget.setAttribute(QtCore.Qt.WA_StyledBackground)
@@ -399,6 +401,8 @@ class Window(QtWidgets.QDialog):
                 "left": left_view,
                 "right": right_view,
                 "terminal": terminal_view,
+            },
+            "modals": {
                 "details": details,
             },
             "models": {
@@ -415,6 +419,7 @@ class Window(QtWidgets.QDialog):
                 "artist": artist_page,
                 "overview": overview_page,
                 "terminal": terminal_page,
+                # "perspectve": None,
             },
             "buttons": {
                 "play": play,
@@ -458,7 +463,6 @@ class Window(QtWidgets.QDialog):
                     "ordersWithError": set()
                 },
             },
-            "temp": {}  # Stores variables to prevent garbage collection
         }
 
         # Initialise default tab
@@ -504,14 +508,15 @@ class Window(QtWidgets.QDialog):
             self.on_plugin_action_menu_requested)
 
     def on_item_inspected(self, index, state):
-        details = self.data["views"]["details"]
+        details = self.data["modals"]["details"]
 
         if state is True:
             details.move(QtGui.QCursor.pos())
             details.init({
-                "heading": index.data(model.Label),
-                "subheading": ", ".join(index.data(model.Families)),
-                "duration": str(index.data(model.Duration) or 0) + " ms"
+                "label": index.data(model.Label),
+                "families": ", ".join(index.data(model.Families)),
+                "duration": str(index.data(model.Duration) or 0) + " ms",
+                "docstring": (index.data(model.Docstring) or "").split("\n")[0]
             })
 
         details.setVisible(state)
@@ -661,10 +666,6 @@ class Window(QtWidgets.QDialog):
                 result = self._process(*state["current_pair"])
 
                 if result["error"] is not None:
-
-                    # Log the error to the terminal
-                    self.info(str(result["error"]))
-
                     self.data["state"]["current_error"] = result["error"]
 
                 models["plugins"].update_with_result(result)
@@ -924,7 +925,6 @@ class Window(QtWidgets.QDialog):
 
         error = self.data["state"]["current_error"]
         if error is not None:
-            self.info(str(error))
             self.info("Stopped due to error(s), see Terminal.")
         else:
             self.info("Finished successfully!")

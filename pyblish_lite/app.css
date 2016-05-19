@@ -144,27 +144,36 @@ QPushButton[highlight="true"] {
 }
 
 #Details {
-	background: #222;
-	border: 1px solid #444;
+	background: #333;
+	border: 1px solid #222;
 }
 
 #Details QLabel {
-	font-size: 9pt;
+	font-size: 8pt;
+}
+
+#Details #Header {
+	background: #444;
+	border: 1px solid #222;
+}
+
+#Details #Body {
+	background: transparent;
 }
 
 #Details #Heading {
+	padding-left: 7px;  /* Leave space for mouse cursor */
+	font-size: 9pt;
 	font-weight: bold;
 }
 
 #Details #Subheading {
-	font-size: 8pt;
-	opacity: 0.5;
+	background: transparent;
 }
 
 #Details #Duration {
-	opacity: 0.5;
+	color: #999;
 }
 
-#Details QListView {
-	font-size: 8pt;
+#Details #Docstring {
 }
