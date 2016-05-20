@@ -13,6 +13,14 @@ colors = {
     "selected": QtGui.QColor(255, 255, 255, 20),
 }
 
+record_colors = {
+    "DEBUG": QtGui.QColor("#ff66e8"),
+    "INFO": QtGui.QColor("#66abff"),
+    "WARNING": QtGui.QColor("#ffba66"),
+    "ERROR": QtGui.QColor("#ff4d58"),
+    "CRITICAL": QtGui.QColor("#ff4f75"),
+}
+
 fonts = {
     "h3": QtGui.QFont("Open Sans", 10, 400),
     "h4": QtGui.QFont("Open Sans", 8, 400),
@@ -212,21 +220,15 @@ class Terminal(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
         """Paint text"""
 
-        icon_rect = QtCore.QRectF(option.rect)
-        icon_rect.setWidth(icon_rect.height())
-        icon_rect.adjust(3, 3, -3, -3)
+        icon_rect = QtCore.QRectF(option.rect).adjusted(3, 3, -3, -3)
+        icon_rect.setWidth(14)
+        icon_rect.setHeight(14)
 
         icon_color = colors["idle"]
         icon = icons[index.data(model.Type)]
 
         if index.data(model.Type) == "record":
-            icon_color = {
-                "DEBUG": QtGui.QColor("#ff66e8"),
-                "INFO": QtGui.QColor("#66abff"),
-                "WARNING": QtGui.QColor("#ffba66"),
-                "ERROR": QtGui.QColor("#ff4d58"),
-                "CRITICAL": QtGui.QColor("#ff4f75"),
-            }[index.data(model.LogLevel)]
+            icon_color = record_colors[index.data(model.LogLevel)]
 
         elif index.data(model.Type) == "error":
             icon_color = colors["warning"]
@@ -256,6 +258,18 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(label_rect, label)
 
+        if index.data(model.Expanded):
+            painter.setPen(colors["inactive"])
+            y = metrics.height()
+
+            for key, value in index.data(model.Data).items():
+                if key.startswith("_"):
+                    continue
+
+                painter.drawText(label_rect.adjusted(0, y, 0, y),
+                                 "%s = %s" % (key, value))
+                y += metrics.height()
+
         # Draw icon
         painter.setFont(fonts["awesome"])
         painter.setPen(QtGui.QPen(icon_color))
@@ -271,4 +285,5 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20)
+        return QtCore.QSize(option.rect.width(),
+                            180 if index.data(model.Expanded) else 20)

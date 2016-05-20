@@ -534,6 +534,7 @@ class Window(QtWidgets.QDialog):
         right_view.inspected.connect(self.on_item_inspected)
         left_view.toggled.connect(self.on_item_toggled)
         right_view.toggled.connect(self.on_item_toggled)
+        terminal_view.expanded.connect(self.on_item_expanded)
         reset.clicked.connect(self.on_reset_clicked)
         validate.clicked.connect(self.on_validate_clicked)
         play.clicked.connect(self.on_play_clicked)
@@ -553,6 +554,15 @@ class Window(QtWidgets.QDialog):
             box.setChecked(True)
 
         artist_tab.setChecked(True)
+
+    def on_item_expanded(self, index, state):
+        if not index.data(model.IsExpandable):
+            return
+
+        if state is None:
+            state = not index.data(model.Expanded)
+
+        # index.model().setData(index, state, model.Expanded)
 
     def on_item_inspected(self, index, state):
         details = self.data["modals"]["details"]

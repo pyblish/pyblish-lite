@@ -32,6 +32,11 @@ from Qt import QtCore, __binding__
 # The original object; Instance or Plugin
 Object = QtCore.Qt.UserRole + 0
 
+# Additional data (metadata) about an item
+# In the case of instances, this is their data as-is.
+# For anyhting else, this is statistics, such as running-time.
+Data = QtCore.Qt.UserRole + 16
+
 # The internal .id of any item
 Id = QtCore.Qt.UserRole + 1
 Type = QtCore.Qt.UserRole + 10
@@ -50,6 +55,8 @@ HasFailed = QtCore.Qt.UserRole + 6
 HasSucceeded = QtCore.Qt.UserRole + 7
 HasProcessed = QtCore.Qt.UserRole + 8
 Duration = QtCore.Qt.UserRole + 11
+Expanded = QtCore.Qt.UserRole + 13
+IsExpandable = QtCore.Qt.UserRole + 14
 
 # PLUGINS
 
@@ -129,6 +136,7 @@ class Item(Abstract):
             HasProcessed: "_has_processed",
             HasSucceeded: "_has_succeeded",
             HasFailed: "_has_failed",
+            Expanded: "_expanded",
         }
 
     def store_checkstate(self):
@@ -171,11 +179,16 @@ class Plugin(Item):
         item._has_processed = False
         item._has_succeeded = False
         item._has_failed = False
+        item._expanded = False
+        item._is_expandable = False
 
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
         item = self.items[index.row()]
+
+        if role == Data:
+            return {}
 
         if role == Actions:
 
@@ -285,6 +298,8 @@ class Instance(Item):
         item.data["_has_succeeded"] = False
         item.data["_has_failed"] = False
         item.data["_is_idle"] = True
+        item.data["_expanded"] = False
+        item.data["_is_expandable"] = False
 
         # Merge `family` and `families` for backwards compatibility
         item.data["__families__"] = ([item.data["family"]] +
@@ -294,6 +309,10 @@ class Instance(Item):
 
     def data(self, index, role):
         item = self.items[index.row()]
+
+        if role == Data:
+            return item.data
+
         key = self.schema.get(role)
 
         if not key:
@@ -361,10 +380,25 @@ class Terminal(Abstract):
             ExcLineNumber: "line_number",
             ExcFunc: "func",
             ExcExc: "exc",
+
+            # GUI-only data
+            Expanded: "_expanded",
+            IsExpandable: "_is_expandable",
         }
+
+    def append(self, item):
+        # GUI-only data
+        item["_expanded"] = False
+        item["_is_expandable"] = item.get("_is_expandable", False)
+
+        return super(Terminal, self).append(item)
 
     def data(self, index, role):
         item = self.items[index.row()]
+
+        if role == Data:
+            return item
+
         key = self.schema.get(role)
 
         if not key:
@@ -377,12 +411,39 @@ class Terminal(Abstract):
 
         return value
 
+    def setData(self, index, value, role):
+        item = self.items[index.row()]
+        key = self.schema.get(role)
+
+        if key is None:
+            return
+
+        item[key] = value
+
+        if __binding__ in ("PyQt4", "PySide"):
+            self.dataChanged.emit(index, index)
+        else:
+            self.dataChanged.emit(index, index, [role])
+
     def update_with_result(self, result):
         for record in result["records"]:
-            self.append(dict(record.__dict__, **{
+            self.append({
                 "label": str(record.msg),
-                "type": "record"
-            }))
+                "type": "record",
+
+                # Native
+                "threadName": record.threadName,
+                "name": record.name,
+                "filename": record.filename,
+                "pathname": record.pathname,
+                "lineno": record.lineno,
+                "msg": record.msg,
+                "msecs": record.msecs,
+                "levelname": record.levelname,
+
+                # GUI-only data
+                "_is_expandable": True,
+            })
 
         error = result["error"]
         if error is not None:
@@ -393,7 +454,10 @@ class Terminal(Abstract):
                 "fname": fname,
                 "line_number": line_no,
                 "func": func,
-                "exc": exc
+                "exc": exc,
+
+                # GUI-only data
+                "_is_expandable": True
             })
 
 

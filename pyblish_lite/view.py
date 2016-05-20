@@ -22,19 +22,19 @@ class Item(QtWidgets.QListView):
         if not event.type() == QtCore.QEvent.KeyPress:
             return super(Item, self).event(event)
 
-        if event.key() == QtCore.Qt.Key_Space:
+        elif event.key() == QtCore.Qt.Key_Space:
             for index in self.selectionModel().selectedIndexes():
                 self.toggled.emit(index, None)
 
             return True
 
-        if event.key() == QtCore.Qt.Key_Backspace:
+        elif event.key() == QtCore.Qt.Key_Backspace:
             for index in self.selectionModel().selectedIndexes():
                 self.toggled.emit(index, False)
 
             return True
 
-        if event.key() == QtCore.Qt.Key_Return:
+        elif event.key() == QtCore.Qt.Key_Return:
             for index in self.selectionModel().selectedIndexes():
                 self.toggled.emit(index, True)
 
@@ -76,17 +76,30 @@ class Item(QtWidgets.QListView):
 
 
 class LogView(QtWidgets.QListView):
+
+    # Expand an item, defaults to (None) toggling currently active state.
+    # Force a state via True or False.
+    expanded = QtCore.Signal("QModelIndex", object)
+
     def __init__(self, parent=None):
         super(LogView, self).__init__(parent)
 
-        self.verticalScrollBar().hide()
         self.horizontalScrollBar().hide()
         self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            indexes = self.selectionModel().selectedIndexes()
+            if len(indexes) <= 1:
+                for index in indexes:
+                    self.expanded.emit(index, None)
+
+        return super(LogView, self).mouseReleaseEvent(event)
+
     def rowsInserted(self, parent, start, end):
-        """Enable editable checkbox for each row
+        """Automatically scroll to bottom on each new item added
 
         Arguments:
             parent (QtCore.QModelIndex): The model itself, since this is a list
