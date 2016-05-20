@@ -66,6 +66,7 @@ LogPath = QtCore.Qt.UserRole + 53
 LogLineNumber = QtCore.Qt.UserRole + 54
 LogMessage = QtCore.Qt.UserRole + 55
 LogMilliseconds = QtCore.Qt.UserRole + 56
+LogLevel = QtCore.Qt.UserRole + 61
 
 # EXCEPTIONS
 
@@ -353,6 +354,7 @@ class Terminal(Abstract):
             LogLineNumber: "lineno",
             LogMessage: "msg",
             LogMilliseconds: "msecs",
+            LogLevel: "levelname",
 
             # Exceptions
             ExcFname: "fname",
