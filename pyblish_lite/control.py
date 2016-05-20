@@ -16,6 +16,7 @@ class Window(QtWidgets.QDialog):
     STATES:
         These are all possible states and their transitions.
 
+
           reset
             '
             '
@@ -178,6 +179,8 @@ class Window(QtWidgets.QDialog):
 
         layout = QtWidgets.QVBoxLayout(terminal_container)
         layout.addWidget(terminal_view)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(0)
 
         terminal_footer = QtWidgets.QWidget()
 
