@@ -95,9 +95,11 @@ class LogView(QtWidgets.QListView):
 
         """
 
-        self.scrollToBottom()
+        super(LogView, self).rowsInserted(parent, start, end)
 
-        return super(LogView, self).rowsInserted(parent, start, end)
+        # IMPORTANT: This must be done *after* the superclass to get
+        # an accurate value of the delegate's height.
+        self.scrollToBottom()
 
 
 class Details(QtWidgets.QDialog):
