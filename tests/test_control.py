@@ -25,8 +25,8 @@ def test_something():
 
     pyblish.api.register_plugin(MyCollector)
 
-    window = control.Window()
-    window._reset()
+    ctrl = control.Controller()
+    ctrl.reset()
 
     assert count["#"] == 1
 
@@ -51,8 +51,8 @@ def test_logging_nonstring():
 
     pyblish.api.register_plugin(MyCollector)
 
-    window = control.Window()
-    window._reset()
+    ctrl = control.Controller()
+    ctrl.reset()
 
     assert count["#"] == 1
 
@@ -79,8 +79,8 @@ def test_reset():
     for plugin in [MyCollector, MyValidator]:
         pyblish.api.register_plugin(plugin)
 
-    window = control.Window()
-    window._reset()
+    ctrl = control.Controller()
+    ctrl.reset()
 
     assert count["#"] == 1
 
@@ -109,18 +109,18 @@ def test_publish():
     for plugin in [MyCollector, MyValidator]:
         pyblish.api.register_plugin(plugin)
 
-    window = control.Window()
-    window._reset()
+    ctrl = control.Controller()
+    ctrl.reset()
 
     assert count["#"] == 1, count
 
-    window._publish()
+    ctrl.publish()
 
     assert count["#"] == 11, count
 
     # There are no more items in the queue at this point,
     # so publishing again should do nothing.
-    window._publish()
+    ctrl.publish()
 
     assert count["#"] == 11, count
 
@@ -158,12 +158,12 @@ def test_publish_families():
     for plugin in [MyCollector, Supported, Unsupported]:
         pyblish.api.register_plugin(plugin)
 
-    window = control.Window()
-    window._reset()
+    ctrl = control.Controller()
+    ctrl.reset()
 
     assert count["#"] == 1, count
 
-    window._publish()
+    ctrl.publish()
 
     assert count["#"] == 11, count
 
@@ -192,8 +192,8 @@ def test_publish_inactive():
     for plugin in [Active, Inactive]:
         pyblish.api.register_plugin(plugin)
 
-    window = control.Window()
-    window._reset()
+    ctrl = control.Controller()
+    ctrl.reset()
 
     assert count["#"] == 1, count
 
@@ -221,11 +221,11 @@ def test_publish_disabled():
     for plugin in [MyCollector, MyValidator]:
         pyblish.api.register_plugin(plugin)
 
-    window = control.Window()
-    window._reset()
+    ctrl = control.Controller()
+    ctrl.reset()
 
     assert count["#"] == 1, count
 
-    window._publish()
+    ctrl.publish()
 
     assert count["#"] == 11, count

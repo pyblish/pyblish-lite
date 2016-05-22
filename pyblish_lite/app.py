@@ -4,7 +4,7 @@ import contextlib
 
 from Qt import QtWidgets, QtGui
 
-from . import control, util
+from . import control, util, window
 
 
 @contextlib.contextmanager
@@ -49,18 +49,20 @@ def show(parent=None):
     with application():
         install_fonts()
 
-        window = control.Window(parent)
-        window.resize(430, 600)
-        window.show()
+        ctrl = control.Controller()
 
-        font = window.font()
+        win = window.Window(ctrl, parent)
+        win.resize(430, 600)
+        win.show()
+
+        font = win.font()
         font.setFamily("Open Sans")
         font.setPointSize(8)
         font.setWeight(400)
 
-        window.setFont(font)
-        window.setStyleSheet(css)
+        win.setFont(font)
+        win.setStyleSheet(css)
 
-        window.prepare_reset()
+        win.reset()
 
-        return window
+        return win
