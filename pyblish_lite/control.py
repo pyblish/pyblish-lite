@@ -1,3 +1,51 @@
+"""The Controller in a Model/View/Controller-based application
+
+
+STATES:
+    These are all possible states and their transitions.
+
+
+      reset
+        '
+        '
+        '
+     ___v__
+    |      |       reset
+    | Idle |--------------------.
+    |      |<-------------------'
+    |      |
+    |      |                   _____________
+    |      |     validate     |             |    reset     # TODO
+    |      |----------------->| In-progress |-----------.
+    |      |                  |_____________|           '
+    |      |<-------------------------------------------'
+    |      |
+    |      |                   _________                 _____________
+    |      |      publish     |         |    publish    |             |
+    |      |----------------->| Comment |-------------->| In-progress |---.
+    |      |                  |_________|               |_____________|   '
+    |      |<-------------------------------------------------------------'
+    |______|
+
+
+TODO:
+    There are notes spread throughout this project with the syntax:
+
+    - TODO(username)
+
+    The `username` is a quick and dirty indicator of who made the note
+    and is by no means exclusive to that person in terms of seeing it
+    done. Feel free to do, or make your own TODO's as you code. Just
+    make sure the description is sufficient for anyone reading it for
+    the first time to understand how to actually to it!
+
+PREPARE:
+    Major functions have a corresponding "prepare_" function.
+    This is where the GUI is setup before actually starting to
+    process. When testing, these are *not* necessary.
+
+"""
+
 import os
 import traceback
 
@@ -11,51 +59,6 @@ from . import model, view, util, delegate
 
 
 class Window(QtWidgets.QDialog):
-    """Main Window
-
-    STATES:
-        These are all possible states and their transitions.
-
-
-          reset
-            '
-            '
-            '
-         ___v__
-        |      |       reset
-        | Idle |--------------------.
-        |      |<-------------------'
-        |      |
-        |      |                   _____________
-        |      |     validate     |             |    reset     # TODO
-        |      |----------------->| In-progress |-----------.
-        |      |                  |_____________|           '
-        |      |<-------------------------------------------'
-        |      |
-        |      |                   _________                 _____________
-        |      |      publish     |         |    publish    |             |
-        |      |----------------->| Comment |-------------->| In-progress |---.
-        |      |                  |_________|               |_____________|   '
-        |      |<-------------------------------------------------------------'
-        |______|
-
-    TODO:
-        There are notes spread throughout this project with the syntax:
-
-        - TODO(username)
-
-        The `username` is a quick and dirty indicator of who made the note
-        and is by no means exclusive to that person in terms of seeing it
-        done. Feel free to do, or make your own TODO's as you code. Just
-        make sure the description is sufficient for anyone reading it for
-        the first time to understand how to actually to it!
-
-    PREPARE:
-        Major functions have a corresponding "prepare_" function.
-        This is where the GUI is setup before actually starting to
-        process. When testing, these are *not* necessary.
-
-    """
 
     # Emitted when the GUI is about to start processing;
     # e.g. resetting, validating or publishing.
@@ -83,11 +86,11 @@ class Window(QtWidgets.QDialog):
         |       Body       |     |                     |
         |                  | --> |        Page         |
         |                  |     |                     |
-        |                  |     |                     |
-        |__________________|     |_____________________|
-        |                  |
-        |      Footer      |
-        |__________________|
+        |                  |     |_____________________|
+        |__________________|      _____________________
+        |                  |     |           |         |
+        |      Footer      |     | Status    | Buttons |
+        |__________________|     |___________|_________|
 
         """
 
@@ -235,8 +238,7 @@ class Window(QtWidgets.QDialog):
         """
 
         comment_box = QtWidgets.QLineEdit()
-        comment_placeholder = QtWidgets.QLabel(
-            "Comment..", comment_box)
+        comment_placeholder = QtWidgets.QLabel("Comment..", comment_box)
         comment_placeholder.move(2, 2)
         comment_box.setEnabled(False)
         comment_box.hide()
@@ -317,17 +319,17 @@ class Window(QtWidgets.QDialog):
 
         timeline = QtCore.QSequentialAnimationGroup()
 
-        on = QtCore.QPropertyAnimation(info_effect, "opacity")
+        on = QtCore.QPropertyAnimation(info_effect, b"opacity")
         on.setDuration(0)
         on.setStartValue(0)
         on.setEndValue(1)
 
-        off = QtCore.QPropertyAnimation(info_effect, "opacity")
+        off = QtCore.QPropertyAnimation(info_effect, b"opacity")
         off.setDuration(0)
         off.setStartValue(1)
         off.setEndValue(0)
 
-        fade = QtCore.QPropertyAnimation(info_effect, "opacity")
+        fade = QtCore.QPropertyAnimation(info_effect, b"opacity")
         fade.setDuration(500)
         fade.setStartValue(1.0)
         fade.setEndValue(0.0)
