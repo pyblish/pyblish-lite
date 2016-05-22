@@ -36,6 +36,7 @@ setup(
     classifiers=classifiers,
     package_data={
         "pyblish_lite": [
+            "*.css",
             "img/*.png",
             "font/fontawesome/*.ttf",
             "font/opensans/*.ttf"
