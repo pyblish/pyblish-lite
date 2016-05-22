@@ -50,7 +50,7 @@ def show(parent=None):
         install_fonts()
 
         window = control.Window(parent)
-        window.resize(400, 600)
+        window.resize(430, 600)
         window.show()
 
         font = window.font()

@@ -11,10 +11,12 @@ class Item(QtWidgets.QListView):
     def __init__(self, parent=None):
         super(Item, self).__init__(parent)
 
-        self.verticalScrollBar().hide()
+        self.horizontalScrollBar().hide()
         self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setResizeMode(QtWidgets.QListView.Adjust)
+        self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
 
         self._inspecting = False
 
@@ -87,7 +89,8 @@ class LogView(QtWidgets.QListView):
         self.horizontalScrollBar().hide()
         self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setSelectionMode(QtWidgets.QListView.ExtendedSelection)
+        self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
 
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:

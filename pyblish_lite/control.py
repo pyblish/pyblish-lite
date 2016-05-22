@@ -72,6 +72,10 @@ class Window(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
         icon = QtGui.QIcon(util.get_asset("img", "logo-extrasmall.png"))
+        self.setWindowFlags(QtCore.Qt.WindowTitleHint |
+                            QtCore.Qt.WindowMaximizeButtonHint |
+                            QtCore.Qt.WindowMinimizeButtonHint |
+                            QtCore.Qt.WindowCloseButtonHint)
         self.setWindowTitle("Pyblish")
         self.setWindowIcon(icon)
 
@@ -217,7 +221,7 @@ class Window(QtWidgets.QDialog):
         terminal_page = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(terminal_page)
         layout.addWidget(terminal_container)
-        layout.addWidget(terminal_footer)
+        # layout.addWidget(terminal_footer)  # TODO
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -343,11 +347,6 @@ class Window(QtWidgets.QDialog):
         timeline.addAnimation(fade)
 
         info_animation = timeline
-
-        # CSS property
-        # Highlight is enabled when a comment is requested, to
-        # indicate to the user that the button is awaiting further input.
-        play.setProperty("highlight", False)
 
         """Setup
 
@@ -564,7 +563,11 @@ class Window(QtWidgets.QDialog):
         if state is None:
             state = not index.data(model.Expanded)
 
-        # index.model().setData(index, state, model.Expanded)
+        # Collapse others
+        for i in index.model():
+            index.model().setData(i, False, model.Expanded)
+
+        index.model().setData(index, state, model.Expanded)
 
     def on_item_inspected(self, index, state):
         details = self.data["modals"]["details"]

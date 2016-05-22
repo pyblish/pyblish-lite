@@ -38,12 +38,26 @@ QListView {
 }
 
 QPushButton {
-	width: 30px;
-	height: 30px;
+	width: 27px;
+	height: 27px;
 	background: #555;
 	border: 1px solid #333;
 	font-family: "FontAwesome";
-	font-size: 9pt;
+	font-size: 11pt;
+	color: white;
+}
+
+QPushButton:pressed {
+	background: "#777";
+}
+
+QPushButton:hover {
+	color: white;
+	background: "#666";
+}
+
+QPushButton:disabled {
+	color: rgba(255, 255, 255, 50);
 }
 
 QTextEdit, QLineEdit {
@@ -93,32 +107,16 @@ QComboBox QAbstractItemView {
 	background: #555;
 }
 
-QPushButton:pressed {
-	background: "#777";
-}
-
-QPushButton:hover {
-	background: "#666";
-}
-
-QPushButton:disabled {
-	color: rgba(255, 255, 255, 50);
-}
-
-QPushButton[highlight="true"] {
-	border: 1px solid white;
-}
-
 QScrollBar:vertical {
  	border: none;
  	background: transparent;
- 	width: 10px;
+ 	width: 6px;
  	margin: 0;
 }
 
 QScrollBar::handle:vertical {
  	background: #333;
- 	border-radius: 5px;
+ 	border-radius: 3px;
  	min-height: 20px;
 }
 
@@ -154,7 +152,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 }
 
 #Header QRadioButton::indicator {
-	width: 50px;
+	width: 65px;
 	height: 40px;
 	border: 0px solid "transparent";
 	border-bottom: 3px solid "transparent";
@@ -184,7 +182,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 }
 
 #Footer {
-	min-height: 47px;
+	min-height: 43px;
 }
 
 #ClosingPlaceholder {
