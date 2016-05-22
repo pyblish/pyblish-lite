@@ -25,7 +25,7 @@ fonts = {
     "h3": QtGui.QFont("Open Sans", 10, 400),
     "h4": QtGui.QFont("Open Sans", 8, 400),
     "h5": QtGui.QFont("Open Sans", 8, 800),
-    "awesome": QtGui.QFont("Font Awesome", 8)
+    "awesome": QtGui.QFont("FontAwesome", 8)
 }
 
 icons = {
