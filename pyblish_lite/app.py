@@ -43,7 +43,8 @@ def show(parent=None):
         css = f.read()
 
         # Make relative paths absolute
-        css = css.replace("url(\"", "url(\"%s" % util.get_asset(""))
+        root = util.get_asset("").replace("\\", "/")
+        css = css.replace("url(\"", "url(\"%s" % root)
 
     with application():
         install_fonts()
