@@ -37,12 +37,6 @@ QListView {
 	background: "transparent"
 }
 
-/* Hide horizontal scrollbars permanently */
-/*QListView QScrollBar {
-	height: 0px;
-	width: 0px;
-}*/
-
 QPushButton {
 	width: 30px;
 	height: 30px;
@@ -116,31 +110,33 @@ QPushButton[highlight="true"] {
 	border: 1px solid white;
 }
 
- QScrollBar:vertical {
-     border: none;
-     background: transparent;
-     width: 10px;
-     margin: 0;
- }
- QScrollBar::handle:vertical {
-     background: #333;
-     border-radius: 5px;
-     min-height: 20px;
- }
- QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-     height: 0px;
- }
- 
- QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
-     border: 1px solid #444;
-     width: 3px;
-     height: 3px;
-     background: white;
- }
+QScrollBar:vertical {
+ 	border: none;
+ 	background: transparent;
+ 	width: 10px;
+ 	margin: 0;
+}
 
- QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-     background: none;
- }
+QScrollBar::handle:vertical {
+ 	background: #333;
+ 	border-radius: 5px;
+ 	min-height: 20px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+ 	height: 0px;
+}
+
+QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
+ 	border: 1px solid #444;
+ 	width: 3px;
+ 	height: 3px;
+ 	background: white;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+ 	background: none;
+}
 
 /* Specific CSS */
 
