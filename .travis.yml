@@ -5,12 +5,10 @@ dist: trusty
 python:
 - 2.6
 - 2.7
-- 3.3
-- 3.4
 
 install:
 - sudo apt-get update
-- sudo apt-get -y install python3-pyqt5
+- sudo apt-get -y install python-pyside
 - pip install coveralls
 
 script:
@@ -19,5 +17,3 @@ script:
 
 after_success:
 - coveralls
-
-sudo: true
