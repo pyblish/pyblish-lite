@@ -1,13 +1,24 @@
 language: python
+sudo: required
+dist: trusty
+
+virtualenv:
+  system_site_packages: true
+
 python:
 - 2.6
 - 2.7
 - 3.3
-- 3.5
+- 3.4
+
 install:
-- pip install coveralls pyside
+- sudo apt-get update
+- sudo apt-get -y install python3-pyqt5
+- pip install coveralls
+
 script:
 - python run_tests.py
 - pip install git+git://github.com/pyblish/pyblish-lite.git
+
 after_success:
 - coveralls
