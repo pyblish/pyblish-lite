@@ -1,3 +1,4 @@
+import os
 import sys
 
 
@@ -37,12 +38,16 @@ def load_pyside():
     import PySide
     from PySide import QtGui
     PySide.QtWidgets = QtGui
+    PySide.QtCore.QSortFilterProxyModel = PySide.QtGui.QSortFilterProxyModel
     sys.modules["Qt"] = PySide
     PySide.__binding__ = "PySide"
     print("Loaded PySide")
 
 
 def init():
+    if os.name == "nt":
+        windows_taskbar_compat()
+
     # Support Qt 4 and 5, PyQt and PySide
     try:
         load_pyside2()
@@ -58,3 +63,11 @@ def init():
                 except:
                     sys.stderr.write("pyblish-lite: Could not find "
                                      "appropriate bindings for Qt\n")
+
+
+def windows_taskbar_compat():
+    """Enable icon and taskbar grouping for Windows 7+"""
+
+    import ctypes
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+        u"pyblish_lite")

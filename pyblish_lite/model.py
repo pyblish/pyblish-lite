@@ -32,6 +32,11 @@ from Qt import QtCore, __binding__
 # The original object; Instance or Plugin
 Object = QtCore.Qt.UserRole + 0
 
+# Additional data (metadata) about an item
+# In the case of instances, this is their data as-is.
+# For anyhting else, this is statistics, such as running-time.
+Data = QtCore.Qt.UserRole + 16
+
 # The internal .id of any item
 Id = QtCore.Qt.UserRole + 1
 Type = QtCore.Qt.UserRole + 10
@@ -50,6 +55,8 @@ HasFailed = QtCore.Qt.UserRole + 6
 HasSucceeded = QtCore.Qt.UserRole + 7
 HasProcessed = QtCore.Qt.UserRole + 8
 Duration = QtCore.Qt.UserRole + 11
+Expanded = QtCore.Qt.UserRole + 13
+IsExpandable = QtCore.Qt.UserRole + 14
 
 # PLUGINS
 
@@ -66,6 +73,7 @@ LogPath = QtCore.Qt.UserRole + 53
 LogLineNumber = QtCore.Qt.UserRole + 54
 LogMessage = QtCore.Qt.UserRole + 55
 LogMilliseconds = QtCore.Qt.UserRole + 56
+LogLevel = QtCore.Qt.UserRole + 61
 
 # EXCEPTIONS
 
@@ -128,6 +136,7 @@ class Item(Abstract):
             HasProcessed: "_has_processed",
             HasSucceeded: "_has_succeeded",
             HasFailed: "_has_failed",
+            Expanded: "_expanded",
         }
 
     def store_checkstate(self):
@@ -170,11 +179,16 @@ class Plugin(Item):
         item._has_processed = False
         item._has_succeeded = False
         item._has_failed = False
+        item._expanded = False
+        item._is_expandable = False
 
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
         item = self.items[index.row()]
+
+        if role == Data:
+            return {}
 
         if role == Actions:
 
@@ -284,6 +298,8 @@ class Instance(Item):
         item.data["_has_succeeded"] = False
         item.data["_has_failed"] = False
         item.data["_is_idle"] = True
+        item.data["_expanded"] = False
+        item.data["_is_expandable"] = False
 
         # Merge `family` and `families` for backwards compatibility
         item.data["__families__"] = ([item.data["family"]] +
@@ -293,6 +309,10 @@ class Instance(Item):
 
     def data(self, index, role):
         item = self.items[index.row()]
+
+        if role == Data:
+            return item.data
+
         key = self.schema.get(role)
 
         if not key:
@@ -353,16 +373,32 @@ class Terminal(Abstract):
             LogLineNumber: "lineno",
             LogMessage: "msg",
             LogMilliseconds: "msecs",
+            LogLevel: "levelname",
 
             # Exceptions
             ExcFname: "fname",
             ExcLineNumber: "line_number",
             ExcFunc: "func",
             ExcExc: "exc",
+
+            # GUI-only data
+            Expanded: "_expanded",
+            IsExpandable: "_is_expandable",
         }
+
+    def append(self, item):
+        # GUI-only data
+        item["_expanded"] = False
+        item["_is_expandable"] = item.get("_is_expandable", False)
+
+        return super(Terminal, self).append(item)
 
     def data(self, index, role):
         item = self.items[index.row()]
+
+        if role == Data:
+            return item
+
         key = self.schema.get(role)
 
         if not key:
@@ -375,12 +411,39 @@ class Terminal(Abstract):
 
         return value
 
+    def setData(self, index, value, role):
+        item = self.items[index.row()]
+        key = self.schema.get(role)
+
+        if key is None:
+            return
+
+        item[key] = value
+
+        if __binding__ in ("PyQt4", "PySide"):
+            self.dataChanged.emit(index, index)
+        else:
+            self.dataChanged.emit(index, index, [role])
+
     def update_with_result(self, result):
         for record in result["records"]:
-            self.append(dict(record.__dict__, **{
+            self.append({
                 "label": str(record.msg),
-                "type": "record"
-            }))
+                "type": "record",
+
+                # Native
+                "threadName": record.threadName,
+                "name": record.name,
+                "filename": record.filename,
+                "pathname": record.pathname,
+                "lineno": record.lineno,
+                "msg": record.msg,
+                "msecs": record.msecs,
+                "levelname": record.levelname,
+
+                # GUI-only data
+                "_is_expandable": True,
+            })
 
         error = result["error"]
         if error is not None:
@@ -391,5 +454,167 @@ class Terminal(Abstract):
                 "fname": fname,
                 "line_number": line_no,
                 "func": func,
-                "exc": exc
+                "exc": exc,
+
+                # GUI-only data
+                "_is_expandable": True
             })
+
+
+class ProxyModel(QtCore.QSortFilterProxyModel):
+    """A QSortFilterProxyModel with custom exclude and include rules
+
+    Role may be either an integer or string, and each
+    role may include multiple values.
+
+    Example:
+        >>> # Exclude any item whose role 123 equals "Abc"
+        >>> model = ProxyModel(None)
+        >>> model.add_exclusion(role=123, value="Abc")
+
+        >>> # Exclude multiple values
+        >>> model.add_exclusion(role="name", value="Pontus")
+        >>> model.add_exclusion(role="name", value="Richard")
+
+        >>> # Exclude amongst includes
+        >>> model.add_inclusion(role="type", value="PluginItem")
+        >>> model.add_exclusion(role="name", value="Richard")
+
+    """
+
+    def __init__(self, source, parent=None):
+        super(ProxyModel, self).__init__(parent)
+        self.setSourceModel(source)
+
+        self.excludes = dict()
+        self.includes = dict()
+
+    def item(self, index):
+        index = self.index(index, 0, QtCore.QModelIndex())
+        index = self.mapToSource(index)
+        model = self.sourceModel()
+        return model.items[index.row()]
+
+    def add_exclusion(self, role, value):
+        """Exclude item if `role` equals `value`
+
+        Attributes:
+            role (int, string): Qt role or name to compare `value` to
+            value (object): Value to exclude
+
+        """
+
+        self._add_rule(self.excludes, role, value)
+
+    def remove_exclusion(self, role, value=None):
+        """Remove exclusion rule
+
+        Arguments:
+            role (int, string): Qt role or name to remove
+            value (object, optional): Value to remove. If none
+                is supplied, the entire role will be removed.
+
+        """
+
+        self._remove_rule(self.excludes, role, value)
+
+    def set_exclusion(self, rules):
+        """Set excludes
+
+        Replaces existing excludes with those in `rules`
+
+        Arguments:
+            rules (list): Tuples of (role, value)
+
+        """
+
+        self._set_rules(self.excludes, rules)
+
+    def clear_exclusion(self):
+        self._clear_group(self.excludes)
+
+    def add_inclusion(self, role, value):
+        """Include item if `role` equals `value`
+
+        Attributes:
+            role (int): Qt role to compare `value` to
+            value (object): Value to exclude
+
+        """
+
+        self._add_rule(self.includes, role, value)
+
+    def remove_inclusion(self, role, value=None):
+        """Remove exclusion rule"""
+        self._remove_rule(self.includes, role, value)
+
+    def set_inclusion(self, rules):
+        self._set_rules(self.includes, rules)
+
+    def clear_inclusion(self):
+        self._clear_group(self.includes)
+
+    def _add_rule(self, group, role, value):
+        """Implementation detail"""
+        if role not in group:
+            group[role] = list()
+
+        group[role].append(value)
+
+        self.invalidate()
+
+    def _remove_rule(self, group, role, value=None):
+        """Implementation detail"""
+        if role not in group:
+            return
+
+        if value is None:
+            group.pop(role, None)
+        else:
+            group[role].remove(value)
+
+        self.invalidate()
+
+    def _set_rules(self, group, rules):
+        """Implementation detail"""
+        group.clear()
+
+        for rule in rules:
+            self._add_rule(group, *rule)
+
+        self.invalidate()
+
+    def _clear_group(self, group):
+        group.clear()
+
+        self.invalidate()
+
+    # Overridden methods
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        """Exclude items in `self.excludes`"""
+        model = self.sourceModel()
+        item = model.items[source_row]
+
+        key = getattr(item, "filter", None)
+        if key is not None:
+            regex = self.filterRegExp()
+            if regex.pattern():
+                match = regex.indexIn(key)
+                return False if match == -1 else True
+
+        for role, values in self.includes.items():
+            data = getattr(item, role, None)
+            if data not in values:
+                return False
+
+        for role, values in self.excludes.items():
+            data = getattr(item, role, None)
+            if data in values:
+                return False
+
+        return super(ProxyModel, self).filterAcceptsRow(
+            source_row, source_parent)
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return super(ProxyModel, self).rowCount(parent)

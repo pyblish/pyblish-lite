@@ -37,27 +37,14 @@ QListView {
 	background: "transparent"
 }
 
-/* Hide horizontal scrollbars permanently */
-QListView QScrollBar {
-	height: 0px;
-	width: 0px;
-}
-
 QPushButton {
-	width: 30px;
-	height: 30px;
-	background: "#555";
-	border: 1px solid "#333";
+	width: 27px;
+	height: 27px;
+	background: #555;
+	border: 1px solid #333;
 	font-family: "FontAwesome";
-	font-size: 9pt;
-}
-
-QTextEdit, QLineEdit {
-	background: "#555";
-	border: 1px solid "#333";
-	font-family: "FontAwesome";
-	font-size: 9pt;
-	color: "#fff";
+	font-size: 11pt;
+	color: white;
 }
 
 QPushButton:pressed {
@@ -65,6 +52,7 @@ QPushButton:pressed {
 }
 
 QPushButton:hover {
+	color: white;
 	background: "#666";
 }
 
@@ -72,11 +60,86 @@ QPushButton:disabled {
 	color: rgba(255, 255, 255, 50);
 }
 
-QPushButton[highlight="true"] {
-	border: 1px solid white;
+QTextEdit, QLineEdit {
+	background: "#555";
+	border: 1px solid "#333";
+	font-size: 9pt;
+	color: "#fff";
+}
+
+QCheckBox {
+	min-width: 17px;
+	max-width: 17px;
+	border: 1px solid #222;
+	background: transparent;
+}
+
+QCheckBox::indicator {
+	width: 15px;
+	height: 15px;
+	/*background: #444;*/
+	background: transparent;
+	border: 1px solid #555;
+}
+
+QCheckBox::indicator:checked {
+	background: #222;
+}
+
+QComboBox {
+	background: #444;
+	color: #EEE;
+	font-size: 8pt;
+	border: 1px solid #333;
+	padding: 0px;
+}
+
+QComboBox::drop-down {
+	background: transparent;
+}
+
+QComboBox::down-arrow {
+	max-width: 0px;
+	width: 1px;
+}
+
+QComboBox QAbstractItemView {
+	background: #555;
+}
+
+QScrollBar:vertical {
+ 	border: none;
+ 	background: transparent;
+ 	width: 6px;
+ 	margin: 0;
+}
+
+QScrollBar::handle:vertical {
+ 	background: #333;
+ 	border-radius: 3px;
+ 	min-height: 20px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+ 	height: 0px;
+}
+
+QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
+ 	border: 1px solid #444;
+ 	width: 3px;
+ 	height: 3px;
+ 	background: white;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+ 	background: none;
 }
 
 /* Specific CSS */
+
+#Terminal QComboBox::drop-down {
+	width: 60px;
+}
 
 #Header {
 	background: "#555";
@@ -89,7 +152,7 @@ QPushButton[highlight="true"] {
 }
 
 #Header QRadioButton::indicator {
-	width: 50px;
+	width: 65px;
 	height: 40px;
 	border: 0px solid "transparent";
 	border-bottom: 3px solid "transparent";
@@ -119,7 +182,7 @@ QPushButton[highlight="true"] {
 }
 
 #Footer {
-	min-height: 47px;
+	min-height: 43px;
 }
 
 #ClosingPlaceholder {

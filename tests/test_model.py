@@ -1,3 +1,5 @@
+import logging
+
 from pyblish_lite import model
 from pyblish_lite.vendor import six
 
@@ -7,11 +9,14 @@ def test_label_nonstring():
 
     result = {
         "records": [
-            type("LogRecord", (object,), {"msg": "Proper message"}),
-            type("LogRecord", (object,), {"msg": 12}),
-            type("LogRecord", (object,), {"msg": {"a": "dict"}}),
-            type("LogRecord", (object,), {"msg": list()}),
-            type("LogRecord", (object,), {"msg": 1.0}),
+            logging.LogRecord("root", "INFO", "", 0, msg, [], None)
+            for msg in (
+                "Proper message",
+                12,
+                {"a": "dict"},
+                list(),
+                1.0,
+            )
         ],
         "error": None
     }
