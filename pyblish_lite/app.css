@@ -172,13 +172,15 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 }
 
 #Header #ArtistTab {
-	background-image: url("img/logo-white.png");
+	background-image: url("img/tab-home.png");
 }
 
 #Header #TerminalTab {
+	background-image: url("img/tab-terminal.png");
 }
 
 #Header #OverviewTab {
+	background-image: url("img/tab-overview.png");
 }
 
 #Footer {

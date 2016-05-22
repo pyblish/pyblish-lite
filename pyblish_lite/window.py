@@ -478,8 +478,13 @@ class Window(QtWidgets.QDialog):
         controller.was_validated.connect(self.on_was_validated)
         controller.was_published.connect(self.on_was_published)
         controller.was_acted.connect(self.on_was_acted)
-        controller.was_discovered.connect(self.on_was_discovered)
         controller.finished.connect(self.on_finished)
+
+        # Discovery happens synchronously during reset, that's
+        # why it's important that this connection is triggered
+        # right away.
+        controller.was_discovered.connect(self.on_was_discovered,
+                                          QtCore.Qt.DirectConnection)
 
         # This is called synchronously on each process
         controller.was_processed.connect(self.on_was_processed,
@@ -587,9 +592,15 @@ class Window(QtWidgets.QDialog):
         self.data["tabs"]["current"] = target
 
     def on_validate_clicked(self):
+        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box.setEnabled(False)
+        comment_box.hide()
         self.validate()
 
     def on_play_clicked(self):
+        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box.setEnabled(False)
+        comment_box.hide()
         self.publish()
 
     def on_reset_clicked(self):

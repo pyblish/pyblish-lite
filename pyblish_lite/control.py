@@ -27,8 +27,8 @@ class Controller(QtCore.QObject):
 
     # Emitted for each process
     was_processed = QtCore.Signal(dict)
-    was_discovered = QtCore.Signal()
 
+    was_discovered = QtCore.Signal()
     was_reset = QtCore.Signal()
     was_validated = QtCore.Signal()
     was_published = QtCore.Signal()
