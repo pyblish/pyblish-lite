@@ -10,13 +10,15 @@ addons:
     - libqt4-dev
 
 install:
-  # Based on http://stackoverflow.com/a/24545890/478949
   - pip install --upgrade pip
+  - pip install -r requirements.txt
+  
+  # PySide installation
+  # Based on http://stackoverflow.com/a/24545890/478949
   - pip install PySide --no-index --find-links https://parkin.github.io/python-wheelhouse/;
   - python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
 
 script:
-  - pip install git+git://github.com/pyblish/pyblish-base.git
   - python run_tests.py
 
 after_success:
