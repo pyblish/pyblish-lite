@@ -242,3 +242,27 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 
 #Details #Docstring {
 }
+
+#RecordCb::indicator:checked {
+	background: #ff66e8;
+}
+
+#DebugCb::indicator:checked {
+	background: #ff66e8;
+}
+
+#InfoCb::indicator:checked {
+	background: #66abff;
+}
+
+#WarningCb::indicator:checked {
+	background: #ffba66;
+}
+
+#ErrorCb::indicator:checked {
+	background: #ff4d58;
+}
+
+#CriticalCb::indicator:checked {
+	background: #ff4f75;
+}

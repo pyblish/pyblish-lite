@@ -23,7 +23,7 @@ Roles:
     as the key of a dictionary, except they can only be integers.
 
 """
-
+import re
 from Qt import QtCore, __binding__
 
 
@@ -200,13 +200,13 @@ class Plugin(Item):
 
             # Context specific actions
             for action in actions:
-                if action.on == "failed" and not item.has_failed:
+                if action.on == "failed" and not item._has_failed:
                     actions.remove(action)
-                if action.on == "succeeded" and not item.has_succeeded:
+                if action.on == "succeeded" and not item._has_succeeded:
                     actions.remove(action)
-                if action.on == "processed" and not item.has_processed:
+                if action.on == "processed" and not item._has_processed:
                     actions.remove(action)
-                if action.on == "notProcessed" and item.has_processed:
+                if action.on == "notProcessed" and item._has_processed:
                     actions.remove(action)
 
             # Discard empty groups
@@ -488,12 +488,14 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
 
         self.excludes = dict()
         self.includes = dict()
+        self.search = re.compile('.*')
 
-    def item(self, index):
-        index = self.index(index, 0, QtCore.QModelIndex())
-        index = self.mapToSource(index)
-        model = self.sourceModel()
-        return model.items[index.row()]
+    def setData(self, index, value, role):
+        return self.sourceModel().setData(self.mapToSource(index), value, role)
+
+    def set_search(self, value):
+        value = value.replace(" ", ".*")
+        self.search = re.compile(".*{0}.*".format(value))
 
     def add_exclusion(self, role, value):
         """Exclude item if `role` equals `value`
@@ -596,20 +598,18 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         model = self.sourceModel()
         item = model.items[source_row]
 
-        key = getattr(item, "filter", None)
-        if key is not None:
-            regex = self.filterRegExp()
-            if regex.pattern():
-                match = regex.indexIn(key)
-                return False if match == -1 else True
+        if self.search:
+            data = item.get("label", None)
+            if not self.search.match(data):
+                return False
 
         for role, values in self.includes.items():
-            data = getattr(item, role, None)
+            data = item.get(role, None)
             if data not in values:
                 return False
 
         for role, values in self.excludes.items():
-            data = getattr(item, role, None)
+            data = item.get(role, None)
             if data in values:
                 return False
 
@@ -618,3 +618,11 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return super(ProxyModel, self).rowCount(parent)
+
+    def __iter__(self):
+        """Yield each row of model"""
+        model = self.sourceModel()
+        for i in range(len(model.items)):
+            index = self.index(i, 0, QtCore.QModelIndex())
+            if self.mapToSource(index).isValid():
+                yield index
