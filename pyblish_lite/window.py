@@ -171,21 +171,25 @@ class Window(QtWidgets.QDialog):
         terminal_footer = QtWidgets.QWidget()
 
         search_box = QtWidgets.QLineEdit()
-        instance_combo = QtWidgets.QComboBox()
-        plugin_combo = QtWidgets.QComboBox()
-        show_errors = QtWidgets.QCheckBox()
+        # instance_combo = QtWidgets.QComboBox()
+        # plugin_combo = QtWidgets.QComboBox()
         show_records = QtWidgets.QCheckBox()
+        show_records.setToolTip("Records")
         show_debug = QtWidgets.QCheckBox()
+        show_debug.setToolTip("Debug")
         show_info = QtWidgets.QCheckBox()
+        show_info.setToolTip("Info")
         show_warning = QtWidgets.QCheckBox()
+        show_warning.setToolTip("Warning")
         show_error = QtWidgets.QCheckBox()
+        show_error.setToolTip("Error")
         show_critical = QtWidgets.QCheckBox()
+        show_critical.setToolTip("Critical")
 
         layout = QtWidgets.QHBoxLayout(terminal_footer)
         for w in (search_box,
-                  instance_combo,
-                  plugin_combo,
-                  show_errors,
+                  # instance_combo,
+                  # plugin_combo,
                   show_records,
                   show_debug,
                   show_info,
@@ -200,7 +204,7 @@ class Window(QtWidgets.QDialog):
         terminal_page = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(terminal_page)
         layout.addWidget(terminal_container)
-        # layout.addWidget(terminal_footer)  # TODO
+        layout.addWidget(terminal_footer)  # TODO
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -353,14 +357,15 @@ class Window(QtWidgets.QDialog):
         instance_model = model.Instance()
         plugin_model = model.Plugin()
         terminal_model = model.Terminal()
+        terminal_proxy_model = model.ProxyModel(terminal_model)
 
         artist_view.setModel(instance_model)
         left_view.setModel(instance_model)
         right_view.setModel(plugin_model)
-        terminal_view.setModel(terminal_model)
+        terminal_view.setModel(terminal_proxy_model)
 
-        instance_combo.setModel(instance_model)
-        plugin_combo.setModel(plugin_model)
+        # instance_combo.setModel(instance_model)
+        # plugin_combo.setModel(plugin_model)
 
         names = {
             # Main
@@ -387,6 +392,14 @@ class Window(QtWidgets.QDialog):
             "Validate": validate,
             "Reset": reset,
             "Stop": stop,
+
+            # Check Boxes
+            "RecordCb": show_records,
+            "DebugCb": show_debug,
+            "InfoCb": show_info,
+            "WarningCb": show_warning,
+            "ErrorCb": show_error,
+            "CriticalCb": show_critical,
 
             # Misc
             "CommentBox": comment_box,
@@ -427,6 +440,15 @@ class Window(QtWidgets.QDialog):
                 "instances": instance_model,
                 "plugins": plugin_model,
                 "terminal": terminal_model,
+                "terminal_proxy": terminal_proxy_model
+            },
+            "terminal_toggles": {
+                "record": show_records,
+                "debug": show_debug,
+                "info": show_info,
+                "warning": show_warning,
+                "error": show_error,
+                "critical": show_critical
             },
             "tabs": {
                 "artist": artist_tab,
@@ -509,14 +531,14 @@ class Window(QtWidgets.QDialog):
         right_view.customContextMenuRequested.connect(
             self.on_plugin_action_menu_requested)
 
-        for box in (show_errors,
-                    show_records,
-                    show_debug,
-                    show_info,
-                    show_warning,
-                    show_error,
-                    show_critical):
+        for box, value in ((show_records, 'record'),
+                           (show_debug, 'debug'),
+                           (show_info, 'info'),
+                           (show_warning, 'warning'),
+                           (show_error, 'error'),
+                           (show_critical, 'critical')):
             box.setChecked(True)
+            box.toggled.connect(lambda toggle, v=value: self.on_item_filter(toggle, v))
 
         artist_tab.setChecked(True)
 
@@ -525,6 +547,16 @@ class Window(QtWidgets.QDialog):
     # Event handlers
     #
     # -------------------------------------------------------------------------
+
+    def on_item_search_filter(self, value):
+        model = self.data["models"]["terminal_proxy"]
+        model.set_search(value)
+
+    def on_item_filter(self, value, level):
+        model = self.data["models"]["terminal_proxy"]
+        f = model.remove_exclusion if value else model.add_exclusion
+        f(role="type", value=level)
+        f(role="levelname", value=level.upper())
 
     def on_item_expanded(self, index, state):
         if not index.data(model.IsExpandable):
