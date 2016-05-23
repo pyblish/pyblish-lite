@@ -1,12 +1,8 @@
-VERSION_MAJOR = 0
-VERSION_MINOR = 3
-VERSION_PATCH = 2
-
-version_info = (VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
-version = '%i.%i.%i' % version_info
-__version__ = version
-
+from .version import version, version_info, __version__
 from . import compat as __compat
+
+# This must be run prior to importing the application, due to the
+# application requiring a discovered copy of Qt bindings.
 __compat.init()
 
 from .app import show

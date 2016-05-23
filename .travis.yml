@@ -1,0 +1,26 @@
+language: python
+
+python:
+  - 3.4
+
+addons:
+  apt:
+    packages:
+    - qt4-qmake
+    - libqt4-dev
+
+install:
+  - pip install --upgrade pip
+  
+  # Preferred PySide installation, it is faster
+  # Based on http://stackoverflow.com/a/24545890/478949
+  - pip install PySide --no-index --find-links https://parkin.github.io/python-wheelhouse/;
+  - python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
+  
+  - pip install -r requirements.txt
+
+script:
+  - python run_tests.py
+
+after_success:
+  - coveralls
