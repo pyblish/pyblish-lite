@@ -44,6 +44,7 @@ Type = QtCore.Qt.UserRole + 10
 # The display name of an item
 Label = QtCore.Qt.DisplayRole + 0
 Families = QtCore.Qt.DisplayRole + 1
+Icon = QtCore.Qt.DisplayRole + 13
 
 # The item has not been used
 IsIdle = QtCore.Qt.UserRole + 2
@@ -55,8 +56,6 @@ HasFailed = QtCore.Qt.UserRole + 6
 HasSucceeded = QtCore.Qt.UserRole + 7
 HasProcessed = QtCore.Qt.UserRole + 8
 Duration = QtCore.Qt.UserRole + 11
-Expanded = QtCore.Qt.UserRole + 13
-IsExpandable = QtCore.Qt.UserRole + 14
 
 # PLUGINS
 
@@ -128,15 +127,16 @@ class Item(Abstract):
             Id: "id",
             Actions: "actions",
             IsOptional: "optional",
+            Icon: "icon",
 
             # GUI-only data
+            Type: "_type",
             Duration: "_duration",
             IsIdle: "_is_idle",
             IsProcessing: "_is_processing",
             HasProcessed: "_has_processed",
             HasSucceeded: "_has_succeeded",
             HasFailed: "_has_failed",
-            Expanded: "_expanded",
         }
 
     def store_checkstate(self):
@@ -179,8 +179,7 @@ class Plugin(Item):
         item._has_processed = False
         item._has_succeeded = False
         item._has_failed = False
-        item._expanded = False
-        item._is_expandable = False
+        item._type = "plugin"
 
         return super(Plugin, self).append(item)
 
@@ -295,11 +294,10 @@ class Instance(Item):
         item.data["label"] = item.data.get("label", item.data["name"])
 
         # GUI-only data
+        item.data["_type"] = "instance"
         item.data["_has_succeeded"] = False
         item.data["_has_failed"] = False
         item.data["_is_idle"] = True
-        item.data["_expanded"] = False
-        item.data["_is_expandable"] = False
 
         # Merge `family` and `families` for backwards compatibility
         item.data["__families__"] = ([item.data["family"]] +
@@ -380,18 +378,7 @@ class Terminal(Abstract):
             ExcLineNumber: "line_number",
             ExcFunc: "func",
             ExcExc: "exc",
-
-            # GUI-only data
-            Expanded: "_expanded",
-            IsExpandable: "_is_expandable",
         }
-
-    def append(self, item):
-        # GUI-only data
-        item["_expanded"] = False
-        item["_is_expandable"] = item.get("_is_expandable", False)
-
-        return super(Terminal, self).append(item)
 
     def data(self, index, role):
         item = self.items[index.row()]
@@ -440,9 +427,6 @@ class Terminal(Abstract):
                 "msg": record.msg,
                 "msecs": record.msecs,
                 "levelname": record.levelname,
-
-                # GUI-only data
-                "_is_expandable": True,
             })
 
         error = result["error"]
@@ -455,9 +439,6 @@ class Terminal(Abstract):
                 "line_number": line_no,
                 "func": func,
                 "exc": exc,
-
-                # GUI-only data
-                "_is_expandable": True
             })
 
 

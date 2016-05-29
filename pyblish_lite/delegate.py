@@ -11,6 +11,7 @@ colors = {
     "inactive": QtGui.QColor("#888"),
     "hover": QtGui.QColor(255, 255, 255, 10),
     "selected": QtGui.QColor(255, 255, 255, 20),
+    "outline": QtGui.QColor("#333"),
 }
 
 record_colors = {
@@ -22,15 +23,17 @@ record_colors = {
 }
 
 fonts = {
-    "h3": QtGui.QFont("Open Sans", 10, 400),
+    "h3": QtGui.QFont("Open Sans", 10, 900),
     "h4": QtGui.QFont("Open Sans", 8, 400),
     "h5": QtGui.QFont("Open Sans", 8, 800),
-    "awesome": QtGui.QFont("FontAwesome", 8)
+    "smallAwesome": QtGui.QFont("FontAwesome", 8),
+    "largeAwesome": QtGui.QFont("FontAwesome", 16),
 }
 
 icons = {
-    "info": u"\uf129",  # fa-info
+    "info": u"\uf129",     # fa-info
     "record": u"\uf111",   # fa-circle
+    "file": u"\uf15b",     # fa-file
     "error": u"\uf071",    # fa-exclamation-triangle
 }
 
@@ -124,19 +127,43 @@ class Artist(QtWidgets.QStyledItemDelegate):
 
     def paint(self, painter, option, index):
         """Paint checkbox and text
-         _
-        | |  My label
-        |_|  My family
+
+         _________________________________________
+        |       |  label              | duration  |
+        |toggle |_____________________|           |
+        |       |  families           |           |
+        |_______|_____________________|___________|
 
         """
 
-        rect = QtCore.QRectF(option.rect)
-        rect.setWidth(rect.height())
-        rect.adjust(0, 0, -35, 0)
+        # Layout
+        spacing = 10
+        metrics = painter.fontMetrics()
 
-        path = QtGui.QPainterPath()
-        path.addRect(rect)
+        body_rect = QtCore.QRectF(option.rect).adjusted(2, 2, -8, -2)
+        content_rect = body_rect.adjusted(5, 5, -5, -5)
 
+        toggle_rect = QtCore.QRectF(body_rect)
+        toggle_rect.setWidth(7)
+        toggle_rect.adjust(1, 1, 0, -1)
+
+        icon_rect = QtCore.QRectF(content_rect)
+        icon_rect.translate(toggle_rect.width() + spacing, 3)
+        icon_rect.setWidth(35)
+        icon_rect.setHeight(35)
+
+        duration_rect = QtCore.QRectF(content_rect)
+        duration_rect.translate(content_rect.width() - 50, 0)
+
+        label_rect = QtCore.QRectF(content_rect)
+        label_rect.translate(icon_rect.width() +
+                             spacing, 0)
+        label_rect.setHeight(metrics.lineSpacing() + spacing)
+
+        families_rect = QtCore.QRectF(label_rect)
+        families_rect.translate(0, label_rect.height())
+
+        # Colors
         check_color = colors["idle"]
 
         if index.data(model.IsProcessing) is True:
@@ -151,67 +178,69 @@ class Artist(QtWidgets.QStyledItemDelegate):
         elif index.data(model.HasProcessed) is True:
             check_color = colors["ok"]
 
-        metrics = painter.fontMetrics()
-
-        rect = QtCore.QRectF(option.rect.adjusted(rect.width() + 12, 0, 0, -2))
-        assert rect.width() > 0
-
+        icon = index.data(model.Icon) or icons["file"]
         label = index.data(model.Label)
+        families = ", ".join(index.data(model.Families))
+
+        # Elide
         label = metrics.elidedText(label,
                                    QtCore.Qt.ElideRight,
-                                   rect.width())
+                                   label_rect.width())
 
-        families = ", ".join(index.data(model.Families))
         families = metrics.elidedText(families,
                                       QtCore.Qt.ElideRight,
-                                      rect.width())
+                                      label_rect.width())
 
         font_color = colors["idle"]
         if not index.data(model.IsChecked):
             font_color = colors["inactive"]
 
-        hover = QtGui.QPainterPath()
-        hover.addRect(QtCore.QRectF(option.rect).adjusted(0, 0, -1, -1))
-
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
+        # Draw background
+        painter.fillRect(body_rect, colors["hover"])
+
+        painter.setFont(fonts["largeAwesome"])
+        painter.setPen(QtGui.QPen(font_color))
+        painter.drawText(icon_rect, icon)
+
         # Draw label
         painter.setFont(fonts["h3"])
-        painter.setPen(QtGui.QPen(font_color))
-        painter.drawText(rect, label)
-
-        rect = QtCore.QRectF(option.rect.adjusted(17, 18, 0, -2))
+        painter.drawText(label_rect, label)
 
         # Draw families
         painter.setFont(fonts["h5"])
         painter.setPen(QtGui.QPen(colors["inactive"]))
-        painter.drawText(rect, families)
+        painter.drawText(families_rect, families)
 
         # Draw checkbox
         pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
 
         if index.data(model.IsOptional):
-            painter.drawPath(path)
+            painter.drawRect(toggle_rect)
 
             if index.data(model.IsChecked):
-                painter.fillPath(path, check_color)
+                painter.fillRect(toggle_rect, check_color)
 
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
-                painter.fillPath(path, check_color)
+                painter.fillRect(toggle_rect, check_color)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
-            painter.fillPath(hover, colors["hover"])
+            painter.fillRect(body_rect, colors["hover"])
 
         if option.state & QtWidgets.QStyle.State_Selected:
-            painter.fillPath(hover, colors["selected"])
+            painter.fillRect(body_rect, colors["selected"])
+
+        painter.setPen(colors["outline"])
+        painter.drawRect(body_rect)
 
         # Ok, we're done, tidy up.
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 40)
+        return QtCore.QSize(option.rect.width(), 80)
 
 
 class Terminal(QtWidgets.QStyledItemDelegate):
@@ -258,20 +287,8 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(label_rect, label)
 
-        if index.data(model.Expanded):
-            painter.setPen(colors["inactive"])
-            y = metrics.height()
-
-            for key, value in index.data(model.Data).items():
-                if key.startswith("_"):
-                    continue
-
-                painter.drawText(label_rect.adjusted(0, y, 0, y),
-                                 "%s = %s" % (key, value))
-                y += metrics.height()
-
         # Draw icon
-        painter.setFont(fonts["awesome"])
+        painter.setFont(fonts["smallAwesome"])
         painter.setPen(QtGui.QPen(icon_color))
         painter.drawText(icon_rect, QtCore.Qt.AlignCenter, icon)
 
@@ -285,5 +302,4 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(),
-                            180 if index.data(model.Expanded) else 20)
+        return QtCore.QSize(option.rect.width(), 20)

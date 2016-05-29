@@ -601,6 +601,14 @@ class InactiveInstanceCollectorPlugin(pyblish.api.InstancePlugin):
         raise TypeError("I shouldn't have run in the first place")
 
 
+class CollectWithIcon(pyblish.api.ContextPlugin):
+    order = pyblish.api.CollectorOrder
+
+    def process(self, context):
+        instance = context.create_instance("With Icon")
+        instance.data["icon"] = u"\uf1c4"
+
+
 instances = [
     {
         "name": "Peter01",
@@ -714,6 +722,7 @@ plugins = [
     InactiveInstanceCollectorPlugin,
 
     CollectComment,
+    CollectWithIcon,
 ]
 
 pyblish.api.sort_plugins(plugins)
