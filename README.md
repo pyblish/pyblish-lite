@@ -4,7 +4,7 @@
 
 A lightweight alternative to [pyblish-qml](https://github.com/pyblish/pyblish-qml).
 
-![untitled](https://cloud.githubusercontent.com/assets/2152766/14935732/054d938c-0ed3-11e6-9468-a3935a0e5184.gif)
+![untitled](https://cloud.githubusercontent.com/assets/2152766/15649651/0785cdc2-266b-11e6-81aa-182e55234854.gif)
 
 **Supports**
 
