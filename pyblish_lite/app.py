@@ -4,7 +4,7 @@ import contextlib
 
 from Qt import QtWidgets, QtGui
 
-from . import control, util, window
+from . import control, util, window, compat
 
 
 @contextlib.contextmanager
@@ -47,6 +47,8 @@ def show(parent=None):
         css = css.replace("url(\"", "url(\"%s" % root)
 
     with application():
+        compat.init()
+
         install_fonts()
 
         ctrl = control.Controller()

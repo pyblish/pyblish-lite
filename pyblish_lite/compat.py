@@ -9,5 +9,6 @@ def __windows_taskbar_compat():
         u"pyblish_lite")
 
 
-if os.name == "nt":
-    __windows_taskbar_compat()
+def init():
+    if os.name == "nt":
+        __windows_taskbar_compat()
