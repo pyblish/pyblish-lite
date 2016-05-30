@@ -599,7 +599,7 @@ class Window(QtWidgets.QDialog):
                 "icon": index.data(model.Icon) or u"\uf0b0",  # fa-filter
                 "heading": index.data(model.Label),
                 "subheading": ", ".join(index.data(model.Families)),
-                "text": (index.data(model.Docstring) or "").split("\n")[0],
+                "text": index.data(model.Docstring) or "",
                 "timestamp": str(index.data(model.Duration) or 0) + " ms",
             })
 
@@ -608,7 +608,7 @@ class Window(QtWidgets.QDialog):
                 "icon": index.data(model.Icon) or u"\uf15b",  # fa-file
                 "heading": index.data(model.Label),
                 "subheading": ", ".join(index.data(model.Families)),
-                "text": "Some text",
+                "text": "",
                 "timestamp": str(index.data(model.Duration) or 0) + " ms",
             })
 

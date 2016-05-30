@@ -131,6 +131,7 @@ class Details(QtWidgets.QDialog):
         super(Details, self).__init__(parent)
         self.setWindowFlags(QtCore.Qt.Popup)
         self.setEnabled(False)
+        self.setFixedWidth(100)
 
         header = QtWidgets.QWidget()
 
@@ -144,13 +145,14 @@ class Details(QtWidgets.QDialog):
         layout.addWidget(icon, 0, 0)
         layout.addWidget(heading, 0, 1)
         layout.addWidget(timestamp, 0, 2)
-        layout.addWidget(subheading, 1, 0, 1, -1)
+        layout.addWidget(subheading, 1, 1, 1, -1)
         layout.setColumnStretch(1, 1)
         layout.setContentsMargins(5, 5, 5, 5)
 
         body = QtWidgets.QWidget()
 
         text = QtWidgets.QLabel()
+        text.setWordWrap(True)
 
         layout = QtWidgets.QVBoxLayout(body)
         layout.addWidget(text)
