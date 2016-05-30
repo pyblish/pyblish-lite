@@ -1,5 +1,7 @@
 ### Pyblish Lite
 
+[![Build Status](https://travis-ci.org/pyblish/pyblish-lite.svg?branch=master)](https://travis-ci.org/pyblish/pyblish-lite) [![Coverage Status](https://coveralls.io/repos/github/pyblish/pyblish-lite/badge.svg?branch=master)](https://coveralls.io/github/pyblish/pyblish-lite?branch=master)
+
 A lightweight alternative to [pyblish-qml](https://github.com/pyblish/pyblish-qml).
 
 ![untitled](https://cloud.githubusercontent.com/assets/2152766/14935732/054d938c-0ed3-11e6-9468-a3935a0e5184.gif)

@@ -209,6 +209,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 }
 
 #Details {
+	width: 20px;
 	background: #333;
 	border: 1px solid #222;
 }
@@ -227,7 +228,6 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 }
 
 #Details #Heading {
-	padding-left: 7px;  /* Leave space for mouse cursor */
 	font-size: 9pt;
 	font-weight: bold;
 }
@@ -236,9 +236,16 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 	background: transparent;
 }
 
-#Details #Duration {
+#Details #Timestamp {
 	color: #999;
 }
 
-#Details #Docstring {
+#Details #Text {
+	font-family: "Courier";
+	font-size: 9pt;
+}
+
+#Details #Icon {
+	font-family: "FontAwesome";
+	font-size: 15pt;
 }

@@ -5,8 +5,8 @@ class Item(QtWidgets.QListView):
     # An item is requesting to be toggled, with optional forced-state
     toggled = QtCore.Signal("QModelIndex", object)
 
-    # An item is requesting details, True means show, False means hide
-    inspected = QtCore.Signal("QModelIndex", bool)
+    # An item is requesting details
+    inspected = QtCore.Signal("QModelIndex")
 
     def __init__(self, parent=None):
         super(Item, self).__init__(parent)
@@ -17,8 +17,6 @@ class Item(QtWidgets.QListView):
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.setResizeMode(QtWidgets.QListView.Adjust)
         self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
-
-        self._inspecting = False
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
@@ -51,37 +49,27 @@ class Item(QtWidgets.QListView):
         self._inspecting = False
         super(Item, self).leaveEvent(event)
 
-    def mouseMoveEvent(self, event):
-        if self._inspecting:
-            index = self.indexAt(event.pos())
-            self.inspected.emit(index, True) if index.isValid() else None
-
-        return super(Item, self).mouseMoveEvent(event)
-
     def mousePressEvent(self, event):
-        self._inspecting = event.button() == QtCore.Qt.MidButton
+        if event.button() == QtCore.Qt.MidButton:
+            index = self.indexAt(event.pos())
+            self.inspected.emit(index) if index.isValid() else None
+
         return super(Item, self).mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             indexes = self.selectionModel().selectedIndexes()
-            if len(indexes) <= 1:
+            if len(indexes) <= 1 and event.pos().x() < 20:
                 for index in indexes:
                     self.toggled.emit(index, None)
-
-        if event.button() == QtCore.Qt.MidButton:
-            index = self.indexAt(event.pos())
-            self.inspected.emit(index, False) if index.isValid() else None
-            self._inspecting = False
 
         return super(Item, self).mouseReleaseEvent(event)
 
 
 class LogView(QtWidgets.QListView):
 
-    # Expand an item, defaults to (None) toggling currently active state.
-    # Force a state via True or False.
-    expanded = QtCore.Signal("QModelIndex", object)
+    # An item is requesting details
+    inspected = QtCore.Signal("QModelIndex")
 
     def __init__(self, parent=None):
         super(LogView, self).__init__(parent)
@@ -92,12 +80,19 @@ class LogView(QtWidgets.QListView):
         self.setSelectionMode(QtWidgets.QListView.ExtendedSelection)
         self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
 
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.MidButton:
+            index = self.indexAt(event.pos())
+            self.inspected.emit(index) if index.isValid() else None
+
+        return super(LogView, self).mousePressEvent(event)
+
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             indexes = self.selectionModel().selectedIndexes()
-            if len(indexes) <= 1:
+            if len(indexes) <= 1 and event.pos().x() < 20:
                 for index in indexes:
-                    self.expanded.emit(index, None)
+                    self.toggled.emit(index, None)
 
         return super(LogView, self).mouseReleaseEvent(event)
 
@@ -119,31 +114,48 @@ class LogView(QtWidgets.QListView):
 
 
 class Details(QtWidgets.QDialog):
+    """Popup dialog with detailed information
+     _____________________________________
+    |                                     |
+    | Header                    Timestamp |
+    | Subheading                          |
+    |                                     |
+    |-------------------------------------|
+    |                                     |
+    | Text                                |
+    |_____________________________________|
+
+    """
+
     def __init__(self, parent=None):
         super(Details, self).__init__(parent)
-        self.setWindowFlags(QtCore.Qt.ToolTip)
+        self.setWindowFlags(QtCore.Qt.Popup)
+        self.setEnabled(False)
+        self.setFixedWidth(100)
 
         header = QtWidgets.QWidget()
 
-        label = QtWidgets.QLabel("My Instance")
-        families = QtWidgets.QLabel("default, cfx, simRig")
-        duration = QtWidgets.QLabel("255 ms")
-        spacer = QtWidgets.QWidget()
+        icon = QtWidgets.QLabel()
+        heading = QtWidgets.QLabel()
+        subheading = QtWidgets.QLabel()
+        timestamp = QtWidgets.QLabel()
+        timestamp.setFixedWidth(50)
 
         layout = QtWidgets.QGridLayout(header)
-        layout.addWidget(label, 0, 0)
-        layout.addWidget(families, 1, 0)
-        layout.addWidget(spacer, 0, 1)
-        layout.addWidget(duration, 0, 2)
+        layout.addWidget(icon, 0, 0)
+        layout.addWidget(heading, 0, 1)
+        layout.addWidget(timestamp, 0, 2)
+        layout.addWidget(subheading, 1, 1, 1, -1)
         layout.setColumnStretch(1, 1)
         layout.setContentsMargins(5, 5, 5, 5)
 
         body = QtWidgets.QWidget()
 
-        docstring = QtWidgets.QLabel("Hello World")
+        text = QtWidgets.QLabel()
+        text.setWordWrap(True)
 
         layout = QtWidgets.QVBoxLayout(body)
-        layout.addWidget(docstring)
+        layout.addWidget(text)
         layout.setContentsMargins(5, 5, 5, 5)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -158,32 +170,39 @@ class Details(QtWidgets.QDialog):
 
         names = {
             # Main
+            "Icon": icon,
             "Header": header,
 
-            "Heading": label,
-            "Subheading": families,
-            "Duration": duration,
+            "Heading": heading,
+            "Subheading": subheading,
+            "Timestamp": timestamp,
 
             "Body": body,
-            "Docstring": docstring,
+            "Text": text,
         }
 
         for name, widget in names.items():
             widget.setObjectName(name)
 
-    def init(self, data):
-        for widget, key in {"Heading": "label",
-                            "Subheading": "families",
-                            "Duration": "duration",
-                            "Docstring": "docstring"}.items():
+    def show(self, data):
+        # Open before initializing; this allows the widget to properly
+        # size itself before filling it with content. The content can
+        # then elide itself properly.
+
+        for widget, key in {"Icon": "icon",
+                            "Heading": "heading",
+                            "Subheading": "subheading",
+                            "Timestamp": "timestamp",
+                            "Text": "text"}.items():
             widget = self.findChild(QtWidgets.QWidget, widget)
-            value = data[key]
+            value = data.get(key, "")
 
-            value = widget.fontMetrics().elidedText(value,
-                                                    QtCore.Qt.ElideRight,
-                                                    widget.width())
+            if key != "text":
+                value = widget.fontMetrics().elidedText(value,
+                                                        QtCore.Qt.ElideRight,
+                                                        widget.width())
             widget.setText(value)
+            widget.updateGeometry()
 
-    def leaveEvent(self, event):
-        self.hide()
-        return super(Details, self).leaveEvent(event)
+        self.updateGeometry()
+        self.setVisible(True)

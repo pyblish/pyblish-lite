@@ -428,6 +428,14 @@ class Window(QtWidgets.QDialog):
                 "plugins": plugin_model,
                 "terminal": terminal_model,
             },
+            "terminal_toggles": {
+                "record": show_records,
+                "debug": show_debug,
+                "info": show_info,
+                "warning": show_warning,
+                "error": show_error,
+                "critical": show_critical
+            },
             "tabs": {
                 "artist": artist_tab,
                 "overview": overview_tab,
@@ -495,11 +503,14 @@ class Window(QtWidgets.QDialog):
                                             QtCore.Qt.DirectConnection)
 
         artist_view.toggled.connect(self.on_item_toggled)
-        left_view.inspected.connect(self.on_item_inspected)
-        right_view.inspected.connect(self.on_item_inspected)
         left_view.toggled.connect(self.on_item_toggled)
         right_view.toggled.connect(self.on_item_toggled)
-        terminal_view.expanded.connect(self.on_item_expanded)
+
+        artist_view.inspected.connect(self.on_item_inspected)
+        left_view.inspected.connect(self.on_item_inspected)
+        right_view.inspected.connect(self.on_item_inspected)
+        terminal_view.inspected.connect(self.on_item_inspected)
+
         reset.clicked.connect(self.on_reset_clicked)
         validate.clicked.connect(self.on_validate_clicked)
         play.clicked.connect(self.on_play_clicked)
@@ -539,19 +550,67 @@ class Window(QtWidgets.QDialog):
 
         index.model().setData(index, state, model.Expanded)
 
-    def on_item_inspected(self, index, state):
+    def on_item_inspected(self, index):
         details = self.data["modals"]["details"]
+        details.move(QtGui.QCursor.pos())
 
-        if state is True:
-            details.move(QtGui.QCursor.pos())
-            details.init({
-                "label": index.data(model.Label),
-                "families": ", ".join(index.data(model.Families)),
-                "duration": str(index.data(model.Duration) or 0) + " ms",
-                "docstring": (index.data(model.Docstring) or "").split("\n")[0]
+        if index.data(model.Type) == "record":
+
+            # Compose available data
+            data = list()
+            for key, value in index.data(model.Data).items():
+                if key.startswith("_"):
+                    continue
+
+                data.append("%s %s" % ((key + ":").ljust(12), value))
+
+            text = "\n".join(data)
+
+            details.show({
+                "icon": u"\uf111",  # fa-circle
+                "heading": index.data(model.Label).split("\n")[0],
+                "subheading": "LogRecord (%s)" % index.data(model.LogLevel),
+                "text": text,
+                "timestamp": "",
             })
 
-        details.setVisible(state)
+        elif index.data(model.Type) == "error":
+
+            # Compose available data
+            data = list()
+            for key, value in index.data(model.Data).items():
+                if key.startswith("_"):
+                    continue
+
+                data.append("%s %s" % ((key + ":").ljust(12), value))
+
+            text = "\n".join(data)
+
+            details.show({
+                "icon": u"\uf071",  # fa-exclamation-triangle
+                "heading": index.data(model.Label).split("\n")[0],
+                "subheading": "Exception",
+                "text": text,
+                "timestamp": "",
+            })
+
+        elif index.data(model.Type) == "plugin":
+            details.show({
+                "icon": index.data(model.Icon) or u"\uf0b0",  # fa-filter
+                "heading": index.data(model.Label),
+                "subheading": ", ".join(index.data(model.Families)),
+                "text": index.data(model.Docstring) or "",
+                "timestamp": str(index.data(model.Duration) or 0) + " ms",
+            })
+
+        elif index.data(model.Type) == "instance":
+            details.show({
+                "icon": index.data(model.Icon) or u"\uf15b",  # fa-file
+                "heading": index.data(model.Label),
+                "subheading": ", ".join(index.data(model.Families)),
+                "text": "",
+                "timestamp": str(index.data(model.Duration) or 0) + " ms",
+            })
 
     def on_item_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
