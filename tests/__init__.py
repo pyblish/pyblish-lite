@@ -2,6 +2,7 @@ import os
 import sys
 
 import pyblish_lite
+from pyblish_lite.vendor import Qt
 from Qt import QtCore
 
 # Remove artificial delay from GUI
