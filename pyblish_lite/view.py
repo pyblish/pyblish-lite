@@ -87,15 +87,6 @@ class LogView(QtWidgets.QListView):
 
         return super(LogView, self).mousePressEvent(event)
 
-    def mouseReleaseEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            indexes = self.selectionModel().selectedIndexes()
-            if len(indexes) <= 1 and event.pos().x() < 20:
-                for index in indexes:
-                    self.toggled.emit(index, None)
-
-        return super(LogView, self).mouseReleaseEvent(event)
-
     def rowsInserted(self, parent, start, end):
         """Automatically scroll to bottom on each new item added
 
