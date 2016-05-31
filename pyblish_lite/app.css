@@ -249,3 +249,24 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 	font-family: "FontAwesome";
 	font-size: 15pt;
 }
+
+ActionMenu {
+	max-width: 150px;
+	min-width: 150px;
+	background: #444;
+	border: 1px solid #222;
+}
+
+ActionMenu QPushButton {
+	background: transparent;
+	text-align: left;
+	font-size: 7pt;
+	padding-left: 40px;
+}
+
+ActionMenu QLabel {
+	font-size: 15pt;
+	padding-left: 3px;
+	padding-top: 2px;
+	font-family: "FontAwesome";
+}

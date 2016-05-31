@@ -19,6 +19,22 @@ Python 2.6+ and Python 3.x+
 <br>
 <br>
 
+### Installation
+
+All Pyblish projects are installable as-is and without dependencies directly via git.
+
+```bash
+$ git clone https://github.com/pyblish/pyblish-lite
+
+# Windows
+$ set PYTHONPATH=%cd%\pyblish-lite
+
+# Unix & OSX
+$ export PYTHONPATH=$(pwd)/pyblish-lite
+
+$ python -m pyblish_lite --debug
+```
+
 ### Usage
 
 Pyblish Lite runs both standalone and from a host and requires either PySide of PyQt bindings to be readily available.
