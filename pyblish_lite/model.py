@@ -199,13 +199,13 @@ class Plugin(Item):
 
             # Context specific actions
             for action in actions:
-                if action.on == "failed" and not item.has_failed:
+                if action.on == "failed" and not item._has_failed:
                     actions.remove(action)
-                if action.on == "succeeded" and not item.has_succeeded:
+                if action.on == "succeeded" and not item._has_succeeded:
                     actions.remove(action)
-                if action.on == "processed" and not item.has_processed:
+                if action.on == "processed" and not item._has_processed:
                     actions.remove(action)
-                if action.on == "notProcessed" and item.has_processed:
+                if action.on == "notProcessed" and item._has_processed:
                     actions.remove(action)
 
             # Discard empty groups
