@@ -606,7 +606,7 @@ class CollectWithIcon(pyblish.api.ContextPlugin):
 
     def process(self, context):
         instance = context.create_instance("With Icon")
-        instance.data["icon"] = u"\uf1c4"
+        instance.data["icon"] = "play"
 
 
 instances = [

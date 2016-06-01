@@ -43,6 +43,7 @@ Todo:
 from Qt import QtCore, QtWidgets, QtGui
 
 from . import model, view, util, delegate
+from .awesome import tags as awesome
 
 
 class Window(QtWidgets.QDialog):
@@ -254,10 +255,10 @@ class Window(QtWidgets.QDialog):
         footer = QtWidgets.QWidget()
         info = QtWidgets.QLabel()
         spacer = QtWidgets.QWidget()
-        reset = QtWidgets.QPushButton(u"\uf021")  # fa-refresh
-        validate = QtWidgets.QPushButton(u"\uf0c3")   # fa-flask
-        play = QtWidgets.QPushButton(u"\uf04b")   # fa-play
-        stop = QtWidgets.QPushButton(u"\uf04d")   # fa-stop
+        reset = QtWidgets.QPushButton(awesome["refresh"])
+        validate = QtWidgets.QPushButton(awesome["flask"])
+        play = QtWidgets.QPushButton(awesome["play"])
+        stop = QtWidgets.QPushButton(awesome["stop"])
 
         layout = QtWidgets.QHBoxLayout(footer)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -568,7 +569,7 @@ class Window(QtWidgets.QDialog):
             text = "\n".join(data)
 
             details.show({
-                "icon": u"\uf111",  # fa-circle
+                "icon": awesome["circle"],
                 "heading": index.data(model.Label).split("\n")[0],
                 "subheading": "LogRecord (%s)" % index.data(model.LogLevel),
                 "text": text,
@@ -588,7 +589,7 @@ class Window(QtWidgets.QDialog):
             text = "\n".join(data)
 
             details.show({
-                "icon": u"\uf071",  # fa-exclamation-triangle
+                "icon": awesome["exclamation-triangle"],
                 "heading": index.data(model.Label).split("\n")[0],
                 "subheading": "Exception",
                 "text": text,
@@ -597,7 +598,7 @@ class Window(QtWidgets.QDialog):
 
         elif index.data(model.Type) == "plugin":
             details.show({
-                "icon": index.data(model.Icon) or u"\uf0b0",  # fa-filter
+                "icon": index.data(model.Icon) or awesome["filter"],
                 "heading": index.data(model.Label),
                 "subheading": ", ".join(index.data(model.Families)),
                 "text": index.data(model.Docstring) or "",
@@ -606,7 +607,7 @@ class Window(QtWidgets.QDialog):
 
         elif index.data(model.Type) == "instance":
             details.show({
-                "icon": index.data(model.Icon) or u"\uf15b",  # fa-file
+                "icon": index.data(model.Icon) or awesome["file"],
                 "heading": index.data(model.Label),
                 "subheading": ", ".join(index.data(model.Families)),
                 "text": "",
