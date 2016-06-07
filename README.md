@@ -28,6 +28,8 @@ $ pip install pyblish-lite
 $ python -m pyblish_lite --debug  # Test install
 ```
 
+Requires [pyblish-base](https://github.com/pyblish/pyblish-base).
+
 ### Usage
 
 Pyblish Lite runs both standalone and from a host and requires either PySide of PyQt bindings to be readily available.

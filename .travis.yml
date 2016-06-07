@@ -24,7 +24,7 @@ install:
   - sudo apt-get install -y python3-pyqt4 python3-pyside
   - python -c "import PySide;print(PySide)"
   - python -c "import PyQt4;print(PyQt4)"
-  - pip install -r requirements.txt
+  - pip install pyblish-base
 
 # Enable virtual framebuffer, this way we can instantiate
 # a QApplication and create widgets.
@@ -48,4 +48,4 @@ deploy:
   on:
     tags: true
     repo: pyblish/pyblish-lite
-    python: 3.4
+    python: 2.7
