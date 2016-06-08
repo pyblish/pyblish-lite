@@ -1,26 +1,49 @@
 language: python
 
+sudo: required
+dist: trusty
+
 python:
+  - 2.7
   - 3.4
 
-addons:
-  apt:
-    packages:
-    - qt4-qmake
-    - libqt4-dev
+services:
+  - docker
+
+env:
+  QT_VERBOSE=true
+
+virtualenv:
+  # apt-install ends up amongst system packages
+  system_site_packages: true
 
 install:
-  - pip install --upgrade pip
-  
-  # Preferred PySide installation, it is faster
   # Based on http://stackoverflow.com/a/24545890/478949
-  - pip install PySide --no-index --find-links https://parkin.github.io/python-wheelhouse/;
-  - python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
-  
-  - pip install -r requirements.txt
+  - sudo apt-get install -y qt4-qmake libqt4-dev
+  - sudo apt-get install -y python-pyside python3-pyside
+  - python -c "import PySide;print(PySide)"
+  - pip install pyblish-base
+
+# Enable virtual framebuffer, this way we can instantiate
+# a QApplication and create widgets.
+# https://docs.travis-ci.com/user/gui-and-headless-browsers/
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
 
 script:
-  - python run_tests.py
+- python run_tests.py
 
 after_success:
-  - coveralls
+- coveralls
+
+deploy:
+  provider: pypi
+  user: mottosso
+  password:
+    secure: IEY2MxMpwdoq8JbAZsX9VTrlpmBmh82ZJl2v4+mWNj9FxP8T76LhhfSwr2+P0GwFwx4I2z8wvzqz7lu+CQN/jRylsDyrFayac89+XH0OMaCk/yNk7VBmcigDJus1HZ3nzgTrP/hmxUf51i0wYvLYPqO9d77DIrv918BmNy+lMQIHjJ7tIQYtm3vWxmA84HVsZxdNUCDyEbFLg0DwV9xtw20j7txd0SrQnPO3gygKJOFOVRaYNB1r79FXNObQKAH8yh5t1viuz4DuCWIlvdHRuPs+/NUZDjQIWZHo4OdSr921oK19xr1q9NyF2RruII+rttBo2g2wMIQ9+QrmVfq7JSy79wbPcsBeqUEOGLV5sPrHsP6bbPn902rBoI0q6rLeLgvutHckcr9sqmGJz1wpIhqQGfISbQ9ZoyJIxlOXoEewi/d9XsZiROXqjHWHUmT1HJHL0nxQ6lLJyYVz4WIkrkIEuTL5X64gHwcxFf1UQsYkBf89lKVomxOWwIZsf/ttiLt2eUzE8dW45E6jFrlaUJBGE/It8TYHZ1VcTNdsyt369wKCgnQwb+6Cj4uHYaXLDsRxjllKAApbVFCfO1fWANhGeC0H7jgcf/qFl1kVOvb4o71/lzWpR9qzKe7uswUo9GXvKRe8GkO1W+BgHcAyDfu6GSR1q1QIlafDp82JIZU=
+  on:
+    tags: true
+    repo: pyblish/pyblish-lite
+    python: 2.7
