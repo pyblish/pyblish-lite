@@ -20,7 +20,7 @@ virtualenv:
 install:
   # Based on http://stackoverflow.com/a/24545890/478949
   - sudo apt-get install -y qt4-qmake libqt4-dev
-  - sudo apt-get install -y python-pyside
+  - sudo apt-get install -y python-pyside python3-pyside
   - python -c "import PySide;print(PySide)"
   - pip install pyblish-base
 
