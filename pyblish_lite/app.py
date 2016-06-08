@@ -22,18 +22,6 @@ def application():
         yield app
 
 
-@contextlib.contextmanager
-def stylesheet():
-    with open(util.get_asset("app.css")) as f:
-        css = f.read()
-
-        # Make relative paths absolute
-        root = util.get_asset("").replace("\\", "/")
-        css = css.replace("url(\"", "url(\"%s" % root)
-
-    yield css
-
-
 def install_fonts():
     database = QtGui.QFontDatabase()
 
@@ -76,9 +64,7 @@ def show(parent=None):
         font.setWeight(400)
 
         win.setFont(font)
-
-        with stylesheet() as css:
-            win.setStyleSheet(css)
+        win.setStyleSheet(css)
 
         win.reset()
 
