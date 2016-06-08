@@ -20,10 +20,8 @@ virtualenv:
 install:
   # Based on http://stackoverflow.com/a/24545890/478949
   - sudo apt-get install -y qt4-qmake libqt4-dev
-  - sudo apt-get install -y python-qt4 python-pyside
-  - sudo apt-get install -y python3-pyqt4 python3-pyside
+  - sudo apt-get install -y python-pyside
   - python -c "import PySide;print(PySide)"
-  - python -c "import PyQt4;print(PyQt4)"
   - pip install pyblish-base
 
 # Enable virtual framebuffer, this way we can instantiate
