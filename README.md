@@ -30,48 +30,46 @@ $ python -m pyblish_lite --debug  # Test install
 
 Requires [pyblish-base](https://github.com/pyblish/pyblish-base).
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
 <br>
 <br>
 <br>
 
-=======
->>>>>>> c1e9bf571174619bd0e60642c28d0e91097e5ebb
->>>>>>> Stashed changes
 ### Usage
 
 Pyblish Lite runs both standalone and from a host and requires either PySide of PyQt bindings to be readily available.
 
-**Terminal**
+- [Terminal](#terminal)
+- [Python](#python)
+- [Maya](#maya)
+- [Nuke](#nuke)
+- [Mari](#mari)
+- [Houdini](#houdini)
+
+##### Terminal
 
 ```bash
 $ python -m pyblish_lite
 ```
 
-**Python**
+##### Python
 
 ```python
 import pyblish_lite
 pyblish_lite.show()
 ```
 
-**Maya**
+##### Maya
 
 ```python
-from PySide import QtGui
-
 import pyblish.api
 import pyblish_lite
 
 pyblish.api.register_host("maya")
 
-parent = {o.objectName(): o for o in QtGui.qApp.topLevelWidgets()}["MayaWindow"]
-window = pyblish_lite.show(parent)
+window = pyblish_lite.show()
 ```
 
-**Nuke**
+##### Nuke
 
 ```python
 import pyblish.api
@@ -82,7 +80,7 @@ pyblish.api.register_host("nuke")
 window = pyblish_lite.show()
 ```
 
-**Mari**
+##### Mari
 
 ```python
 from PySide import QtGui
@@ -99,19 +97,15 @@ parent = QtGui.qApp.activeWindow()
 window = pyblish_lite.show(parent)
 ```
 
-**Houdini 15**
+##### Houdini
 
-ATTENTION: This must be started from a shelf button.
+ATTENTION: This can't be run from the Houdini Python terminal, it'll crash the process.
 
 ```python
-import hou
 import pyblish.api
 import pyblish_lite
 
 pyblish.api.register_host("houdini")
 
-parent = hou.ui.mainQtWindow()
-window = pyblish_lite.show(parent)
+window = pyblish_lite.show()
 ```
-
-Houdini < 15.0 doesn't have the call to `mainQtWindow` but should work well without it, unless you find a way to grab the window yourself.
