@@ -13,9 +13,7 @@ RUN apt-get update && apt-get install -y \
     git \
     python-pyside \
     python-pip \
-    python-nose && \
-    pip install \
-        coverage
+    python-nose
 
 RUN mkdir /deps && cd /deps && \
     git clone https://github.com/pyblish/pyblish-base

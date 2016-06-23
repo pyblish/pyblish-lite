@@ -8,7 +8,7 @@ A lightweight alternative to [pyblish-qml](https://github.com/pyblish/pyblish-qm
 
 **Supports**
 
-Python 2.6+ and Python 3.x+
+Python 2.6+ and Python 3.x
 
 - PySide
 - PySide2
@@ -108,4 +108,34 @@ import pyblish_lite
 pyblish.api.register_host("houdini")
 
 window = pyblish_lite.show()
+```
+
+<br>
+<br>
+<br>
+
+### Testing
+
+Tests are automatically run at each commit to GitHub via Travis-CI. You can run these tests locally via Docker too.
+
+```bash
+$ git clone https://github.com/pyblish/pyblish-lite.git
+$ cd pyblish-lite
+$ docker build -t pyblish/pyblish-lite .
+$ docker run --rm -v $(pwd):/pyblish-lite pyblish/pyblish-lite
+# Doctest: pyblish_lite.model.ProxyModel ... ok
+# Doctest: pyblish_lite.util.get_asset ... ok
+# Anything runs ... ok
+# Logging things that aren't string is fine ... ok
+# Resetting works the way you'd expect ... ok
+# Publishing works the way you'd expect ... ok
+# Only supported families are published ... ok
+# Only active plugins are published ... ok
+# Only active instances are published ... ok
+# Logging things that aren't string is fine ... ok
+#
+# ----------------------------------------------------------------------
+# Ran 10 tests in 0.357s
+#
+# OK
 ```
