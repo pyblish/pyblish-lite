@@ -1,10 +1,6 @@
-language: python
 
 sudo: required
 dist: trusty
-
-python:
-  - 2.7
 
 services:
   - docker
@@ -24,4 +20,3 @@ deploy:
   on:
     tags: true
     repo: pyblish/pyblish-lite
-    python: 2.7
