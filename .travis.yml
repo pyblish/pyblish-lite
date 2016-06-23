@@ -5,38 +5,16 @@ dist: trusty
 
 python:
   - 2.7
-  - 3.4
 
 services:
   - docker
 
-env:
-  QT_VERBOSE=true
-
-virtualenv:
-  # apt-install ends up amongst system packages
-  system_site_packages: true
-
-install:
-  # Based on http://stackoverflow.com/a/24545890/478949
-  - sudo apt-get install -y qt4-qmake libqt4-dev
-  - sudo apt-get install -y python-pyside python3-pyside
-  - python -c "import PySide;print(PySide)"
-  - pip install pyblish-base
-
-# Enable virtual framebuffer, this way we can instantiate
-# a QApplication and create widgets.
-# https://docs.travis-ci.com/user/gui-and-headless-browsers/
-before_script:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 3 # give xvfb some time to start
-
 script:
-- python run_tests.py
+  - docker build -t pyblish/pyblish-lite .
+  - docker run --rm -v $(pwd):/pyblish-lite pyblish/pyblish-lite
 
-after_success:
-- coveralls
+  # Test setup.py
+  - pip install --upgrade --force-reinstall file://$(pwd)
 
 deploy:
   provider: pypi
