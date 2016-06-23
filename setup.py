@@ -42,4 +42,7 @@ setup(
             "font/opensans/*.ttf"
         ],
     },
+    install_requires=[
+        "pyblish-base>=1.4"
+    ],
 )

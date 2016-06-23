@@ -10,7 +10,7 @@ script:
   - docker run --rm -v $(pwd):/pyblish-lite pyblish/pyblish-lite
 
   # Test setup.py
-  - pip install --upgrade --force-reinstall file://$(pwd)
+  - sudo pip install --upgrade --force-reinstall file://$(pwd)
 
 deploy:
   provider: pypi
