@@ -1,6 +1,7 @@
 from Qt import QtWidgets, QtGui, QtCore
 
 from . import model
+from .awesome import tags as awesome
 
 colors = {
     "warning": QtGui.QColor("#ff4a4a"),
@@ -31,10 +32,10 @@ fonts = {
 }
 
 icons = {
-    "info": u"\uf129",     # fa-info
-    "record": u"\uf111",   # fa-circle
-    "file": u"\uf15b",     # fa-file
-    "error": u"\uf071",    # fa-exclamation-triangle
+    "info": awesome["info"],
+    "record": awesome["circle"],
+    "file": awesome["file"],
+    "error": awesome["exclamation-triangle"],
 }
 
 
@@ -48,12 +49,11 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         """
 
-        check_rect = QtCore.QRectF(option.rect)
+        body_rect = QtCore.QRectF(option.rect)
+
+        check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
         check_rect.adjust(6, 6, -6, -6)
-
-        check_path = QtGui.QPainterPath()
-        check_path.addRect(check_rect)
 
         check_color = colors["idle"]
 
@@ -85,9 +85,6 @@ class Item(QtWidgets.QStyledItemDelegate):
         if not index.data(model.IsChecked):
             font_color = colors["inactive"]
 
-        hover = QtGui.QPainterPath()
-        hover.addRect(QtCore.QRectF(option.rect).adjusted(0, 0, -1, -1))
-
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
 
@@ -101,19 +98,19 @@ class Item(QtWidgets.QStyledItemDelegate):
         painter.setPen(pen)
 
         if index.data(model.IsOptional):
-            painter.drawPath(check_path)
+            painter.drawRect(check_rect)
 
             if index.data(model.IsChecked):
-                painter.fillPath(check_path, check_color)
+                painter.fillRect(check_rect, check_color)
 
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
-                painter.fillPath(check_path, check_color)
+                painter.fillRect(check_rect, check_color)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
-            painter.fillPath(hover, colors["hover"])
+            painter.fillRect(body_rect, colors["hover"])
 
         if option.state & QtWidgets.QStyle.State_Selected:
-            painter.fillPath(hover, colors["selected"])
+            painter.fillRect(body_rect, colors["selected"])
 
         # Ok, we're done, tidy up.
         painter.restore()

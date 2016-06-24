@@ -25,6 +25,7 @@ Roles:
 """
 
 from Qt import QtCore, __binding__
+from .awesome import tags as awesome
 
 
 # GENERAL
@@ -189,6 +190,9 @@ class Plugin(Item):
         if role == Data:
             return {}
 
+        if role == Icon:
+            return awesome.get(getattr(item, "icon", ""))
+
         if role == Actions:
 
             # Can only run actions on active plug-ins.
@@ -310,6 +314,9 @@ class Instance(Item):
 
         if role == Data:
             return item.data
+
+        if role == Icon:
+            return awesome.get(item.data.get("icon"))
 
         key = self.schema.get(role)
 
