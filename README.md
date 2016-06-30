@@ -114,6 +114,66 @@ window = pyblish_lite.show()
 <br>
 <br>
 
+### Documentation
+
+Below is the current and full documentation of Lite.
+
+<br>
+
+##### Artist View
+
+Launching Lite brings you to the landing page, called "Artist View".
+
+![](http://forums.pyblish.com/uploads/default/original/1X/92c8f51dfe3da624a249f55e88f95b6a7d83193a.gif)
+
+It's designed to provide a minimal set of information relevant to any user, without going into detail. Here you can control the icon with which an instance is drawn via the `icon` data member.
+
+```python
+instance.data["icon"] = "random"
+```
+
+Icons are derived from a font library known as FontAwesome. Their names and appearance can be found here:
+
+- [fontawesome.io/icons/](http://fontawesome.io/icons/)
+
+As a future suggestion, maybe we'd also like to visualise some form of `description` or `message` here as well?
+
+<br>
+
+##### Overview
+
+The next tab brings you to the full overview of available instances and the plug-ins associated with those instances. Here the user may toggle instances, like before, but also plug-ins tagged as `optional=True`.
+
+In Lite's bigger brother QML, plug-ins that are not compatible with any instance are excluded from this list, simplifying situations where you may have hundreds of them, but only a few are relevant. This is an upcoming feature in Lite.
+
+<br>
+
+##### Terminal
+
+Finally, the last tab provides a full record of everything logged from within a plug-in, along with exceptions raised (for the artist) and their exact location in Python (for the developer).
+
+QML also features filtering of these messages, via log `level` and freeform text search.
+
+<br>
+
+##### Middle Clicking
+
+Throughout the application, middle-click on things to visualise additional information about any object.
+
+<br>
+
+##### Comment
+
+By adding `context.data["comment"] = ""` to your, a comment-box will be provided in the GUI for your user. The data entered here will update whatever value you passed into the `comment` data member.
+
+Other than providing an empty string as value, you may also provide a placeholder of sorts.
+
+For example, you may let your user know what is expected to type in or provide an automatic message of sorts, based on information available at that particular time and place.
+
+<br>
+<br>
+<br>
+
 ### Testing
 
 Tests are automatically run at each commit to GitHub via Travis-CI. You can run these tests locally via Docker too.
