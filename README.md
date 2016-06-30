@@ -118,9 +118,29 @@ window = pyblish_lite.show()
 
 Below is the current and full documentation of Lite.
 
+Currently, it has all things Pyblish QML except the perspective view, plus a few extras.
+
+- [Keyboard shortcuts](#keyboard-shortcuts)
+- [Artist view](#artist-view)
+- [Middle-click on any item to explore it's properties](#middle-click)
+- [Comment section](#comment)
+- Scrollbars
+- Select multiple items
+- Remembers checked state between refreshes
+- Continue publishing after successful validation
+
+##### Keyboard shortcuts
+
+- Select a single item to toggle
+- **Drag**, **CTRL** or **SHIFT** select to select multiple items
+- Invert check with **Space**
+- Toggle ON with **Enter**
+- Toggle OFF with **Backspace**
+- **CTRL+A** to select all
+
 <br>
 
-##### Artist View
+##### Artist view
 
 Launching Lite brings you to the landing page, called "Artist View".
 
@@ -146,7 +166,7 @@ The next tab brings you to the full overview of available instances and the plug
 
 In Lite's bigger brother QML, plug-ins that are not compatible with any instance are excluded from this list, simplifying situations where you may have hundreds of them, but only a few are relevant. This is an upcoming feature in Lite.
 
-<br>
+<br>	
 
 ##### Terminal
 
@@ -156,19 +176,19 @@ QML also features filtering of these messages, via log `level` and freeform text
 
 <br>
 
-##### Middle Clicking
+##### Middle Click
 
-Throughout the application, middle-click on things to visualise additional information about any object.
+In Pyblish QML, items in the terminal are expanded to reveal more information about any particular message, like at which module and line within that module it came from. This information is available via middle-click.
 
-<br>
+![middle](https://cloud.githubusercontent.com/assets/2152766/16478617/906b599c-3e92-11e6-9bd3-93447740503c.gif)
 
 ##### Comment
 
-By adding `context.data["comment"] = ""` to your, a comment-box will be provided in the GUI for your user. The data entered here will update whatever value you passed into the `comment` data member.
+Add `context.data["comment"] = ""` and the GUI adds a widget to interactively modify that data member.
 
-Other than providing an empty string as value, you may also provide a placeholder of sorts.
+![comment](https://cloud.githubusercontent.com/assets/2152766/16478620/93c7190a-3e92-11e6-8eb0-32606ff91eb9.gif)
 
-For example, you may let your user know what is expected to type in or provide an automatic message of sorts, based on information available at that particular time and place.
+Pre-fill it for a custom placeholder or guidelines for how to comment. Press "Enter" to publish.
 
 <br>
 <br>
