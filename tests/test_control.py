@@ -229,3 +229,47 @@ def test_publish_disabled():
     ctrl.publish()
 
     assert count["#"] == 11, count
+
+
+@with_setup(clean)
+def test_order_20():
+    """Orders beyond CVEI should still run"""
+
+    count = {"#": 0}
+
+    class MyCollector(pyblish.api.ContextPlugin):
+        order = pyblish.api.CollectorOrder
+
+        def process(self, context):
+            instance = context.create_instance("MyInstance")
+            instance.data["families"] = ["myFamily"]
+            count["#"] += 1
+
+    class OldValidator(pyblish.api.Validator):
+        """Old-style plug-in, not using InstancePlugin"""
+
+        families = ["myFamily"]
+        order = 20
+
+        def process(self, instance):
+            count["#"] += 10
+
+    class NewValidator(pyblish.api.InstancePlugin):
+        families = ["myFamily"]
+        order = 20
+
+        def process(self, instance):
+            count["#"] += 100
+
+    pyblish.api.register_plugin(MyCollector)
+    pyblish.api.register_plugin(OldValidator)
+    pyblish.api.register_plugin(NewValidator)
+
+    ctrl = control.Controller()
+    ctrl.reset()
+
+    assert count["#"] == 1, count
+
+    ctrl.publish()
+
+    assert count["#"] == 111, count

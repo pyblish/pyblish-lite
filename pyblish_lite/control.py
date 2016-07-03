@@ -1,9 +1,9 @@
 """The Controller in a Model/View/Controller-based application
 
 The graphical components of Pyblish Lite use this object to perform
-publishing. It communicates with via the Qt Signals/Slots mechanism
+publishing. It communicates via the Qt Signals/Slots mechanism
 and has no direct connection to any graphics. This is important,
-because this is how unittests are able to run without requireing
+because this is how unittests are able to run without requiring
 an active window manager; such as via Travis-CI.
 
 """
@@ -83,8 +83,7 @@ class Controller(QtCore.QObject):
                   on_finished=self.was_validated.emit)
 
     def publish(self):
-        self._run(until=pyblish.api.IntegratorOrder,
-                  on_finished=self.was_published.emit)
+        self._run(on_finished=self.was_published.emit)
 
     def act(self, plugin, action):
         context = self.context
@@ -135,13 +134,15 @@ class Controller(QtCore.QObject):
 
         return result
 
-    def _run(self, until, on_finished):
+    def _run(self, until=-1, on_finished=lambda: None):
         """Process current pair and store next pair for next process
 
         Arguments:
-            until (pyblish.api.Order): Keep fetching next() until this order
-            on_finished (callable): Mandatory handler finished state,
-                takes no arguments.
+            until (pyblish.api.Order, optional): Keep fetching next()
+                until this order, default value -1 means it will run
+                until there are no more plug-ins.
+            on_finished (callable, optional): What to do when finishing,
+                defaults to doing nothing.
 
         """
 
@@ -157,7 +158,7 @@ class Controller(QtCore.QObject):
             #
             # TODO(marcus): Make this less magical
             #
-            if self.current_pair[0].order > (until + 0.5):
+            if until != -1 and self.current_pair[0].order > (until + 0.5):
                 return util.defer(100, on_finished)
 
             self.about_to_process.emit(*self.current_pair)
