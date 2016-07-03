@@ -1,9 +1,9 @@
 """The Controller in a Model/View/Controller-based application
 
 The graphical components of Pyblish Lite use this object to perform
-publishing. It communicates with via the Qt Signals/Slots mechanism
+publishing. It communicates via the Qt Signals/Slots mechanism
 and has no direct connection to any graphics. This is important,
-because this is how unittests are able to run without requireing
+because this is how unittests are able to run without requiring
 an active window manager; such as via Travis-CI.
 
 """
