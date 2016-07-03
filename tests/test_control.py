@@ -273,3 +273,36 @@ def test_order_20():
     ctrl.publish()
 
     assert count["#"] == 111, count
+
+
+@with_setup(clean)
+def test_far_negative_orders():
+    """Orders may go below 0"""
+
+    count = {"#": 0}
+
+    class MyCollector1(pyblish.api.ContextPlugin):
+        order = pyblish.api.CollectorOrder
+
+    class MyCollector2(pyblish.api.ContextPlugin):
+        order = -1
+
+    class MyCollector3(pyblish.api.ContextPlugin):
+        order = -1000
+
+    def process(self, context):
+        count["#"] += 1
+
+    MyCollector1.process = process
+    MyCollector2.process = process
+    MyCollector3.process = process
+
+    pyblish.api.register_plugin(MyCollector1)
+    pyblish.api.register_plugin(MyCollector2)
+    pyblish.api.register_plugin(MyCollector3)
+
+    ctrl = control.Controller()
+    ctrl.reset()
+
+    # They all register as Collectors
+    assert count["#"] == 3, count

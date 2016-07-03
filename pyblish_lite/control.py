@@ -134,13 +134,12 @@ class Controller(QtCore.QObject):
 
         return result
 
-    def _run(self, until=-1, on_finished=lambda: None):
+    def _run(self, until=float("inf"), on_finished=lambda: None):
         """Process current pair and store next pair for next process
 
         Arguments:
             until (pyblish.api.Order, optional): Keep fetching next()
-                until this order, default value -1 means it will run
-                until there are no more plug-ins.
+                until this order, default value is infinity.
             on_finished (callable, optional): What to do when finishing,
                 defaults to doing nothing.
 
@@ -158,7 +157,8 @@ class Controller(QtCore.QObject):
             #
             # TODO(marcus): Make this less magical
             #
-            if until != -1 and self.current_pair[0].order > (until + 0.5):
+            order = self.current_pair[0].order
+            if order > (until + 0.5):
                 return util.defer(100, on_finished)
 
             self.about_to_process.emit(*self.current_pair)
