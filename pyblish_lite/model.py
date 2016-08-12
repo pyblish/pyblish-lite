@@ -62,6 +62,7 @@ Duration = QtCore.Qt.UserRole + 11
 
 # Available and context-sensitive actions
 Actions = QtCore.Qt.UserRole + 9
+ActionIconVisible = QtCore.Qt.UserRole + 13
 Docstring = QtCore.Qt.UserRole + 12
 
 # LOG RECORDS
@@ -192,6 +193,30 @@ class Plugin(Item):
 
         if role == Icon:
             return awesome.get(getattr(item, "icon", ""))
+
+        if role == ActionIconVisible:
+
+            # Can only run actions on active plug-ins.
+            if not item.active:
+                return
+
+            actions = list(item.actions)
+
+            # Context specific actions
+            for action in actions:
+                if action.on == "failed" and not item._has_failed:
+                    actions.remove(action)
+                if action.on == "succeeded" and not item._has_succeeded:
+                    actions.remove(action)
+                if action.on == "processed" and not item._has_processed:
+                    actions.remove(action)
+                if action.on == "notProcessed" and item._has_processed:
+                    actions.remove(action)
+
+            if actions:
+                return True
+
+            return False
 
         if role == Actions:
 
