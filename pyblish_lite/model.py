@@ -63,6 +63,11 @@ Duration = QtCore.Qt.UserRole + 11
 # Available and context-sensitive actions
 Actions = QtCore.Qt.UserRole + 9
 ActionIconVisible = QtCore.Qt.UserRole + 13
+ActionState = QtCore.Qt.UserRole + 14
+ActionIdle = QtCore.Qt.UserRole + 15
+ActionProcessing = QtCore.Qt.UserRole + 16
+ActionFailed = QtCore.Qt.UserRole + 17
+ActionSucceeded = QtCore.Qt.UserRole + 18
 Docstring = QtCore.Qt.UserRole + 12
 
 # LOG RECORDS
@@ -139,6 +144,10 @@ class Item(Abstract):
             HasProcessed: "_has_processed",
             HasSucceeded: "_has_succeeded",
             HasFailed: "_has_failed",
+            ActionIdle: "_action_idle",
+            ActionProcessing: "_action_processing",
+            ActionFailed: "_action_failed",
+            ActionSucceeded: "_action_succeeded",
         }
 
     def store_checkstate(self):
@@ -183,6 +192,11 @@ class Plugin(Item):
         item._has_failed = False
         item._type = "plugin"
 
+        item._action_idle = True
+        item._action_processing = False
+        item._action_succeeded = False
+        item._action_failed = False
+
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
@@ -193,6 +207,21 @@ class Plugin(Item):
 
         if role == Icon:
             return awesome.get(getattr(item, "icon", ""))
+
+        if role == ActionState:
+
+            state = "inactive"
+
+            if item._action_idle:
+                state = "idle"
+            if item._action_processing:
+                state = "processing"
+            if item._action_failed:
+                state = "failed"
+            if item._action_succeeded:
+                state = "succeeded"
+
+            return state
 
         if role == ActionIconVisible:
 
@@ -293,11 +322,18 @@ class Plugin(Item):
         else:
             self.dataChanged.emit(index, index, [role])
 
-    def update_with_result(self, result):
+    def update_with_result(self, result, action=False):
         item = result["plugin"]
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
+
+        if action:
+            self.setData(index, False, ActionProcessing)
+            self.setData(index, result["success"], ActionSucceeded)
+            self.setData(index, not result["success"], ActionFailed)
+            return
+
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)

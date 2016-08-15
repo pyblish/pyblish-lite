@@ -490,6 +490,8 @@ class Window(QtWidgets.QDialog):
         controller.was_acted.connect(self.on_was_acted)
         controller.finished.connect(self.on_finished)
 
+        controller.action_processing.connect(self.on_action_processing)
+
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
         # right away.
@@ -811,10 +813,23 @@ class Window(QtWidgets.QDialog):
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
 
-    def on_was_acted(self):
+    def on_action_processing(self, plugin):
+        plugin_model = self.data["models"]["plugins"]
+        index = plugin_model.items.index(plugin)
+        index = plugin_model.createIndex(index, 0)
+        plugin_model.setData(index, False, model.ActionIdle)
+        plugin_model.setData(index, True, model.ActionProcessing)
+        plugin_model.setData(index, False, model.ActionSucceeded)
+        plugin_model.setData(index, False, model.ActionFailed)
+
+    def on_was_acted(self, result):
         buttons = self.data["buttons"]
         buttons["reset"].show()
         buttons["stop"].hide()
+
+        models = self.data["models"]
+        models["plugins"].update_with_result(result, action=True)
+        models["terminal"].update_with_result(result)
 
         self.on_finished()
 

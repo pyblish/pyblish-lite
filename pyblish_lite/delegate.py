@@ -94,14 +94,26 @@ class Item(QtWidgets.QStyledItemDelegate):
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(label_rect, label)
 
-        # Draw icon
+        # Draw action icon
         if index.data(model.ActionIconVisible):
             icon = icons["action"]
             icon_rect = QtCore.QRectF(option.rect.adjusted(
                 label_rect.width() + 1, label_rect.height() / 3, 0, 0))
 
             painter.setFont(fonts["smallAwesome"])
-            painter.setPen(QtGui.QPen(colors["idle"]))
+            state = index.data(model.ActionState)
+            color = colors["inactive"]
+            if state == "idle":
+                color = colors["idle"]
+            if state == "processing":
+                color = colors["active"]
+            if state == "succeeded":
+                color = colors["ok"]
+            if state == "failed":
+                color = colors["warning"]
+
+            painter.setPen(QtGui.QPen(color))
+
             painter.drawText(icon_rect, icon)
 
         # Draw checkbox
