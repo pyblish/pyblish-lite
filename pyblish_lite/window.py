@@ -629,12 +629,14 @@ class Window(QtWidgets.QDialog):
 
         data = {"new_value": state, "old_value": not state}
         if index.data(model.Type) == "instance":
-            data.update({"instance": index.data(model.Data)})
+            instance = self.data["models"]["instances"].items[index.row()]
+            data.update({"instance": instance})
             util.defer(100,
                        lambda: self.controller.controlEmit("instanceToggled",
                                                            data))
         if index.data(model.Type) == "plugin":
-            data.update({"plugin": index.data(model.Data)})
+            plugin = self.data["models"]["plugins"].items[index.row()]
+            data.update({"plugin": plugin})
             util.defer(100,
                        lambda: self.controller.controlEmit("pluginToggled",
                                                            data))
