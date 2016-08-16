@@ -144,10 +144,6 @@ class Item(Abstract):
             HasProcessed: "_has_processed",
             HasSucceeded: "_has_succeeded",
             HasFailed: "_has_failed",
-            ActionIdle: "_action_idle",
-            ActionProcessing: "_action_processing",
-            ActionFailed: "_action_failed",
-            ActionSucceeded: "_action_succeeded",
         }
 
     def store_checkstate(self):
@@ -179,6 +175,10 @@ class Plugin(Item):
         self.schema.update({
             IsChecked: "active",
             Docstring: "__doc__",
+            ActionIdle: "_action_idle",
+            ActionProcessing: "_action_processing",
+            ActionFailed: "_action_failed",
+            ActionSucceeded: "_action_succeeded",
         })
 
     def append(self, item):
