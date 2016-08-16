@@ -627,6 +627,18 @@ class Window(QtWidgets.QDialog):
 
         index.model().setData(index, state, model.IsChecked)
 
+        data = {"new_value": state, "old_value": not state}
+        if index.data(model.Type) == "instance":
+            data.update({"instance": index.data(model.Data)})
+            util.defer(100,
+                       lambda: self.controller.controlEmit("instanceToggled",
+                                                           data))
+        if index.data(model.Type) == "plugin":
+            data.update({"plugin": index.data(model.Data)})
+            util.defer(100,
+                       lambda: self.controller.controlEmit("pluginToggled",
+                                                           data))
+
         # Withdraw option to publish if no instances are toggled
         play = self.findChild(QtWidgets.QWidget, "Play")
         validate = self.findChild(QtWidgets.QWidget, "Validate")

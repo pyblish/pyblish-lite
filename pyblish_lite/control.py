@@ -95,6 +95,10 @@ class Controller(QtCore.QObject):
 
         util.defer(100, on_next)
 
+    def controlEmit(self, signal, kwargs):
+
+        pyblish.api.emit(signal, **kwargs)
+
     def _load(self):
         """Initiate new generator and load first pair"""
         self.is_running = True
