@@ -95,7 +95,7 @@ class Controller(QtCore.QObject):
 
         util.defer(100, on_next)
 
-    def emit_(self, signal, **kwargs):
+    def emit_(self, signal, kwargs):
 
         pyblish.api.emit(signal, **kwargs)
 
