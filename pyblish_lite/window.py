@@ -42,7 +42,7 @@ Todo:
 
 from Qt import QtCore, QtWidgets, QtGui
 
-from . import model, view, util, delegate
+from . import model, view, util, delegate, tree
 from .awesome import tags as awesome
 
 
@@ -133,8 +133,8 @@ class Window(QtWidgets.QDialog):
 
         overview_page = QtWidgets.QWidget()
 
-        left_view = view.Item()
-        right_view = view.Item()
+        left_view = tree.View()
+        right_view = tree.View()
 
         item_delegate = delegate.Item()
         left_view.setItemDelegate(item_delegate)
@@ -357,7 +357,12 @@ class Window(QtWidgets.QDialog):
         terminal_model = model.Terminal()
 
         artist_view.setModel(instance_model)
-        left_view.setModel(instance_model)
+
+        left_proxy = tree.Proxy()
+        left_proxy.setSourceModel(instance_model)
+        left_proxy.set_group_role(model.Families)
+        left_view.setModel(left_proxy)
+
         right_view.setModel(plugin_model)
         terminal_view.setModel(terminal_model)
 
@@ -489,6 +494,12 @@ class Window(QtWidgets.QDialog):
         controller.was_published.connect(self.on_was_published)
         controller.was_acted.connect(self.on_was_acted)
         controller.finished.connect(self.on_finished)
+
+        controller.was_reset.connect(left_proxy.rebuild)
+        controller.was_validated.connect(left_proxy.rebuild)
+        controller.was_published.connect(left_proxy.rebuild)
+        controller.was_acted.connect(left_proxy.rebuild)
+        controller.finished.connect(left_proxy.rebuild)
 
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
