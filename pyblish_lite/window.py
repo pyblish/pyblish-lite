@@ -363,7 +363,10 @@ class Window(QtWidgets.QDialog):
         left_proxy.set_group_role(model.Families)
         left_view.setModel(left_proxy)
 
-        right_view.setModel(plugin_model)
+        right_proxy = tree.Proxy()
+        right_proxy.setSourceModel(plugin_model)
+        right_proxy.set_group_role(model.Order)
+        right_view.setModel(right_proxy)
         terminal_view.setModel(terminal_model)
 
         instance_combo.setModel(instance_model)
@@ -500,6 +503,12 @@ class Window(QtWidgets.QDialog):
         controller.was_published.connect(left_proxy.rebuild)
         controller.was_acted.connect(left_proxy.rebuild)
         controller.finished.connect(left_proxy.rebuild)
+
+        controller.was_reset.connect(right_proxy.rebuild)
+        controller.was_validated.connect(right_proxy.rebuild)
+        controller.was_published.connect(right_proxy.rebuild)
+        controller.was_acted.connect(right_proxy.rebuild)
+        controller.finished.connect(right_proxy.rebuild)
 
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
