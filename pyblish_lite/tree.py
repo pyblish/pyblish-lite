@@ -1,4 +1,6 @@
 
+import pyblish
+
 from .vendor import Qt
 from Qt import QtWidgets, QtCore
 from itertools import groupby
@@ -88,6 +90,35 @@ class Proxy(QtWidgets.QAbstractProxyModel):
     def set_group_role(self, role):
         self.group_role = role
 
+    def groupby_key(self, source_index):
+        """Returns the data to group by.
+
+        Override this in subclasses to group by customized data instead of
+        by simply the currently set group role.
+
+        Args:
+            source_index (QtCore.QModelIndex): index from source to retrieve
+                data from to group by.
+
+        Returns:
+            object: Collected data to group by for index.
+
+        """
+        return source_index.data(self.group_role)
+
+    def groupby_label(self, section):
+        """Returns the label for a section based on the collected group key.
+
+        Override this in subclasses to format the name for a specific key.
+
+        Args:
+            section: key value for this group section
+
+        Returns:
+            str: Label of the section header based on group key
+        """
+        return section
+
     def rebuild(self):
         """Update proxy sections and items
 
@@ -105,14 +136,12 @@ class Proxy(QtWidgets.QAbstractProxyModel):
         source_rows = source.rowCount()
         source_indices = [source.index(i, 0) for i in range(source_rows)]
 
-        def key_getter(source_index):
-            """Return group role data for source index"""
-            return source.data(source_index, self.group_role)
-
-        for section, group in groupby(source_indices, key=key_getter):
+        for section, group in groupby(source_indices,
+                                      key=self.groupby_key):
 
             # section
-            section_item = ProxySectionItem(section)
+            label = self.groupby_label(section)
+            section_item = ProxySectionItem(label)
             self.root.addChild(section_item)
 
             #  items in section
@@ -209,6 +238,29 @@ class Proxy(QtWidgets.QAbstractProxyModel):
             return self.createIndex(row, 0, parent)
 
 
+class PluginOrderGroupProxy(Proxy):
+    """Proxy grouping by order by full range known.
+
+    Before Collectors and after Integrators will be grouped as "Other".
+
+    """
+
+    def groupby_key(self, source_index):
+        plugin_order = super(PluginOrderGroupProxy,
+                             self).groupby_key(source_index)
+        label = "Other"
+
+        mapping = {pyblish.plugin.CollectorOrder: "Collector",
+                   pyblish.plugin.ValidatorOrder: "Validator",
+                   pyblish.plugin.ExtractorOrder: "Extractor",
+                   pyblish.plugin.IntegratorOrder: "Integrator"}
+        for order, _type in mapping.items():
+            if pyblish.lib.inrange(plugin_order, base=order):
+                label = _type
+
+        return label
+
+
 class View(QtWidgets.QTreeView):
     # An item is requesting to be toggled, with optional forced-state
     toggled = QtCore.Signal("QModelIndex", object)
@@ -223,12 +275,10 @@ class View(QtWidgets.QTreeView):
         self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        #self.setResizeMode(QtWidgets.QTreeView.Adjust)
         self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollPerPixel)
         self.setHeaderHidden(True)
         self.setRootIsDecorated(False)
-        self.setIndentation(10)
-        #self.setItemsExpandable(False)
+        self.setIndentation(40)     # TODO: Set to 0 when styling is better
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:

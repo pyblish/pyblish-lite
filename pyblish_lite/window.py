@@ -363,7 +363,7 @@ class Window(QtWidgets.QDialog):
         left_proxy.set_group_role(model.Families)
         left_view.setModel(left_proxy)
 
-        right_proxy = tree.Proxy()
+        right_proxy = tree.PluginOrderGroupProxy()
         right_proxy.setSourceModel(plugin_model)
         right_proxy.set_group_role(model.Order)
         right_view.setModel(right_proxy)
