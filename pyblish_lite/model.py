@@ -243,11 +243,7 @@ class Plugin(Item):
             return actions
 
         key = self.schema.get(role)
-
-        if key is None:
-            return
-
-        value = getattr(item, key, None)
+        value = getattr(item, key, None) if key is not None else None
 
         if value is None:
             value = super(Plugin, self).data(index, role)
@@ -319,11 +315,7 @@ class Instance(Item):
             return awesome.get(item.data.get("icon"))
 
         key = self.schema.get(role)
-
-        if not key:
-            return
-
-        value = item.data.get(key)
+        value = item.data.get(key) if key is not None else None
 
         if value is None:
             value = super(Instance, self).data(index, role)
