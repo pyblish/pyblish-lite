@@ -63,11 +63,8 @@ Duration = QtCore.Qt.UserRole + 11
 # Available and context-sensitive actions
 Actions = QtCore.Qt.UserRole + 9
 ActionIconVisible = QtCore.Qt.UserRole + 13
-ActionState = QtCore.Qt.UserRole + 14
 ActionIdle = QtCore.Qt.UserRole + 15
-ActionProcessing = QtCore.Qt.UserRole + 16
 ActionFailed = QtCore.Qt.UserRole + 17
-ActionSucceeded = QtCore.Qt.UserRole + 18
 Docstring = QtCore.Qt.UserRole + 12
 
 # LOG RECORDS
@@ -176,9 +173,7 @@ class Plugin(Item):
             IsChecked: "active",
             Docstring: "__doc__",
             ActionIdle: "_action_idle",
-            ActionProcessing: "_action_processing",
             ActionFailed: "_action_failed",
-            ActionSucceeded: "_action_succeeded",
         })
 
     def append(self, item):
@@ -207,21 +202,6 @@ class Plugin(Item):
 
         if role == Icon:
             return awesome.get(getattr(item, "icon", ""))
-
-        if role == ActionState:
-
-            state = "inactive"
-
-            if item._action_idle:
-                state = "idle"
-            if item._action_processing:
-                state = "processing"
-            if item._action_failed:
-                state = "failed"
-            if item._action_succeeded:
-                state = "succeeded"
-
-            return state
 
         if role == ActionIconVisible:
 
@@ -327,12 +307,6 @@ class Plugin(Item):
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
-
-        if action:
-            self.setData(index, False, ActionProcessing)
-            self.setData(index, result["success"], ActionSucceeded)
-            self.setData(index, not result["success"], ActionFailed)
-            return
 
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
