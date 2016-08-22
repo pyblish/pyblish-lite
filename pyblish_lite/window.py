@@ -824,9 +824,9 @@ class Window(QtWidgets.QDialog):
         index = model_.createIndex(index, 0)
 
         model_.setData(index, not result["success"], model.ActionFailed)
+        model_.setData(index, False, model.IsProcessing)
 
         models = self.data["models"]
-        # models["plugins"].update_with_result(result)
         models["terminal"].update_with_result(result)
 
         self.on_finished()
@@ -902,7 +902,8 @@ class Window(QtWidgets.QDialog):
         index = model_.createIndex(index, 0)
 
         for key, value in {model.ActionIdle: False,
-                           model.ActionFailed: False}.items():
+                           model.ActionFailed: False,
+                           model.IsProcessing: True}.items():
             model_.setData(index, value, key)
 
         # Give Qt time to draw

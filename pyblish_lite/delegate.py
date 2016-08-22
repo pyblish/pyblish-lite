@@ -100,6 +100,8 @@ class Item(QtWidgets.QStyledItemDelegate):
 
             if index.data(model.ActionIdle):
                 color = colors["idle"]
+            elif index.data(model.IsProcessing):
+                color = colors["active"]
             elif index.data(model.ActionFailed):
                 color = colors["warning"]
             else:
