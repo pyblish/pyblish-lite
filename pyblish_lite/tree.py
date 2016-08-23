@@ -2,7 +2,7 @@
 import pyblish
 
 from .vendor import Qt
-from Qt import QtWidgets, QtCore
+from Qt import QtWidgets, QtCore, __binding__
 from itertools import groupby
 
 
@@ -128,6 +128,8 @@ class Proxy(QtWidgets.QAbstractProxyModel):
 
         """
 
+        self.reset()
+
         # Start with new root node
         self.root = Item()
 
@@ -161,12 +163,27 @@ class Proxy(QtWidgets.QAbstractProxyModel):
 
         return node.data(role)
 
+    def setData(self, index, data, role):
+
+        source_idx = self.mapToSource(index)
+        if not source_idx.isValid():
+            return
+
+        model = source_idx.model()
+        model.setData(index, data, role)
+
+        if __binding__ in ("PyQt4", "PySide"):
+            self.dataChanged.emit(index, index)
+        else:
+            self.dataChanged.emit(index, index, [role])
+
     def is_header(self, index):
         """Return whether index is a header"""
-        if index in self.to_source:
-            return False
-        else:
+
+        if index.isValid() and not self.mapToSource(index).isValid():
             return True
+        else:
+            return False
 
     def mapFromSource(self, index):
 
@@ -261,6 +278,20 @@ class PluginOrderGroupProxy(Proxy):
         return label
 
 
+class FamilyGroupProxy(Proxy):
+    """Proxy grouping by order by full range known.
+
+    Before Collectors and after Integrators will be grouped as "Other".
+
+    """
+
+    def groupby_key(self, source_index):
+        families = super(FamilyGroupProxy,
+                         self).groupby_key(source_index)
+        family = families[0]
+        return family
+
+
 class View(QtWidgets.QTreeView):
     # An item is requesting to be toggled, with optional forced-state
     toggled = QtCore.Signal("QModelIndex", object)
@@ -278,7 +309,7 @@ class View(QtWidgets.QTreeView):
         self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollPerPixel)
         self.setHeaderHidden(True)
         self.setRootIsDecorated(False)
-        self.setIndentation(40)     # TODO: Set to 0 when styling is better
+        self.setIndentation(0)
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:

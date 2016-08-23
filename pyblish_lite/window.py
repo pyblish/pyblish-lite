@@ -136,7 +136,7 @@ class Window(QtWidgets.QDialog):
         left_view = tree.View()
         right_view = tree.View()
 
-        item_delegate = delegate.Item()
+        item_delegate = delegate.ItemAndSection()
         left_view.setItemDelegate(item_delegate)
         right_view.setItemDelegate(item_delegate)
 
@@ -358,7 +358,7 @@ class Window(QtWidgets.QDialog):
 
         artist_view.setModel(instance_model)
 
-        left_proxy = tree.Proxy()
+        left_proxy = tree.FamilyGroupProxy()
         left_proxy.setSourceModel(instance_model)
         left_proxy.set_group_role(model.Families)
         left_view.setModel(left_proxy)
@@ -504,11 +504,23 @@ class Window(QtWidgets.QDialog):
         controller.was_acted.connect(left_proxy.rebuild)
         controller.finished.connect(left_proxy.rebuild)
 
+        controller.was_reset.connect(left_view.expandAll)
+        controller.was_validated.connect(left_view.expandAll)
+        controller.was_published.connect(left_view.expandAll)
+        controller.was_acted.connect(left_view.expandAll)
+        controller.finished.connect(left_view.expandAll)
+
         controller.was_reset.connect(right_proxy.rebuild)
         controller.was_validated.connect(right_proxy.rebuild)
         controller.was_published.connect(right_proxy.rebuild)
         controller.was_acted.connect(right_proxy.rebuild)
         controller.finished.connect(right_proxy.rebuild)
+
+        controller.was_reset.connect(right_view.expandAll)
+        controller.was_validated.connect(right_view.expandAll)
+        controller.was_published.connect(right_view.expandAll)
+        controller.was_acted.connect(right_view.expandAll)
+        controller.finished.connect(right_view.expandAll)
 
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
