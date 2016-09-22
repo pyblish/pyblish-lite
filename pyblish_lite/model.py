@@ -62,6 +62,9 @@ Duration = QtCore.Qt.UserRole + 11
 
 # Available and context-sensitive actions
 Actions = QtCore.Qt.UserRole + 9
+ActionIconVisible = QtCore.Qt.UserRole + 13
+ActionIdle = QtCore.Qt.UserRole + 15
+ActionFailed = QtCore.Qt.UserRole + 17
 Docstring = QtCore.Qt.UserRole + 12
 
 # LOG RECORDS
@@ -169,6 +172,8 @@ class Plugin(Item):
         self.schema.update({
             IsChecked: "active",
             Docstring: "__doc__",
+            ActionIdle: "_action_idle",
+            ActionFailed: "_action_failed",
         })
 
     def append(self, item):
@@ -182,6 +187,11 @@ class Plugin(Item):
         item._has_failed = False
         item._type = "plugin"
 
+        item._action_idle = True
+        item._action_processing = False
+        item._action_succeeded = False
+        item._action_failed = False
+
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
@@ -192,6 +202,30 @@ class Plugin(Item):
 
         if role == Icon:
             return awesome.get(getattr(item, "icon", ""))
+
+        if role == ActionIconVisible:
+
+            # Can only run actions on active plug-ins.
+            if not item.active:
+                return
+
+            actions = list(item.actions)
+
+            # Context specific actions
+            for action in actions:
+                if action.on == "failed" and not item._has_failed:
+                    actions.remove(action)
+                if action.on == "succeeded" and not item._has_succeeded:
+                    actions.remove(action)
+                if action.on == "processed" and not item._has_processed:
+                    actions.remove(action)
+                if action.on == "notProcessed" and item._has_processed:
+                    actions.remove(action)
+
+            if actions:
+                return True
+
+            return False
 
         if role == Actions:
 
@@ -268,11 +302,12 @@ class Plugin(Item):
         else:
             self.dataChanged.emit(index, index, [role])
 
-    def update_with_result(self, result):
+    def update_with_result(self, result, action=False):
         item = result["plugin"]
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
+
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)

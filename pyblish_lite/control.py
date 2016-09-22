@@ -32,7 +32,7 @@ class Controller(QtCore.QObject):
     was_reset = QtCore.Signal()
     was_validated = QtCore.Signal()
     was_published = QtCore.Signal()
-    was_acted = QtCore.Signal()
+    was_acted = QtCore.Signal(dict)
 
     # Emitted when processing has finished
     finished = QtCore.Signal()
@@ -90,8 +90,7 @@ class Controller(QtCore.QObject):
 
         def on_next():
             result = pyblish.plugin.process(plugin, context, None, action.id)
-            self.was_processed.emit(result)
-            util.defer(500, self.was_acted.emit)
+            self.was_acted.emit(result)
 
         util.defer(100, on_next)
 

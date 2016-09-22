@@ -36,6 +36,7 @@ icons = {
     "record": awesome["circle"],
     "file": awesome["file"],
     "error": awesome["exclamation-triangle"],
+    "action": awesome["adn"],
 }
 
 
@@ -92,6 +93,28 @@ class Item(QtWidgets.QStyledItemDelegate):
         painter.setFont(fonts["h4"])
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(label_rect, label)
+
+        # Draw action icon
+        if index.data(model.ActionIconVisible):
+            painter.save()
+
+            if index.data(model.ActionIdle):
+                color = colors["idle"]
+            elif index.data(model.IsProcessing):
+                color = colors["active"]
+            elif index.data(model.ActionFailed):
+                color = colors["warning"]
+            else:
+                color = colors["ok"]
+
+            painter.setFont(fonts["smallAwesome"])
+            painter.setPen(QtGui.QPen(color))
+
+            icon_rect = QtCore.QRectF(option.rect.adjusted(
+                label_rect.width() + 1, label_rect.height() / 3, 0, 0))
+            painter.drawText(icon_rect, icons["action"])
+
+            painter.restore()
 
         # Draw checkbox
         pen = QtGui.QPen(check_color, 1)

@@ -719,6 +719,7 @@ class Window(QtWidgets.QDialog):
 
         menu = QtWidgets.QMenu(self)
         plugin = self.data["models"]["plugins"].items[index.row()]
+        print("plugin is: %s" % plugin)
 
         for action in actions:
             qaction = QtWidgets.QAction(action.label or action.__name__, self)
@@ -811,10 +812,22 @@ class Window(QtWidgets.QDialog):
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
 
-    def on_was_acted(self):
+    def on_was_acted(self, result):
         buttons = self.data["buttons"]
         buttons["reset"].show()
         buttons["stop"].hide()
+
+        # Update action with result
+        model_ = self.data["models"]["plugins"]
+
+        index = model_.items.index(result["plugin"])
+        index = model_.createIndex(index, 0)
+
+        model_.setData(index, not result["success"], model.ActionFailed)
+        model_.setData(index, False, model.IsProcessing)
+
+        models = self.data["models"]
+        models["terminal"].update_with_result(result)
 
         self.on_finished()
 
@@ -873,7 +886,7 @@ class Window(QtWidgets.QDialog):
         util.defer(5, self.controller.publish)
 
     def act(self, plugin, action):
-        self.info("Preparing action..")
+        self.info("Preparing %s.." % action)
 
         for button in self.data["buttons"].values():
             button.hide()
@@ -881,7 +894,21 @@ class Window(QtWidgets.QDialog):
         self.data["buttons"]["stop"].show()
         self.controller.is_running = True
 
+        # Cause view to update, but it won't visually
+        # happen until Qt is given time to idle..
+        model_ = self.data["models"]["plugins"]
+
+        index = model_.items.index(plugin)
+        index = model_.createIndex(index, 0)
+
+        for key, value in {model.ActionIdle: False,
+                           model.ActionFailed: False,
+                           model.IsProcessing: True}.items():
+            model_.setData(index, value, key)
+
+        # Give Qt time to draw
         util.defer(100, lambda: self.controller.act(plugin, action))
+
         self.info("Action prepared.")
 
     def closeEvent(self, event):
