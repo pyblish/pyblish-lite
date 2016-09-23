@@ -42,7 +42,7 @@ Todo:
 
 from Qt import QtCore, QtWidgets, QtGui
 
-from . import model, view, util, delegate
+from . import model, view, util, delegate, tree
 from .awesome import tags as awesome
 
 
@@ -133,10 +133,10 @@ class Window(QtWidgets.QDialog):
 
         overview_page = QtWidgets.QWidget()
 
-        left_view = view.Item()
-        right_view = view.Item()
+        left_view = tree.View()
+        right_view = tree.View()
 
-        item_delegate = delegate.Item()
+        item_delegate = delegate.ItemAndSection()
         left_view.setItemDelegate(item_delegate)
         right_view.setItemDelegate(item_delegate)
 
@@ -357,8 +357,16 @@ class Window(QtWidgets.QDialog):
         terminal_model = model.Terminal()
 
         artist_view.setModel(instance_model)
-        left_view.setModel(instance_model)
-        right_view.setModel(plugin_model)
+
+        left_proxy = tree.FamilyGroupProxy()
+        left_proxy.setSourceModel(instance_model)
+        left_proxy.set_group_role(model.Families)
+        left_view.setModel(left_proxy)
+
+        right_proxy = tree.PluginOrderGroupProxy()
+        right_proxy.setSourceModel(plugin_model)
+        right_proxy.set_group_role(model.Order)
+        right_view.setModel(right_proxy)
         terminal_view.setModel(terminal_model)
 
         instance_combo.setModel(instance_model)
@@ -489,6 +497,30 @@ class Window(QtWidgets.QDialog):
         controller.was_published.connect(self.on_was_published)
         controller.was_acted.connect(self.on_was_acted)
         controller.finished.connect(self.on_finished)
+
+        controller.was_reset.connect(left_proxy.rebuild)
+        controller.was_validated.connect(left_proxy.rebuild)
+        controller.was_published.connect(left_proxy.rebuild)
+        controller.was_acted.connect(left_proxy.rebuild)
+        controller.finished.connect(left_proxy.rebuild)
+
+        controller.was_reset.connect(left_view.expandAll)
+        controller.was_validated.connect(left_view.expandAll)
+        controller.was_published.connect(left_view.expandAll)
+        controller.was_acted.connect(left_view.expandAll)
+        controller.finished.connect(left_view.expandAll)
+
+        controller.was_reset.connect(right_proxy.rebuild)
+        controller.was_validated.connect(right_proxy.rebuild)
+        controller.was_published.connect(right_proxy.rebuild)
+        controller.was_acted.connect(right_proxy.rebuild)
+        controller.finished.connect(right_proxy.rebuild)
+
+        controller.was_reset.connect(right_view.expandAll)
+        controller.was_validated.connect(right_view.expandAll)
+        controller.was_published.connect(right_view.expandAll)
+        controller.was_acted.connect(right_view.expandAll)
+        controller.finished.connect(right_view.expandAll)
 
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered

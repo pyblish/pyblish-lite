@@ -142,6 +142,66 @@ class Item(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20)
 
 
+class Section(QtWidgets.QStyledItemDelegate):
+    """Generic delegate for section header"""
+
+    def paint(self, painter, option, index):
+        """Paint text
+         _
+        My label
+
+        """
+
+        body_rect = QtCore.QRectF(option.rect)
+
+        metrics = painter.fontMetrics()
+
+        label_rect = QtCore.QRectF(option.rect.adjusted(0, 2, 0, -2))
+
+        assert label_rect.width() > 0
+
+        label = index.data(model.Label)
+        label = metrics.elidedText(label,
+                                   QtCore.Qt.ElideRight,
+                                   label_rect.width())
+
+        font_color = colors["idle"]
+        if not index.data(model.IsChecked):
+            font_color = colors["inactive"]
+
+        # Maintain reference to state, so we can restore it once we're done
+        painter.save()
+
+        # Draw label
+        painter.setFont(fonts["h4"])
+        painter.setPen(QtGui.QPen(font_color))
+        painter.drawText(label_rect, label)
+
+        if option.state & QtWidgets.QStyle.State_MouseOver:
+            painter.fillRect(body_rect, colors["hover"])
+
+        if option.state & QtWidgets.QStyle.State_Selected:
+            painter.fillRect(body_rect, colors["selected"])
+
+        # Ok, we're done, tidy up.
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        return QtCore.QSize(option.rect.width(), 20)
+
+
+class ItemAndSection(Item):
+    """Generic delegate for model items in proxy tree view"""
+    def paint(self, painter, option, index):
+
+        model = index.model()
+        if model.is_header(index):
+            Section().paint(painter, option, index)
+            return
+
+        super(ItemAndSection, self).paint(painter, option, index)
+
+
 class Artist(QtWidgets.QStyledItemDelegate):
     """Delegate used on Artist page"""
 
