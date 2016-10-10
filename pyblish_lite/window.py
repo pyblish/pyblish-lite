@@ -531,7 +531,7 @@ class Window(QtWidgets.QDialog):
                     show_critical):
             box.setChecked(True)
 
-        artist_tab.setChecked(True)
+        self.data["tabs"][settings.InitialTab].setChecked(True)
 
     # -------------------------------------------------------------------------
     #
