@@ -1,0 +1,1 @@
+WindowTitle = "Pyblish"

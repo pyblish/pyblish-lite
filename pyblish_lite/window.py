@@ -42,7 +42,7 @@ Todo:
 
 from Qt import QtCore, QtWidgets, QtGui
 
-from . import model, view, util, delegate
+from . import model, view, util, delegate, settings
 from .awesome import tags as awesome
 
 
@@ -55,7 +55,7 @@ class Window(QtWidgets.QDialog):
                             QtCore.Qt.WindowMaximizeButtonHint |
                             QtCore.Qt.WindowMinimizeButtonHint |
                             QtCore.Qt.WindowCloseButtonHint)
-        self.setWindowTitle("Pyblish")
+        self.setWindowTitle(settings.WindowTitle)
         self.setWindowIcon(icon)
 
         self.controller = controller
