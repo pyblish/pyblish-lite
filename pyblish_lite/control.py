@@ -10,7 +10,7 @@ an active window manager; such as via Travis-CI.
 
 import traceback
 
-from Qt import QtCore
+from .vendor.Qt import QtCore
 
 import pyblish.api
 import pyblish.util

@@ -1,4 +1,4 @@
-from Qt import QtWidgets, QtGui, QtCore
+from .vendor.Qt import QtWidgets, QtGui, QtCore
 
 from . import model
 from .awesome import tags as awesome

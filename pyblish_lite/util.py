@@ -1,6 +1,6 @@
 import os
 
-from Qt import QtCore
+from .vendor.Qt import QtCore
 
 root = os.path.dirname(__file__)
 

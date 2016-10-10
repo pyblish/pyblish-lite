@@ -24,7 +24,7 @@ Roles:
 
 """
 
-from Qt import QtCore, __binding__
+from .vendor.Qt import QtCore, __binding__
 from .awesome import tags as awesome
 
 

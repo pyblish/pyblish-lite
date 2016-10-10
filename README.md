@@ -196,13 +196,27 @@ Pre-fill it for a custom placeholder or guidelines for how to comment. Press "En
 
 ### Testing
 
-Tests are automatically run at each commit to GitHub via Travis-CI. You can run these tests locally via Docker too.
+Tests are automatically run at each commit to GitHub via Travis-CI. You can run these tests locally either by (1) having the dependencies available on your PYTHONPATH, or (2) via Docker.
+
+**Option 1**
 
 ```bash
-$ git clone https://github.com/pyblish/pyblish-lite.git
+$ cd pyblish-lite
+$ export PYTHONPATH=/path/to/Qt.py:/path/to/pyside:/path/to/pyblish-base
+$ nosetests --verbose --with-doctext --exclude=vendor
+```
+
+**Option 2**
+
+```bash
 $ cd pyblish-lite
 $ docker build -t pyblish/pyblish-lite .
 $ docker run --rm -v $(pwd):/pyblish-lite pyblish/pyblish-lite
+```
+
+**Example output**
+
+```bash
 # Doctest: pyblish_lite.model.ProxyModel ... ok
 # Doctest: pyblish_lite.util.get_asset ... ok
 # Anything runs ... ok
