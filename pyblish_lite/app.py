@@ -2,9 +2,7 @@ import os
 import sys
 import contextlib
 
-from .vendor import Qt
-from Qt import QtWidgets, QtGui
-
+from .vendor.Qt import QtWidgets, QtGui
 from . import control, util, window, compat
 
 
