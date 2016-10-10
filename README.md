@@ -45,6 +45,8 @@ Pyblish Lite runs both standalone and from a host and requires either PySide of 
 - [Mari](#mari)
 - [Houdini](#houdini)
 
+- [Settings](#settings)
+
 ##### Terminal
 
 ```bash
@@ -110,6 +112,17 @@ pyblish.api.register_host("houdini")
 window = pyblish_lite.show()
 ```
 
+##### Settings
+You can customise the user's experience with ```pyblish-lite``` from the settings module.
+
+```python
+import pyblish_lite.settings
+pyblish_lite.settings.WindowTitle = "My Window"
+pyblish_lite.settings.InitialTab = "overview"
+```
+
+You can choose which tab to show initially from the existing tabs available; ```artist```, ```overview``` and ```terminal```.
+
 <br>
 <br>
 <br>
@@ -166,7 +179,7 @@ The next tab brings you to the full overview of available instances and the plug
 
 In Lite's bigger brother QML, plug-ins that are not compatible with any instance are excluded from this list, simplifying situations where you may have hundreds of them, but only a few are relevant. This is an upcoming feature in Lite.
 
-<br>	
+<br>
 
 ##### Terminal
 
