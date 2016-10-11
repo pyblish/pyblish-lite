@@ -112,17 +112,6 @@ pyblish.api.register_host("houdini")
 window = pyblish_lite.show()
 ```
 
-##### Settings
-You can customise the user's experience with ```pyblish-lite``` from the settings module.
-
-```python
-import pyblish_lite.settings
-pyblish_lite.settings.WindowTitle = "My Window"
-pyblish_lite.settings.InitialTab = "overview"
-```
-
-You can choose which tab to show initially from the existing tabs available; ```artist```, ```overview``` and ```terminal```.
-
 <br>
 <br>
 <br>
@@ -141,6 +130,7 @@ Currently, it has all things Pyblish QML except the perspective view, plus a few
 - Select multiple items
 - Remembers checked state between refreshes
 - Continue publishing after successful validation
+- [Settings](#settings)
 
 ##### Keyboard shortcuts
 
@@ -202,6 +192,20 @@ Add `context.data["comment"] = ""` and the GUI adds a widget to interactively mo
 ![comment](https://cloud.githubusercontent.com/assets/2152766/16478620/93c7190a-3e92-11e6-8eb0-32606ff91eb9.gif)
 
 Pre-fill it for a custom placeholder or guidelines for how to comment. Press "Enter" to publish.
+
+<br>
+
+##### Settings
+
+You can customise the user's experience with ```pyblish-lite``` from the settings module.
+
+```python
+import pyblish_lite.settings
+pyblish_lite.settings.WindowTitle = "My Window"
+pyblish_lite.settings.InitialTab = "overview"
+```
+
+You can choose which tab to show initially from the existing tabs available; ```artist```, ```overview``` and ```terminal```.
 
 <br>
 <br>
