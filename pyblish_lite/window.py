@@ -635,6 +635,23 @@ class Window(QtWidgets.QDialog):
         play.setEnabled(any_instances)
         validate.setEnabled(any_instances)
 
+        # Emit signals
+        if index.data(model.Type) == "instance":
+            util.defer(
+                100, lambda: self.controller.emit_(
+                    signal="instanceToggled",
+                    kwargs={"new_value": state,
+                            "old_value": not state,
+                            "instance": index.data(model.Object)}))
+
+        if index.data(model.Type) == "plugin":
+            util.defer(
+                100, lambda: self.controller.emit_(
+                    signal="pluginToggled",
+                    kwargs={"new_value": state,
+                            "old_value": not state,
+                            "plugin": index.data(model.Object)}))
+
     def on_tab_changed(self, target):
         for page in self.data["pages"].values():
             page.hide()
