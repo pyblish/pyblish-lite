@@ -45,8 +45,6 @@ Pyblish Lite runs both standalone and from a host and requires either PySide of 
 - [Mari](#mari)
 - [Houdini](#houdini)
 
-- [Settings](#settings)
-
 ##### Terminal
 
 ```bash
