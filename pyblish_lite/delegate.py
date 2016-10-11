@@ -1,3 +1,5 @@
+import platform
+
 from .vendor.Qt import QtWidgets, QtGui, QtCore
 
 from . import model
@@ -30,6 +32,15 @@ fonts = {
     "smallAwesome": QtGui.QFont("FontAwesome", 8),
     "largeAwesome": QtGui.QFont("FontAwesome", 16),
 }
+if platform.system() == "Darwin":
+    fonts = {
+        "h3": QtGui.QFont("Open Sans", 14, 900),
+        "h4": QtGui.QFont("Open Sans", 12, 400),
+        "h5": QtGui.QFont("Open Sans", 12, 800),
+        "smallAwesome": QtGui.QFont("FontAwesome", 12),
+        "largeAwesome": QtGui.QFont("FontAwesome", 20),
+    }
+
 
 icons = {
     "info": awesome["info"],
