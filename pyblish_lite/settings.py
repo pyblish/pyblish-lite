@@ -1,0 +1,2 @@
+WindowTitle = "Pyblish"
+InitialTab = "artist"
