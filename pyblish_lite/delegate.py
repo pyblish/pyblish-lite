@@ -1,3 +1,5 @@
+import platform
+
 from .vendor.Qt import QtWidgets, QtGui, QtCore
 
 from . import model
@@ -23,12 +25,14 @@ record_colors = {
     "CRITICAL": QtGui.QColor("#ff4f75"),
 }
 
+scale_factors = {"darwin": 1.5}
+scale_factor = scale_factors.get(platform.system().lower(), 1.0)
 fonts = {
-    "h3": QtGui.QFont("Open Sans", 10, 900),
-    "h4": QtGui.QFont("Open Sans", 8, 400),
-    "h5": QtGui.QFont("Open Sans", 8, 800),
-    "smallAwesome": QtGui.QFont("FontAwesome", 8),
-    "largeAwesome": QtGui.QFont("FontAwesome", 16),
+    "h3": QtGui.QFont("Open Sans", 10 * scale_factor, 900),
+    "h4": QtGui.QFont("Open Sans", 8 * scale_factor, 400),
+    "h5": QtGui.QFont("Open Sans", 8 * scale_factor, 800),
+    "smallAwesome": QtGui.QFont("FontAwesome", 8 * scale_factor),
+    "largeAwesome": QtGui.QFont("FontAwesome", 16 * scale_factor),
 }
 
 icons = {
