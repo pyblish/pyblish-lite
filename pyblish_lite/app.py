@@ -2,8 +2,11 @@ import os
 import sys
 import contextlib
 
-from .vendor.Qt import QtWidgets, QtGui
-from . import control, util, window, compat
+from .vendor.Qt import QtWidgets, QtGui, QtCore
+from . import control, util, window, compat, settings
+
+self = sys.modules[__name__]
+self._window = None
 
 
 @contextlib.contextmanager
@@ -52,9 +55,23 @@ def show(parent=None):
 
         ctrl = control.Controller()
 
-        win = window.Window(ctrl, parent)
-        win.resize(430, 600)
-        win.show()
+        win = None
+        try:
+            win = self._window
+            win.show()
+            win.activateWindow()
+            win.setWindowTitle(settings.WindowTitle)
+            print "Using existing window..."
+        except:
+            win = window.Window(ctrl, parent)
+            win.resize(430, 600)
+            win.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+            win.show()
+            self._window = win
+            print "Creating new window..."
+
+        if not win:
+            raise ValueError("Could not get window.")
 
         font = win.font()
         font.setFamily("Open Sans")
