@@ -6,6 +6,8 @@ from .vendor.Qt import QtWidgets, QtGui
 from . import control, util, window, compat, settings
 
 self = sys.modules[__name__]
+
+# Maintain reference to currently opened window
 self._window = None
 
 
@@ -40,6 +42,11 @@ def install_fonts():
             sys.stdout.write("Installed %s\n" % font)
 
 
+def on_destroyed():
+    """Remove internal reference to window on window destroyed"""
+    self._window = None
+
+
 def show(parent=None):
     with open(util.get_asset("app.css")) as f:
         css = f.read()
@@ -55,33 +62,23 @@ def show(parent=None):
 
         ctrl = control.Controller()
 
-        win = None
+        if self._window is None:
+            self._window = window.Window(ctrl, parent)
+            self._window.destroyed.connect(on_destroyed)
 
-        if self._window:
-            win = self._window
-            win.show()
-            win.activateWindow()
-            print "Using existing window..."
-        else:
-            win = window.Window(ctrl, parent)
-            win.resize(430, 600)
-            win.show()
-            self._window = win
-            print "Creating new window..."
+        self._window.show()
+        self._window.activateWindow()
+        self._window.resize(430, 600)
+        self._window.setWindowTitle(settings.WindowTitle)
 
-        if not win:
-            raise ValueError("Could not get window.")
-
-        win.setWindowTitle(settings.WindowTitle)
-
-        font = win.font()
+        font = self._window.font()
         font.setFamily("Open Sans")
         font.setPointSize(8)
         font.setWeight(400)
 
-        win.setFont(font)
-        win.setStyleSheet(css)
+        self._window.setFont(font)
+        self._window.setStyleSheet(css)
 
-        win.reset()
+        self._window.reset()
 
-        return win
+        return self._window
