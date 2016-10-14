@@ -35,7 +35,7 @@ class Controller(QtCore.QObject):
     was_acted = QtCore.Signal(dict)
 
     # Emitted when processing has finished
-    finished = QtCore.Signal()
+    was_finished = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(Controller, self).__init__(parent)
@@ -150,7 +150,7 @@ class Controller(QtCore.QObject):
 
         def on_next():
             if self.current_pair == (None, None):
-                return util.defer(100, on_finished)
+                return util.defer(100, on_finished_)
 
             # The magic number 0.5 is the range between
             # the various CVEI processing stages;
@@ -162,7 +162,7 @@ class Controller(QtCore.QObject):
             #
             order = self.current_pair[0].order
             if order > (until + 0.5):
-                return util.defer(100, on_finished)
+                return util.defer(100, on_finished_)
 
             self.about_to_process.emit(*self.current_pair)
 
@@ -194,7 +194,7 @@ class Controller(QtCore.QObject):
             except StopIteration:
                 # All pairs were processed successfully!
                 self.current_pair = (None, None)
-                return util.defer(500, on_finished)
+                return util.defer(500, on_finished_)
 
             except Exception as e:
                 # This is a bug
@@ -208,7 +208,11 @@ class Controller(QtCore.QObject):
         def on_unexpected_error(error):
             self.warning("An unexpected error occurred; "
                          "see Terminal for more.")
-            return util.defer(500, on_finished)
+            return util.defer(500, on_finished_)
+
+        def on_finished_():
+            on_finished()
+            self.was_finished.emit()
 
         self.is_running = True
         util.defer(10, on_next)

@@ -4,7 +4,8 @@ from pyblish_lite import control
 
 # Vendor libraries
 from nose.tools import (
-    with_setup
+    with_setup,
+    assert_equals
 )
 
 
@@ -306,3 +307,56 @@ def test_far_negative_orders():
 
     # They all register as Collectors
     assert count["#"] == 3, count
+
+
+def test_controller_signals():
+    """was_finished emitted on completing any process
+
+    Any process, such as resetting, validating,
+    actuating and publishing.
+
+    """
+
+    count = {
+        "was_reset": 0,
+        "was_validated": 0,
+        "was_published": 0,
+        "was_finished": 0,
+    }
+
+    def on_signal(signal):
+        count[signal] += 1
+
+    ctrl = control.Controller()
+
+    ctrl.was_reset.connect(lambda: on_signal("was_reset"))
+    ctrl.was_validated.connect(lambda: on_signal("was_validated"))
+    ctrl.was_published.connect(lambda: on_signal("was_published"))
+    ctrl.was_finished.connect(lambda: on_signal("was_finished"))
+
+    ctrl.reset()
+
+    assert_equals(count, {
+        "was_reset": 1,
+        "was_validated": 0,
+        "was_published": 0,
+        "was_finished": 1,
+    })
+
+    ctrl.validate()
+
+    assert_equals(count, {
+        "was_reset": 1,
+        "was_validated": 1,
+        "was_published": 0,
+        "was_finished": 2,
+    })
+
+    ctrl.publish()
+
+    assert_equals(count, {
+        "was_reset": 1,
+        "was_validated": 1,
+        "was_published": 1,
+        "was_finished": 3,
+    })
