@@ -308,7 +308,11 @@ class Plugin(Item):
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
-        self.setData(index, not result["success"], HasFailed)
+
+        # Once failed, never go back.
+        if not self.data(index, HasFailed):
+            self.setData(index, not result["success"], HasFailed)
+
         super(Plugin, self).update_with_result(result)
 
 
@@ -383,7 +387,11 @@ class Instance(Item):
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
-        self.setData(index, not result["success"], HasFailed)
+
+        # Once failed, never go back.
+        if not self.data(index, HasFailed):
+            self.setData(index, not result["success"], HasFailed)
+
         super(Instance, self).update_with_result(result)
 
 
