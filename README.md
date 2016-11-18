@@ -199,11 +199,20 @@ You can customise the user's experience with ```pyblish-lite``` from the setting
 
 ```python
 import pyblish_lite.settings
-pyblish_lite.settings.WindowTitle = "My Window"
-pyblish_lite.settings.InitialTab = "overview"
-```
 
-You can choose which tab to show initially from the existing tabs available; ```artist```, ```overview``` and ```terminal```.
+# Customize the title of the window Pyblish-lite produces.
+# Default: "Pyblish"
+pyblish_lite.settings.WindowTitle = "My Window"
+
+# Customize which tab to show initially from the existing tabs available;
+# "artist", "overview" and "terminal".
+# Default: "artist"
+pyblish_lite.settings.InitialTab = "overview"
+
+# Customize whether to use labels for plugins and instances.
+# Default: True
+pyblish_lite.settings.UseLabel = False
+```
 
 <br>
 <br>
