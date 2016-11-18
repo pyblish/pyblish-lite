@@ -874,6 +874,9 @@ class Window(QtWidgets.QDialog):
         models["instances"].store_checkstate()
         models["plugins"].store_checkstate()
 
+        # Reset current ids to secure no previous instances get mixed in.
+        models["instances"].ids = []
+
         for m in models.values():
             m.reset()
 
