@@ -180,7 +180,8 @@ class Plugin(Item):
     def append(self, item):
 
         item.label = item.label or item.__name__
-        if not settings.PluginsLabelName:
+        # Use class names if settings say so.
+        if not settings.UseLabel:
             item.label = item.__name__
 
         # GUI-only data
@@ -334,7 +335,11 @@ class Instance(Item):
     def append(self, item):
         item.data["optional"] = item.data.get("optional", True)
         item.data["publish"] = item.data.get("publish", True)
+
         item.data["label"] = item.data.get("label", item.data["name"])
+        # Use instance name if settings say so.
+        if not settings.UseLabel:
+            item.data["label"] = item.data["name"]
 
         # GUI-only data
         item.data["_type"] = "instance"
