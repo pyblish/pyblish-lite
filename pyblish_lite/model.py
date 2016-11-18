@@ -26,6 +26,7 @@ Roles:
 
 from .vendor.Qt import QtCore, __binding__
 from .awesome import tags as awesome
+from . import settings
 
 
 # GENERAL
@@ -177,7 +178,10 @@ class Plugin(Item):
         })
 
     def append(self, item):
+
         item.label = item.label or item.__name__
+        if not settings.PluginsLabelName:
+            item.label = item.__name__
 
         # GUI-only data
         item._is_idle = True
