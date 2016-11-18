@@ -758,6 +758,10 @@ class Window(QtWidgets.QDialog):
 
         self.info("Finishing up reset..")
 
+        models["instances"].reset()
+        for instance in self.controller.context:
+            models["instances"].append(instance)
+
         buttons = self.data["buttons"]
         buttons["play"].show()
         buttons["validate"].show()
