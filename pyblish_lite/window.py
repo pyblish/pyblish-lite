@@ -756,9 +756,6 @@ class Window(QtWidgets.QDialog):
     def on_was_reset(self):
         models = self.data["models"]
 
-        for instance in self.controller.context:
-            models["instances"].append(instance)
-
         self.info("Finishing up reset..")
 
         buttons = self.data["buttons"]
@@ -824,6 +821,10 @@ class Window(QtWidgets.QDialog):
 
     def on_was_processed(self, result):
         models = self.data["models"]
+
+        for instance in self.controller.context:
+            if instance.id not in models["instances"].ids:
+                models["instances"].append(instance)
 
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
