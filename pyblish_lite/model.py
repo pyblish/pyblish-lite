@@ -408,6 +408,7 @@ class Instance(Item):
 
         super(Instance, self).update_with_result(result)
 
+
 class Terminal(Abstract):
     def __init__(self, parent=None):
         super(Terminal, self).__init__(parent)
