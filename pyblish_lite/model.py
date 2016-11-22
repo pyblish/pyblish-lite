@@ -325,6 +325,7 @@ class Instance(Item):
     def __init__(self):
         super(Instance, self).__init__()
 
+        self.ids = []
         self.schema.update({
             IsChecked: "publish",
 
@@ -340,6 +341,9 @@ class Instance(Item):
         # Use instance name if settings say so.
         if not settings.UseLabel:
             item.data["label"] = item.data["name"]
+
+        # Store instances id in easy access data member
+        self.ids.append(item.id)
 
         # GUI-only data
         item.data["_type"] = "instance"
@@ -392,6 +396,7 @@ class Instance(Item):
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
+
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)

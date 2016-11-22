@@ -756,10 +756,11 @@ class Window(QtWidgets.QDialog):
     def on_was_reset(self):
         models = self.data["models"]
 
+        self.info("Finishing up reset..")
+
+        models["instances"].reset()
         for instance in self.controller.context:
             models["instances"].append(instance)
-
-        self.info("Finishing up reset..")
 
         buttons = self.data["buttons"]
         buttons["play"].show()
@@ -825,6 +826,10 @@ class Window(QtWidgets.QDialog):
     def on_was_processed(self, result):
         models = self.data["models"]
 
+        for instance in self.controller.context:
+            if instance.id not in models["instances"].ids:
+                models["instances"].append(instance)
+
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
@@ -872,6 +877,9 @@ class Window(QtWidgets.QDialog):
 
         models["instances"].store_checkstate()
         models["plugins"].store_checkstate()
+
+        # Reset current ids to secure no previous instances get mixed in.
+        models["instances"].ids = []
 
         for m in models.values():
             m.reset()
