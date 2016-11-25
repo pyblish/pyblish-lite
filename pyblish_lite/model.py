@@ -217,7 +217,7 @@ class Plugin(Item):
             actions = list(item.actions)
 
             # Context specific actions
-            for action in reversed(actions):
+            for action in actions:
                 if action.on == "failed" and item._has_failed:
                     return True
                 if action.on == "succeeded" and item._has_succeeded:
