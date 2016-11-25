@@ -217,18 +217,15 @@ class Plugin(Item):
             actions = list(item.actions)
 
             # Context specific actions
-            for action in actions:
-                if action.on == "failed" and not item._has_failed:
-                    actions.remove(action)
-                if action.on == "succeeded" and not item._has_succeeded:
-                    actions.remove(action)
-                if action.on == "processed" and not item._has_processed:
-                    actions.remove(action)
-                if action.on == "notProcessed" and item._has_processed:
-                    actions.remove(action)
-
-            if actions:
-                return True
+            for action in reversed(actions):
+                if action.on == "failed" and item._has_failed:
+                    return True
+                if action.on == "succeeded" and item._has_succeeded:
+                    return True
+                if action.on == "processed" and item._has_processed:
+                    return True
+                if action.on == "notProcessed" and not item._has_processed:
+                    return True
 
             return False
 
@@ -241,7 +238,7 @@ class Plugin(Item):
             actions = list(item.actions)
 
             # Context specific actions
-            for action in actions:
+            for action in actions[:]:
                 if action.on == "failed" and not item._has_failed:
                     actions.remove(action)
                 if action.on == "succeeded" and not item._has_succeeded:
