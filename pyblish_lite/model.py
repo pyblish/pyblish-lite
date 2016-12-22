@@ -397,7 +397,8 @@ class Instance(Item):
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
-        self.setData(index, result["success"], HasSucceeded)
+        if not self.data(index, HasSucceeded):
+            self.setData(index, result["success"], HasSucceeded)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
@@ -521,7 +522,7 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         self.setSourceModel(source)
 
         self.excludes = dict()
-        self.includes = dict()
+        self.includes = {'families': ['*']}
 
     def item(self, index):
         index = self.index(index, 0, QtCore.QModelIndex())
@@ -629,16 +630,17 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         """Exclude items in `self.excludes`"""
         model = self.sourceModel()
         item = model.items[source_row]
-
         key = getattr(item, "filter", None)
         if key is not None:
             regex = self.filterRegExp()
             if regex.pattern():
                 match = regex.indexIn(key)
                 return False if match == -1 else True
-
         for role, values in self.includes.items():
             data = getattr(item, role, None)
+            if hasattr(data, '__iter__'):
+                return True if any(value in values for value in data) else False
+
             if data not in values:
                 return False
 
