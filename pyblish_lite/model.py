@@ -24,10 +24,9 @@ Roles:
 
 """
 
-from .vendor.Qt import QtCore, __binding__
-from .awesome import tags as awesome
 from . import settings
-
+from .awesome import tags as awesome
+from .vendor.Qt import QtCore, __binding__
 
 # GENERAL
 
@@ -397,8 +396,7 @@ class Instance(Item):
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
-        if not self.data(index, HasSucceeded):
-            self.setData(index, result["success"], HasSucceeded)
+        self.setData(index, result["success"], HasSucceeded)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
@@ -588,6 +586,7 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
 
     def clear_inclusion(self):
         self._clear_group(self.includes)
+        self.add_inclusion(role="families", value="*")
 
     def _add_rule(self, group, role, value):
         """Implementation detail"""
@@ -636,13 +635,11 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
             if regex.pattern():
                 match = regex.indexIn(key)
                 return False if match == -1 else True
-        for role, values in self.includes.items():
-            data = getattr(item, role, None)
-            if hasattr(data, '__iter__'):
-                return True if any(value in values for value in data) else False
 
-            if data not in values:
-                return False
+        # --- Check if any family assigned to the plugin is in allowed families
+        for role, values in self.includes.items():
+            includes_list = [([x] if isinstance(x, (list, tuple)) else x) for x in getattr(item, role, None)]
+            return any(include in values for include in includes_list)
 
         for role, values in self.excludes.items():
             data = getattr(item, role, None)

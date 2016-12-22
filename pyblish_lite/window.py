@@ -714,7 +714,6 @@ class Window(QtWidgets.QDialog):
         index = plugin_model.items.index(plugin)
         index = plugin_model.createIndex(index, 0)
         plugin_model.setData(index, True, model.IsProcessing)
-        # self.data["models"]["plugins"].items[1].families
         self.info("Processing %s" % (index.data(model.Label)))
 
     def on_plugin_action_menu_requested(self, pos):
@@ -831,16 +830,16 @@ class Window(QtWidgets.QDialog):
             if instance.id not in models["instances"].ids:
                 models["instances"].append(instance)
 
-            family = instance.data['family']
+            family = instance.data["family"]
             if family:
-                plugins_filter = self.data['views']['right'].model()
-                plugins_filter.add_inclusion(role='families', value=family)
+                plugins_filter = self.data["views"]["right"].model()
+                plugins_filter.add_inclusion(role="families", value=family)
 
-            families = instance.data['families'] if 'families' in instance.data  else False
+            families = instance.data.get("families")
             if families:
                 for f in families:
-                    plugins_filter = self.data['views']['right'].model()
-                    plugins_filter.add_inclusion(role='families', value=f)
+                    plugins_filter = self.data["views"]["right"].model()
+                    plugins_filter.add_inclusion(role="families", value=f)
 
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
@@ -885,9 +884,8 @@ class Window(QtWidgets.QDialog):
         """Prepare GUI for reset"""
         self.info("About to reset..")
 
-        plugins_filter = self.data['views']['right'].model()
+        plugins_filter = self.data["views"]["right"].model()
         plugins_filter.clear_inclusion()
-        plugins_filter.add_inclusion(role='families', value="*")
 
         models = self.data["models"]
 
