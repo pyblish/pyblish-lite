@@ -528,6 +528,11 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         model = self.sourceModel()
         return model.items[index.row()]
 
+    def reset(self):
+        self.beginResetModel()
+        self.includes = {'families': ['*']}
+        self.endResetModel()
+
     def add_exclusion(self, role, value):
         """Exclude item if `role` equals `value`
 
@@ -586,7 +591,6 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
 
     def clear_inclusion(self):
         self._clear_group(self.includes)
-        self.add_inclusion(role="families", value="*")
 
     def _add_rule(self, group, role, value):
         """Implementation detail"""
