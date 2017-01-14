@@ -640,12 +640,13 @@ class Window(QtWidgets.QDialog):
 
         # Emit signals
         if index.data(model.Type) == "instance":
+            instance = self.data["models"]["instances"].items[index.row()]
             util.defer(
                 100, lambda: self.controller.emit_(
                     signal="instanceToggled",
                     kwargs={"new_value": state,
                             "old_value": not state,
-                            "instance": index.data(model.Object)}))
+                            "instance": instance}))
 
         if index.data(model.Type) == "plugin":
             util.defer(
