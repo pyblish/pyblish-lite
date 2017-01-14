@@ -356,9 +356,11 @@ class Window(QtWidgets.QDialog):
         plugin_model = model.Plugin()
         terminal_model = model.Terminal()
 
+        filter_model = model.ProxyModel(plugin_model)
+
         artist_view.setModel(instance_model)
         left_view.setModel(instance_model)
-        right_view.setModel(plugin_model)
+        right_view.setModel(filter_model)
         terminal_view.setModel(terminal_model)
 
         instance_combo.setModel(instance_model)
@@ -428,6 +430,7 @@ class Window(QtWidgets.QDialog):
             "models": {
                 "instances": instance_model,
                 "plugins": plugin_model,
+                "filter": filter_model,
                 "terminal": terminal_model,
             },
             "terminal_toggles": {
@@ -714,7 +717,6 @@ class Window(QtWidgets.QDialog):
         index = plugin_model.items.index(plugin)
         index = plugin_model.createIndex(index, 0)
         plugin_model.setData(index, True, model.IsProcessing)
-
         self.info("Processing %s" % (index.data(model.Label)))
 
     def on_plugin_action_menu_requested(self, pos):
@@ -736,7 +738,8 @@ class Window(QtWidgets.QDialog):
             return
 
         menu = QtWidgets.QMenu(self)
-        plugin = self.data["models"]["plugins"].items[index.row()]
+        plugins_index = self.data["models"]["filter"].mapToSource(index)
+        plugin = self.data["models"]["plugins"].items[plugins_index.row()]
         print("plugin is: %s" % plugin)
 
         for action in actions:
@@ -831,6 +834,17 @@ class Window(QtWidgets.QDialog):
             if instance.id not in models["instances"].ids:
                 models["instances"].append(instance)
 
+            family = instance.data["family"]
+            if family:
+                plugins_filter = self.data["models"]["filter"]
+                plugins_filter.add_inclusion(role="families", value=family)
+
+            families = instance.data.get("families")
+            if families:
+                for f in families:
+                    plugins_filter = self.data["models"]["filter"]
+                    plugins_filter.add_inclusion(role="families", value=f)
+
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
@@ -895,7 +909,6 @@ class Window(QtWidgets.QDialog):
 
     def validate(self):
         self.info("Preparing validate..")
-
         for button in self.data["buttons"].values():
             button.hide()
 

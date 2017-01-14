@@ -24,10 +24,9 @@ Roles:
 
 """
 
-from .vendor.Qt import QtCore, __binding__
-from .awesome import tags as awesome
 from . import settings
-
+from .awesome import tags as awesome
+from .vendor.Qt import QtCore, __binding__
 
 # GENERAL
 
@@ -521,13 +520,18 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         self.setSourceModel(source)
 
         self.excludes = dict()
-        self.includes = dict()
+        self.includes = {'families': ['*']}
 
     def item(self, index):
         index = self.index(index, 0, QtCore.QModelIndex())
         index = self.mapToSource(index)
         model = self.sourceModel()
         return model.items[index.row()]
+
+    def reset(self):
+        self.beginResetModel()
+        self.includes = {'families': ['*']}
+        self.endResetModel()
 
     def add_exclusion(self, role, value):
         """Exclude item if `role` equals `value`
@@ -629,7 +633,6 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         """Exclude items in `self.excludes`"""
         model = self.sourceModel()
         item = model.items[source_row]
-
         key = getattr(item, "filter", None)
         if key is not None:
             regex = self.filterRegExp()
@@ -637,10 +640,10 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
                 match = regex.indexIn(key)
                 return False if match == -1 else True
 
+        # --- Check if any family assigned to the plugin is in allowed families
         for role, values in self.includes.items():
-            data = getattr(item, role, None)
-            if data not in values:
-                return False
+            includes_list = [([x] if isinstance(x, (list, tuple)) else x) for x in getattr(item, role, None)]
+            return any(include in values for include in includes_list)
 
         for role, values in self.excludes.items():
             data = getattr(item, role, None)
