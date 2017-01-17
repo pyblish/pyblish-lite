@@ -640,6 +640,23 @@ class Window(QtWidgets.QDialog):
 
         # Emit signals
         if index.data(model.Type) == "instance":
+
+            instances = [index.data(model.Data) for index in self.data["models"]["instances"]
+                         if index.data(model.IsChecked)]
+
+            plugins_filter = self.data["models"]["filter"]
+            plugins_filter.reset()
+
+            for instance in instances:
+                family = instance["family"]
+                if family:
+                    plugins_filter.add_inclusion(role="families", value=family)
+
+                families = instance.get("families")
+                if families:
+                    for f in families:
+                        plugins_filter.add_inclusion(role="families", value=f)
+
             util.defer(
                 100, lambda: self.controller.emit_(
                     signal="instanceToggled",
@@ -833,15 +850,15 @@ class Window(QtWidgets.QDialog):
             if instance.id not in models["instances"].ids:
                 models["instances"].append(instance)
 
+            plugins_filter = self.data["models"]["filter"]
+
             family = instance.data["family"]
             if family:
-                plugins_filter = self.data["models"]["filter"]
                 plugins_filter.add_inclusion(role="families", value=family)
 
             families = instance.data.get("families")
             if families:
                 for f in families:
-                    plugins_filter = self.data["models"]["filter"]
                     plugins_filter.add_inclusion(role="families", value=f)
 
         models["plugins"].update_with_result(result)
