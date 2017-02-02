@@ -164,6 +164,10 @@ class Item(Abstract):
             for uid, state in self.checkstate.items():
                 if uid == "{families}.{label}".format(**locals()):
                     self.setData(index, state, IsChecked)
+                    try:
+                        self.dataChanged.emit(index, index)
+                    except:
+                        self.dataChanged.emit(index, index, [])
                     break
 
 
@@ -599,7 +603,8 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         if role not in group:
             group[role] = list()
 
-        group[role].append(value)
+        if value not in group[role]:
+            group[role].append(value)
 
         self.invalidate()
 
