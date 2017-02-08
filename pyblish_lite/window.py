@@ -640,23 +640,6 @@ class Window(QtWidgets.QDialog):
 
         # Emit signals
         if index.data(model.Type) == "instance":
-
-            instances = [index.data(model.Data) for index in self.data["models"]["instances"]
-                         if index.data(model.IsChecked)]
-
-            plugins_filter = self.data["models"]["filter"]
-            plugins_filter.reset()
-
-            for instance in instances:
-                family = instance["family"]
-                if family:
-                    plugins_filter.add_inclusion(role="families", value=family)
-
-                families = instance.get("families")
-                if families:
-                    for f in families:
-                        plugins_filter.add_inclusion(role="families", value=f)
-
             instance = self.data["models"]["instances"].items[index.row()]
             util.defer(
                 100, lambda: self.controller.emit_(
@@ -792,8 +775,6 @@ class Window(QtWidgets.QDialog):
         models["instances"].restore_checkstate()
         models["plugins"].restore_checkstate()
 
-        self.on_after_reset_filter()
-
         # Append placeholder comment from Context
         # This allows users to inject a comment from elsewhere,
         # or to perhaps provide a placeholder comment/template
@@ -853,38 +834,20 @@ class Window(QtWidgets.QDialog):
             if instance.id not in models["instances"].ids:
                 models["instances"].append(instance)
 
-            plugins_filter = self.data["models"]["filter"]
-
             family = instance.data["family"]
             if family:
+                plugins_filter = self.data["models"]["filter"]
                 plugins_filter.add_inclusion(role="families", value=family)
 
             families = instance.data.get("families")
             if families:
                 for f in families:
+                    plugins_filter = self.data["models"]["filter"]
                     plugins_filter.add_inclusion(role="families", value=f)
 
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
-
-    def on_after_reset_filter(self):
-        plugins_filter = self.data["models"]["filter"]
-        plugins_filter.reset()
-        for instance in self.controller.context:
-            if instance.data.get("publish", True) is False:
-                continue
-
-            family = instance.data["family"]
-            if family:
-                plugins_filter.add_inclusion(role="families", value=family)
-
-            families = instance.data.get("families")
-
-            if families:
-                for f in families:
-                    plugins_filter.add_inclusion(role="families", value=f)
-        plugins_filter.invalidate()
 
     def on_was_acted(self, result):
         buttons = self.data["buttons"]

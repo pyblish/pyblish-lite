@@ -28,8 +28,6 @@ from . import settings
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, __binding__
 
-from pyblish.logic import plugins_by_families
-
 # GENERAL
 
 # The original object; Instance or Plugin
@@ -164,10 +162,6 @@ class Item(Abstract):
             for uid, state in self.checkstate.items():
                 if uid == "{families}.{label}".format(**locals()):
                     self.setData(index, state, IsChecked)
-                    try:
-                        self.dataChanged.emit(index, index)
-                    except:
-                        self.dataChanged.emit(index, index, [])
                     break
 
 
@@ -526,7 +520,7 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         self.setSourceModel(source)
 
         self.excludes = dict()
-        self.includes = {'families': []}
+        self.includes = {'families': ['*']}
 
     def item(self, index):
         index = self.index(index, 0, QtCore.QModelIndex())
@@ -536,7 +530,7 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
 
     def reset(self):
         self.beginResetModel()
-        self.includes = {'families': []}
+        self.includes = {'families': ['*']}
         self.endResetModel()
 
     def add_exclusion(self, role, value):
@@ -603,8 +597,7 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         if role not in group:
             group[role] = list()
 
-        if value not in group[role]:
-            group[role].append(value)
+        group[role].append(value)
 
         self.invalidate()
 
@@ -647,8 +640,10 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
                 match = regex.indexIn(key)
                 return False if match == -1 else True
 
-        if not plugins_by_families([item], self.includes['families']):
-            return False
+        # --- Check if any family assigned to the plugin is in allowed families
+        for role, values in self.includes.items():
+            includes_list = [([x] if isinstance(x, (list, tuple)) else x) for x in getattr(item, role, None)]
+            return any(include in values for include in includes_list)
 
         for role, values in self.excludes.items():
             data = getattr(item, role, None)

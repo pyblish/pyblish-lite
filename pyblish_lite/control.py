@@ -120,6 +120,7 @@ class Controller(QtCore.QObject):
         """
 
         self.processing["nextOrder"] = plugin.order
+
         try:
             result = pyblish.plugin.process(plugin, self.context, instance)
 
@@ -158,13 +159,6 @@ class Controller(QtCore.QObject):
             #
             # TODO(marcus): Make this less magical
             #
-            if self.current_pair[1] is not None:
-                if self.current_pair[1].data.get("publish", True) is False:
-                    try:
-                        self.current_pair = next(self.pair_generator)
-                    except:
-                        return util.defer(100, on_finished_)
-
             order = self.current_pair[0].order
             if order > (until + 0.5):
                 return util.defer(100, on_finished_)
