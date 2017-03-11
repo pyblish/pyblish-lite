@@ -164,10 +164,7 @@ class Item(Abstract):
             for uid, state in self.checkstate.items():
                 if uid == "{families}.{label}".format(**locals()):
                     self.setData(index, state, IsChecked)
-                    try:
-                        self.dataChanged.emit(index, index)
-                    except:
-                        self.dataChanged.emit(index, index, [])
+                    self.dataChanged.emit(index, index)
                     break
 
 
@@ -296,7 +293,7 @@ class Plugin(Item):
         key = self.schema.get(role)
 
         if key is None:
-            return
+            return False
 
         setattr(item, key, value)
 
@@ -304,6 +301,8 @@ class Plugin(Item):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+
+        return True
 
     def update_with_result(self, result, action=False):
         item = result["plugin"]
@@ -381,7 +380,7 @@ class Instance(Item):
         key = self.schema.get(role)
 
         if key is None:
-            return
+            return False
 
         item.data[key] = value
 
@@ -389,6 +388,8 @@ class Instance(Item):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+
+        return True
 
     def update_with_result(self, result):
         item = result["instance"]
@@ -461,7 +462,7 @@ class Terminal(Abstract):
         key = self.schema.get(role)
 
         if key is None:
-            return
+            return False
 
         item[key] = value
 
@@ -469,6 +470,8 @@ class Terminal(Abstract):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+
+        return True
 
     def update_with_result(self, result):
         for record in result["records"]:
