@@ -212,6 +212,9 @@ pyblish_lite.settings.InitialTab = "overview"
 # Customize whether to use labels for plugins and instances.
 # Default: True
 pyblish_lite.settings.UseLabel = False
+
+# Custommize the width and height of the window
+pyblish_lite.settings.WindowSize = (500, 500)
 ```
 
 <br>
