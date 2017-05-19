@@ -214,8 +214,7 @@ pyblish_lite.settings.InitialTab = "overview"
 pyblish_lite.settings.UseLabel = False
 
 # Custommize the width and height of the window
-pyblish_lite.settings.WindowWidth = 500
-pyblish_lite.settings.WindowHeight = 500
+pyblish_lite.settings.WindowSize = (500, 500)
 ```
 
 <br>

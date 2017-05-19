@@ -6,5 +6,4 @@ UseLabel = True  # Customize whether to show label names for plugins.
 InitialTab = "artist"
 
 # Customize the window size.
-WindowWidth = 430
-WindowHeight = 600
+WindowSize = (430, 600)
