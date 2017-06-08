@@ -44,6 +44,7 @@ from .vendor.Qt import QtCore, QtWidgets, QtGui
 
 from . import model, view, util, delegate, settings
 from .awesome import tags as awesome
+from functools import partial
 
 
 class Window(QtWidgets.QDialog):
@@ -744,9 +745,7 @@ class Window(QtWidgets.QDialog):
 
         for action in actions:
             qaction = QtWidgets.QAction(action.label or action.__name__, self)
-            qaction.triggered.connect(
-                lambda p=plugin, a=action: self.act(p, a)
-            )
+            qaction.triggered.connect(partial(self.act, plugin, action))
             menu.addAction(qaction)
 
         menu.popup(self.data["views"]["right"].viewport().mapToGlobal(pos))
