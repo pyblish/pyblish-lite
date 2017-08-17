@@ -68,7 +68,7 @@ def show(parent=None):
 
         self._window.show()
         self._window.activateWindow()
-        self._window.resize(430, 600)
+        self._window.resize(*settings.WindowSize)
         self._window.setWindowTitle(settings.WindowTitle)
 
         font = self._window.font()
