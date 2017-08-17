@@ -120,7 +120,6 @@ class Controller(QtCore.QObject):
         """
 
         self.processing["nextOrder"] = plugin.order
-
         try:
             result = pyblish.plugin.process(plugin, self.context, instance)
 
@@ -148,7 +147,9 @@ class Controller(QtCore.QObject):
         """
 
         def on_next():
-            if self.current_pair == (None, None):
+            plugin, instance = self.current_pair
+
+            if (plugin, instance) == (None, None):
                 return util.defer(100, on_finished_)
 
             # The magic number 0.5 is the range between
@@ -159,9 +160,16 @@ class Controller(QtCore.QObject):
             #
             # TODO(marcus): Make this less magical
             #
-            order = self.current_pair[0].order
-            if order > (until + 0.5):
+            if plugin.order > (until + 0.5):
                 return util.defer(100, on_finished_)
+
+            # Support data["publish"] = False
+            if instance is not None:
+                if not instance.data.get("publish", True):
+                    try:
+                        self.current_pair = next(self.pair_generator)
+                    except:
+                        return util.defer(100, on_finished_)
 
             self.about_to_process.emit(*self.current_pair)
 

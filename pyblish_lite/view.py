@@ -1,4 +1,5 @@
 from .vendor.Qt import QtCore, QtWidgets
+from .model import IsChecked
 
 
 class Item(QtWidgets.QListView):
@@ -59,6 +60,8 @@ class Item(QtWidgets.QListView):
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             indexes = self.selectionModel().selectedIndexes()
+
+            # Allow drag-select across checkboxes.
             if len(indexes) <= 1 and event.pos().x() < 20:
                 for index in indexes:
                     self.toggled.emit(index, None)

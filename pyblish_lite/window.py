@@ -357,11 +357,11 @@ class Window(QtWidgets.QDialog):
         plugin_model = model.Plugin()
         terminal_model = model.Terminal()
 
-        filter_model = model.ProxyModel(plugin_model)
+        plugin_proxy_model = model.ProxyModel(plugin_model)
 
         artist_view.setModel(instance_model)
         left_view.setModel(instance_model)
-        right_view.setModel(filter_model)
+        right_view.setModel(plugin_proxy_model)
         terminal_view.setModel(terminal_model)
 
         instance_combo.setModel(instance_model)
@@ -431,7 +431,7 @@ class Window(QtWidgets.QDialog):
             "models": {
                 "instances": instance_model,
                 "plugins": plugin_model,
-                "filter": filter_model,
+                "pluginsProxy": plugin_proxy_model,
                 "terminal": terminal_model,
             },
             "terminal_toggles": {
@@ -641,6 +641,8 @@ class Window(QtWidgets.QDialog):
 
         # Emit signals
         if index.data(model.Type) == "instance":
+            self.update_proxy_models()
+
             instance = self.data["models"]["instances"].items[index.row()]
             util.defer(
                 100, lambda: self.controller.emit_(
@@ -739,7 +741,7 @@ class Window(QtWidgets.QDialog):
             return
 
         menu = QtWidgets.QMenu(self)
-        plugins_index = self.data["models"]["filter"].mapToSource(index)
+        plugins_index = self.data["models"]["pluginsProxy"].mapToSource(index)
         plugin = self.data["models"]["plugins"].items[plugins_index.row()]
         print("plugin is: %s" % plugin)
 
@@ -773,6 +775,8 @@ class Window(QtWidgets.QDialog):
 
         models["instances"].restore_checkstate()
         models["plugins"].restore_checkstate()
+
+        self.update_proxy_models()
 
         # Append placeholder comment from Context
         # This allows users to inject a comment from elsewhere,
@@ -833,20 +837,34 @@ class Window(QtWidgets.QDialog):
             if instance.id not in models["instances"].ids:
                 models["instances"].append(instance)
 
+            plugins_filter = self.data["models"]["pluginsProxy"]
+
             family = instance.data["family"]
             if family:
-                plugins_filter = self.data["models"]["filter"]
                 plugins_filter.add_inclusion(role="families", value=family)
 
             families = instance.data.get("families")
             if families:
                 for f in families:
-                    plugins_filter = self.data["models"]["filter"]
                     plugins_filter.add_inclusion(role="families", value=f)
 
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
+
+    def update_proxy_models(self):
+        proxy = self.data["models"]["pluginsProxy"]
+        proxy.reset()
+
+        # Filter based on remaining checked instances
+        for instance in self.data["models"]["instances"]:
+            if not instance.data(model.IsChecked):
+                continue
+
+            for family in instance.data(model.Families):
+                proxy.add_inclusion(role="families", value=family)
+
+        proxy.invalidate()
 
     def on_was_acted(self, result):
         buttons = self.data["buttons"]
