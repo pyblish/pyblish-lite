@@ -27,6 +27,7 @@ Roles:
 from . import settings
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, __binding__
+from .vendor.six import text_type
 
 # GENERAL
 
@@ -467,7 +468,7 @@ class Terminal(Abstract):
     def update_with_result(self, result):
         for record in result["records"]:
             self.append({
-                "label": str(record.msg),
+                "label": text_type(record.msg),
                 "type": "record",
 
                 # Native
@@ -485,7 +486,7 @@ class Terminal(Abstract):
         if error is not None:
             fname, line_no, func, exc = error.traceback
             self.append({
-                "label": str(error),
+                "label": text_type(error),
                 "type": "error",
                 "fname": fname,
                 "line_number": line_no,
@@ -642,7 +643,8 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
 
         # --- Check if any family assigned to the plugin is in allowed families
         for role, values in self.includes.items():
-            includes_list = [([x] if isinstance(x, (list, tuple)) else x) for x in getattr(item, role, None)]
+            includes_list = [([x] if isinstance(x, (list, tuple)) else x)
+                             for x in getattr(item, role, None)]
             return any(include in values for include in includes_list)
 
         for role, values in self.excludes.items():
