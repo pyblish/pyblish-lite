@@ -23,6 +23,7 @@ Roles:
     as the key of a dictionary, except they can only be integers.
 
 """
+from __future__ import unicode_literals
 
 from . import settings
 from .awesome import tags as awesome
