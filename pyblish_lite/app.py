@@ -1,9 +1,11 @@
+from __future__ import print_function
+
+import contextlib
 import os
 import sys
-import contextlib
 
-from .vendor.Qt import QtWidgets, QtGui
-from . import control, util, window, compat, settings
+from . import compat, control, settings, util, window
+from .vendor.Qt import QtCore, QtGui, QtWidgets
 
 self = sys.modules[__name__]
 
@@ -23,6 +25,14 @@ def application():
     else:
         print("Using existing QApplication..")
         yield app
+
+
+def install_translator(app):
+    translator = QtCore.QTranslator(app)
+    translator.load(QtCore.QLocale.system(), "i18n/",
+                    directory=os.path.dirname(__file__))
+    app.installTranslator(translator)
+    print("Installed translator")
 
 
 def install_fonts():
@@ -55,10 +65,11 @@ def show(parent=None):
         root = util.get_asset("").replace("\\", "/")
         css = css.replace("url(\"", "url(\"%s" % root)
 
-    with application():
+    with application() as app:
         compat.init()
 
         install_fonts()
+        install_translator(app)
 
         ctrl = control.Controller()
 

@@ -1,6 +1,11 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import os
+import sys
 
 from .vendor.Qt import QtCore
+from .vendor.six import text_type
 
 root = os.path.dirname(__file__)
 
@@ -39,3 +44,25 @@ def defer(delay, func):
         return QtCore.QTimer.singleShot(delay, func)
     else:
         return func()
+
+
+def u_print(msg, **kwargs):
+    """`print` with encoded unicode.
+
+    `print` unicode may cause UnicodeEncodeError
+    or non-readable result when `PYTHONIOENCODING` is not set.
+    this will fix it.
+
+    Arguments:
+        msg (unicode): Message to print.
+        **kwargs: Keyword argument for `print` function.
+    """
+
+    if isinstance(msg, text_type):
+        try:
+            encoding = os.getenv('PYTHONIOENCODING', sys.stdout.encoding)
+        except AttributeError:
+            # `sys.stdout.encoding` may not exists.
+            encoding = 'utf-8'
+        msg = msg.encode(encoding, 'replace')
+    print(msg, **kwargs)

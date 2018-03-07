@@ -39,12 +39,12 @@ Todo:
     the first time to understand how to actually to it!
 
 """
-
-from .vendor.Qt import QtCore, QtWidgets, QtGui
-
-from . import model, view, util, delegate, settings
-from .awesome import tags as awesome
 from functools import partial
+
+from . import delegate, model, settings, util, view
+from .awesome import tags as awesome
+
+from .vendor.Qt import QtCore, QtGui, QtWidgets
 
 
 class Window(QtWidgets.QDialog):
@@ -224,7 +224,8 @@ class Window(QtWidgets.QDialog):
         """
 
         comment_box = QtWidgets.QLineEdit()
-        comment_placeholder = QtWidgets.QLabel("Comment..", comment_box)
+        comment_placeholder = QtWidgets.QLabel(
+            self.tr("Comment.."), comment_box)
         comment_placeholder.move(2, 2)
         comment_box.setEnabled(False)
         comment_box.hide()
@@ -718,7 +719,7 @@ class Window(QtWidgets.QDialog):
         index = plugin_model.items.index(plugin)
         index = plugin_model.createIndex(index, 0)
         plugin_model.setData(index, True, model.IsProcessing)
-        self.info("Processing %s" % (index.data(model.Label)))
+        self.info("%s %s" % (self.tr("Processing"), index.data(model.Label)))
 
     def on_plugin_action_menu_requested(self, pos):
         """The user right-clicked on a plug-in
@@ -759,7 +760,7 @@ class Window(QtWidgets.QDialog):
     def on_was_reset(self):
         models = self.data["models"]
 
-        self.info("Finishing up reset..")
+        self.info(self.tr("Finishing up reset.."))
 
         models["instances"].reset()
         for instance in self.controller.context:
@@ -873,9 +874,9 @@ class Window(QtWidgets.QDialog):
 
         error = self.controller.current_error
         if error is not None:
-            self.info("Stopped due to error(s), see Terminal.")
+            self.info(self.tr("Stopped due to error(s), see Terminal."))
         else:
-            self.info("Finished successfully!")
+            self.info(self.tr("Finished successfully!"))
 
     # -------------------------------------------------------------------------
     #
@@ -885,7 +886,7 @@ class Window(QtWidgets.QDialog):
 
     def reset(self):
         """Prepare GUI for reset"""
-        self.info("About to reset..")
+        self.info(self.tr("About to reset.."))
 
         models = self.data["models"]
 
@@ -907,7 +908,7 @@ class Window(QtWidgets.QDialog):
         util.defer(500, self.controller.reset)
 
     def validate(self):
-        self.info("Preparing validate..")
+        self.info(self.tr("Preparing validate.."))
         for button in self.data["buttons"].values():
             button.hide()
 
@@ -915,7 +916,7 @@ class Window(QtWidgets.QDialog):
         util.defer(5, self.controller.validate)
 
     def publish(self):
-        self.info("Preparing publish..")
+        self.info(self.tr("Preparing publish.."))
 
         for button in self.data["buttons"].values():
             button.hide()
@@ -924,7 +925,7 @@ class Window(QtWidgets.QDialog):
         util.defer(5, self.controller.publish)
 
     def act(self, plugin, action):
-        self.info("Preparing %s.." % action)
+        self.info("%s %s.." % (self.tr("Preparing"), action))
 
         for button in self.data["buttons"].values():
             button.hide()
@@ -947,7 +948,7 @@ class Window(QtWidgets.QDialog):
         # Give Qt time to draw
         util.defer(100, lambda: self.controller.act(plugin, action))
 
-        self.info("Action prepared.")
+        self.info(self.tr("Action prepared."))
 
     def closeEvent(self, event):
         """Perform post-flight checks before closing
@@ -965,23 +966,23 @@ class Window(QtWidgets.QDialog):
         if self.data["state"]["is_closing"]:
 
             # Explicitly clear potentially referenced data
-            self.info("Cleaning up models..")
+            self.info(self.tr("Cleaning up models.."))
             for v in self.data["views"].values():
                 v.model().deleteLater()
                 v.setModel(None)
 
-            self.info("Cleaning up terminal..")
+            self.info(self.tr("Cleaning up terminal.."))
             for item in self.data["models"]["terminal"].items:
                 del(item)
 
-            self.info("Cleaning up controller..")
+            self.info(self.tr("Cleaning up controller.."))
             self.controller.cleanup()
 
-            self.info("All clean!")
-            self.info("Good bye")
+            self.info(self.tr("All clean!"))
+            self.info(self.tr("Good bye"))
             return super(Window, self).closeEvent(event)
 
-        self.info("Closing..")
+        self.info(self.tr("Closing.."))
 
         def on_problem():
             self.heads_up("Warning", "Had trouble closing down. "
@@ -989,7 +990,7 @@ class Window(QtWidgets.QDialog):
             self.show()
 
         if self.controller.is_running:
-            self.info("..as soon as processing is finished..")
+            self.info(self.tr("..as soon as processing is finished.."))
             self.controller.is_running = False
             self.finished.connect(self.close)
             util.defer(2000, on_problem)
@@ -1004,7 +1005,7 @@ class Window(QtWidgets.QDialog):
         """Handle ESC key"""
 
         if self.controller.is_running:
-            self.info("Stopping..")
+            self.info(self.tr("Stopping.."))
             self.controller.is_running = False
 
     # -------------------------------------------------------------------------
@@ -1036,7 +1037,7 @@ class Window(QtWidgets.QDialog):
 
         # TODO(marcus): Should this be configurable? Do we want
         # the shell to fill up with these messages?
-        print(message)
+        util.u_print(message)
 
     def warning(self, message):
         """Block processing and print warning until user hits "Continue"
