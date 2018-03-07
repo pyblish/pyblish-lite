@@ -1,3 +1,4 @@
+# -*- coding=UTF-8 -*-
 import logging
 
 from pyblish_lite import model
@@ -16,6 +17,7 @@ def test_label_nonstring():
                 {"a": "dict"},
                 list(),
                 1.0,
+                u'测试',
             )
         ],
         "error": None
