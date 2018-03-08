@@ -469,7 +469,7 @@ class Terminal(Abstract):
     def update_with_result(self, result):
         for record in result["records"]:
             self.append({
-                "label": text_type(record.msg),
+                "label": text_type(record.msg) % record.args,
                 "type": "record",
 
                 # Native
