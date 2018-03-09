@@ -30,7 +30,7 @@ def application():
 def install_translator(app):
     translator = QtCore.QTranslator(app)
     translator.load(QtCore.QLocale.system(), "i18n/",
-                    directory=os.path.dirname(__file__))
+                    directory=util.root)
     app.installTranslator(translator)
     print("Installed translator")
 
