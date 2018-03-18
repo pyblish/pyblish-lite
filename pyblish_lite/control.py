@@ -205,8 +205,7 @@ class Controller(QtCore.QObject):
             util.defer(10, on_next)
 
         def on_unexpected_error(error):
-            self.warning("An unexpected error occurred; "
-                         "see Terminal for more.")
+            util.u_print(u"An unexpected error occurred:\n %s" % error)
             return util.defer(500, on_finished_)
 
         def on_finished_():

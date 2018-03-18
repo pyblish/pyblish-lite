@@ -7,3 +7,6 @@ InitialTab = "artist"
 
 # Customize the window size.
 WindowSize = (430, 600)
+
+# Simple filter for terminal.
+TerminalLoglevel = 10 # logging.DEBUG

@@ -11,3 +11,4 @@ build
 .idea/pyblish-lite.iml
 .idea/vcs.xml
 .idea/workspace.xml
+.vscode/

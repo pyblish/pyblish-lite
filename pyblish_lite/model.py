@@ -23,6 +23,7 @@ Roles:
     as the key of a dictionary, except they can only be integers.
 
 """
+from __future__ import unicode_literals
 
 from . import settings
 from .awesome import tags as awesome
@@ -467,8 +468,10 @@ class Terminal(Abstract):
 
     def update_with_result(self, result):
         for record in result["records"]:
+            if record.levelno < settings.TerminalLoglevel:
+                continue
             self.append({
-                "label": text_type(record.msg),
+                "label": text_type(record.msg) % record.args,
                 "type": "record",
 
                 # Native
