@@ -39,7 +39,8 @@ setup(
             "*.css",
             "img/*.png",
             "font/fontawesome/*.ttf",
-            "font/opensans/*.ttf"
+            "font/opensans/*.ttf",
+            'i18n/*.qm'
         ],
     },
     install_requires=[
