@@ -1,8 +1,7 @@
 
 import pyblish
 
-from .vendor import Qt
-from Qt import QtWidgets, QtCore, __binding__
+from .vendor.Qt import QtWidgets, QtCore, __binding__
 from itertools import groupby
 
 
@@ -75,7 +74,7 @@ class ProxySectionItem(Item):
             return QtWidgets.QColor(220, 220, 220)
 
 
-class Proxy(QtWidgets.QAbstractProxyModel):
+class Proxy(QtCore.QAbstractProxyModel):
     """Proxy that groups by based on a specific role
 
     This assumes the source data is a flat list and not a tree.
@@ -128,7 +127,7 @@ class Proxy(QtWidgets.QAbstractProxyModel):
 
         """
 
-        self.reset()
+        self.beginResetModel()
 
         # Start with new root node
         self.root = Item()
@@ -150,6 +149,8 @@ class Proxy(QtWidgets.QAbstractProxyModel):
             for i, index in enumerate(group):
                 proxy_item = ProxyItem(index)
                 section_item.addChild(proxy_item)
+
+        self.endResetModel()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
 
