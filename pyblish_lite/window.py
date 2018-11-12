@@ -508,25 +508,25 @@ class Window(QtWidgets.QDialog):
         controller.was_validated.connect(left_proxy.rebuild)
         controller.was_published.connect(left_proxy.rebuild)
         controller.was_acted.connect(left_proxy.rebuild)
-        controller.finished.connect(left_proxy.rebuild)
+        controller.was_finished.connect(left_proxy.rebuild)
 
         controller.was_reset.connect(left_view.expandAll)
         controller.was_validated.connect(left_view.expandAll)
         controller.was_published.connect(left_view.expandAll)
         controller.was_acted.connect(left_view.expandAll)
-        controller.finished.connect(left_view.expandAll)
+        controller.was_finished.connect(left_view.expandAll)
 
         controller.was_reset.connect(right_proxy.rebuild)
         controller.was_validated.connect(right_proxy.rebuild)
         controller.was_published.connect(right_proxy.rebuild)
         controller.was_acted.connect(right_proxy.rebuild)
-        controller.finished.connect(right_proxy.rebuild)
+        controller.was_finished.connect(right_proxy.rebuild)
 
         controller.was_reset.connect(right_view.expandAll)
         controller.was_validated.connect(right_view.expandAll)
         controller.was_published.connect(right_view.expandAll)
         controller.was_acted.connect(right_view.expandAll)
-        controller.finished.connect(right_view.expandAll)
+        controller.was_finished.connect(right_view.expandAll)
 
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
