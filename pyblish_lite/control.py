@@ -80,10 +80,18 @@ class Controller(QtCore.QObject):
 
     def validate(self):
         self._run(until=pyblish.api.ValidatorOrder,
-                  on_finished=self.was_validated.emit)
+                  on_finished=self.on_validated)
 
     def publish(self):
-        self._run(on_finished=self.was_published.emit)
+        self._run(on_finished=self.on_published)
+
+    def on_validated(self):
+        pyblish.api.emit("validated", context=self.context)
+        self.was_validated.emit()
+
+    def on_published(self):
+        pyblish.api.emit("published", context=self.context)
+        self.was_published.emit()
 
     def act(self, plugin, action):
         context = self.context
