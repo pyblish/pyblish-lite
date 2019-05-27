@@ -28,7 +28,7 @@ class Controller(QtCore.QObject):
     # Emitted for each process
     was_processed = QtCore.Signal(dict)
 
-    was_discovered = QtCore.Signal()
+    was_discovered = QtCore.Signal(bool)
     was_reset = QtCore.Signal()
     was_validated = QtCore.Signal()
     was_published = QtCore.Signal()
@@ -37,6 +37,10 @@ class Controller(QtCore.QObject):
     # Emitted when processing has finished
     was_finished = QtCore.Signal()
 
+    PART_COLLECT = 'collect'
+    PART_VALIDATE = 'validate'
+    PART_EXTRACT = 'extract'
+    PART_CONFORM = 'conform'
     def __init__(self, parent=None):
         super(Controller, self).__init__(parent)
 
@@ -60,10 +64,14 @@ class Controller(QtCore.QObject):
 
     def reset(self):
         """Discover plug-ins and run collection"""
+        self.validated = False
+        self.all_plugins = []
         self.context = pyblish.api.Context()
-        self.plugins = pyblish.api.discover()
-
-        self.was_discovered.emit()
+        self.all_plugins = pyblish.api.discover()
+        # Load collectors
+        self.load_plugins(True)
+        # Load rest of plugins wth collected instances
+        self._load()
 
         self.pair_generator = None
         self.current_pair = (None, None)
@@ -74,16 +82,48 @@ class Controller(QtCore.QObject):
             "ordersWithError": set()
         }
 
-        self._load()
-        self._run(until=pyblish.api.CollectorOrder,
-                  on_finished=self.was_reset.emit)
+    def load_plugins(self, load_collector=False):
+        self.test = pyblish.logic.registered_test()
+        self.state = {
+            "nextOrder": None,
+            "ordersWithError": set()
+        }
 
-    def validate(self):
-        self._run(until=pyblish.api.ValidatorOrder,
-                  on_finished=self.on_validated)
+        targets = pyblish.logic.registered_targets() or ["default"]
 
-    def publish(self):
-        self._run(on_finished=self.on_published)
+        collectors = []
+        validators = []
+        extractors = []
+        conforms = []
+        plugins = pyblish.logic.plugins_by_targets(
+            self.all_plugins, targets
+        )
+
+        for plugin in plugins:
+            if load_collector:
+                if plugin.order < 1:
+                    collectors.append(plugin)
+            else:
+                if plugin.order < 1:
+                    continue
+                elif plugin.order < 2:
+                    validators.append(plugin)
+                elif plugin.order < 3:
+                    extractors.append(plugin)
+                else:
+                    conforms.append(plugin)
+
+        if not load_collector:
+            collectors = self.plugins[self.PART_COLLECT]
+
+        self.plugins = {
+            self.PART_COLLECT: collectors,
+            self.PART_VALIDATE: validators,
+            self.PART_EXTRACT: extractors,
+            self.PART_CONFORM: conforms
+        }
+
+        self.was_discovered.emit(load_collector)
 
     def on_validated(self):
         pyblish.api.emit("validated", context=self.context)
@@ -107,12 +147,8 @@ class Controller(QtCore.QObject):
 
     def _load(self):
         """Initiate new generator and load first pair"""
-        self.is_running = True
-        self.pair_generator = self._iterator(self.plugins,
-                                             self.context)
-        self.current_pair = next(self.pair_generator, (None, None))
+        self.collect()
         self.current_error = None
-        self.is_running = False
 
     def _process(self, plugin, instance=None):
         """Produce `result` from `plugin` and `instance`
@@ -144,86 +180,72 @@ class Controller(QtCore.QObject):
 
         return result
 
-    def _run(self, until=float("inf"), on_finished=lambda: None):
-        """Process current pair and store next pair for next process
+    def _plugin_collect(self, plugins, collect=False):
+        output = []
+        for plugin in plugins:
+            if not plugin.active:
+                pyblish.logic.log.debug("%s was inactive, skipping.." % plugin)
+                continue
+
+            self.state["nextOrder"] = plugin.order
+
+            message = self.test(**self.state)
+            if message:
+                raise pyblish.logic.StopIteration("Stopped due to %s" % message)
+
+            instances = pyblish.logic.instances_by_plugin(self.context, plugin)
+            if collect:
+                output.append([plugin, None])
+            elif plugin.__instanceEnabled__:
+                for instance in instances:
+                    if instance.data.get("publish") is False:
+                        pyblish.logic.log.debug("%s was inactive, skipping.." % instance)
+                        continue
+
+                    output.append([plugin, instance])
+
+            else:
+                output.append([plugin, None])
+        return output
+
+    def collect(self):
+        """Yield next plug-in and instance to process.
 
         Arguments:
-            until (pyblish.api.Order, optional): Keep fetching next()
-                until this order, default value is infinity.
-            on_finished (callable, optional): What to do when finishing,
-                defaults to doing nothing.
+            plugins (list): Plug-ins to process
+            context (pyblish.api.Context): Context to process
 
         """
+        try:
+            for pair in self._plugin_collect(self.plugins[self.PART_COLLECT], True):
+                plug, instance = pair
+                if not plug.active:
+                    continue
 
-        def on_next():
-            if self.current_pair == (None, None):
-                return util.defer(100, on_finished_)
+                self.about_to_process.emit(*pair)
 
-            # The magic number 0.5 is the range between
-            # the various CVEI processing stages;
-            # e.g.
-            #  - Collection is 0 +- 0.5 (-0.5 - 0.5)
-            #  - Validation is 1 +- 0.5 (0.5  - 1.5)
-            #
-            # TODO(marcus): Make this less magical
-            #
-            order = self.current_pair[0].order
-            if order > (until + 0.5):
-                return util.defer(100, on_finished_)
+                self.processing["nextOrder"] = plug.order
 
-            self.about_to_process.emit(*self.current_pair)
+                if self.test(**self.processing):
+                    raise StopIteration("Stopped due to %s" % test(
+                        **self.processing))
 
-            util.defer(10, on_process)
-
-        def on_process():
-            try:
-                result = self._process(*self.current_pair)
+                result = self._process(*pair)
 
                 if result["error"] is not None:
                     self.current_error = result["error"]
 
                 self.was_processed.emit(result)
 
-            except Exception as e:
-                stack = traceback.format_exc(e)
-                return util.defer(
-                    500, lambda: on_unexpected_error(error=stack))
-
-            # Now that processing has completed, and context potentially
-            # modified with new instances, produce the next pair.
-            #
-            # IMPORTANT: This *must* be done *after* processing of
-            # the current pair, otherwise data generated at that point
-            # will *not* be included.
-            try:
-                self.current_pair = next(self.pair_generator)
-
-            except StopIteration:
-                # All pairs were processed successfully!
-                self.current_pair = (None, None)
-                return util.defer(500, on_finished_)
-
-            except Exception as e:
-                # This is a bug
-                stack = traceback.format_exc(e)
-                self.current_pair = (None, None)
-                return util.defer(
-                    500, lambda: on_unexpected_error(error=stack))
-
-            util.defer(10, on_next)
-
-        def on_unexpected_error(error):
+        except Exception as e:
+            stack = traceback.format_exc(e)
             util.u_print(u"An unexpected error occurred:\n %s" % error)
-            return util.defer(500, on_finished_)
-
-        def on_finished_():
-            on_finished()
+        finally:
+            self.was_reset.emit()
             self.was_finished.emit()
+            self.load_plugins()
 
-        self.is_running = True
-        util.defer(10, on_next)
-
-    def _iterator(self, plugins, context):
+    def validate(self):
         """Yield next plug-in and instance to process.
 
         Arguments:
@@ -232,25 +254,79 @@ class Controller(QtCore.QObject):
 
         """
 
-        test = pyblish.logic.registered_test()
+        try:
+            for pair in self._plugin_collect(self.plugins[self.PART_VALIDATE]):
+                plug, instance = pair
+                if not plug.active:
+                    continue
+                try:
+                    self.about_to_process.emit(plug, instance)
+                    if not instance.data.get("publish"):
+                        continue
 
-        for plug, instance in pyblish.logic.Iterator(plugins, context):
-            if not plug.active:
-                continue
+                    self.processing["nextOrder"] = plug.order
 
-            if instance is not None and instance.data.get("publish") is False:
-                continue
+                    if self.test(**self.processing):
+                        raise StopIteration("Stopped due to %s" % test(
+                            **self.processing))
 
-            self.processing["nextOrder"] = plug.order
 
-            if not self.is_running:
-                raise StopIteration("Stopped")
+                    result = self._process(*pair)
+                    if result["error"] is not None:
+                        self.current_error = result["error"]
 
-            if test(**self.processing):
-                raise StopIteration("Stopped due to %s" % test(
-                    **self.processing))
+                    self.was_processed.emit(result)
 
-            yield plug, instance
+                except Exception as e:
+                    stack = traceback.format_exc(e)
+                    util.u_print(u"An unexpected error occurred:\n %s" % error)
+            self.validated = True
+        except Exception as e:
+            traceback.print_tb(e.__traceback__)
+        finally:
+            self.on_validated()
+            self.was_finished.emit()
+
+    def publish(self):
+        if not self.validated:
+            self.validate()
+        if not self.validated:
+            return
+
+        publish_plugins = []
+        publish_plugins.extend(self.plugins[self.PART_EXTRACT])
+        publish_plugins.extend(self.plugins[self.PART_CONFORM])
+        try:
+            for pair in self._plugin_collect(publish_plugins):
+                plug, instance = pair
+                if not plug.active:
+                    continue
+                try:
+                    self.about_to_process.emit(plug, instance)
+                    if not instance.data.get("publish"):
+                        continue
+
+                    self.processing["nextOrder"] = plug.order
+
+                    if self.test(**self.processing):
+                        raise StopIteration("Stopped due to %s" % test(
+                            **self.processing))
+
+
+                    result = self._process(*pair)
+                    if result["error"] is not None:
+                        self.current_error = result["error"]
+
+                    self.was_processed.emit(result)
+
+                except Exception as e:
+                    stack = traceback.format_exc(e)
+                    util.u_print(u"An unexpected error occurred:\n %s" % error)
+        except Exception as e:
+            traceback.print_tb(e.__traceback__)
+        finally:
+            self.on_published()
+            self.was_finished.emit()
 
     def cleanup(self):
         """Forcefully delete objects from memory
