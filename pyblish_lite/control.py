@@ -290,7 +290,7 @@ class Controller(QtCore.QObject):
     def publish(self):
         if not self.validated:
             self.validate()
-        if not self.validated:
+        if self.current_error:
             return
 
         publish_plugins = []
@@ -320,7 +320,7 @@ class Controller(QtCore.QObject):
                     self.was_processed.emit(result)
 
                 except Exception as e:
-                    stack = traceback.format_exc(e)
+                    error = traceback.format_tb(e.__traceback__)
                     util.u_print(u"An unexpected error occurred:\n %s" % error)
         except Exception as e:
             traceback.print_tb(e.__traceback__)
