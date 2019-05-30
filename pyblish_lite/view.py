@@ -197,3 +197,55 @@ class Details(QtWidgets.QDialog):
 
         self.updateGeometry()
         self.setVisible(True)
+class ExpandableWidget(QtWidgets.QWidget):
+    maximum_policy = QtWidgets.QSizePolicy(
+        QtWidgets.QSizePolicy.Preferred,
+        QtWidgets.QSizePolicy.Maximum
+    )
+    content = None
+
+    def __init__(self, parent, title):
+        super().__init__(parent)
+        self.setSizePolicy(self.maximum_policy)
+        button_size = QtCore.QSize(5, 5)
+        button_toggle = QtWidgets.QToolButton()
+
+        button_toggle.setIconSize(button_size)
+        button_toggle.setStyleSheet("QToolButton { border: none; }")
+        button_toggle.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        button_toggle.setArrowType(QtCore.Qt.RightArrow)
+        button_toggle.setText(str(title))
+        button_toggle.setCheckable(True)
+        button_toggle.setChecked(False)
+
+        main_layout = QtWidgets.QVBoxLayout(self)
+
+        content = QtWidgets.QFrame(self)
+        content.setVisible(False)
+        content.setMinimumHeight(20)
+        content.setStyleSheet('background-color: #232323; color:#eeeeee;')
+
+        content_layout = QtWidgets.QVBoxLayout(content)
+
+        main_layout.addWidget(button_toggle)
+        main_layout.addWidget(content)
+        self.setLayout(main_layout)
+
+        self.button_toggle = button_toggle
+        self.content_widget = content
+        self.content_layout = content_layout
+        self.button_toggle.clicked.connect(self.toggle_content)
+
+    def toggle_content(self, checked):
+        arrow_type = QtCore.Qt.RightArrow
+        if checked:
+            arrow_type = QtCore.Qt.DownArrow
+        self.button_toggle.setChecked(checked)
+        self.button_toggle.setArrowType(arrow_type)
+        self.content_widget.setVisible(checked)
+
+    def set_content(self, in_widget):
+        if self.content:
+            self.content_layout.removeWidget(self.content)
+        self.content_layout.addWidget(in_widget)
+        self.content = in_widget
