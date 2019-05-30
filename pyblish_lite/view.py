@@ -1,10 +1,11 @@
-from .vendor.Qt import QtCore, QtWidgets
+from .vendor.Qt import QtCore, QtWidgets, QtGui
+from . import model, delegate
 
 
 class Item(QtWidgets.QListView):
     # An item is requesting to be toggled, with optional forced-state
     toggled = QtCore.Signal("QModelIndex", object)
-
+    show_perspective = QtCore.Signal("QModelIndex")
     # An item is requesting details
     inspected = QtCore.Signal("QModelIndex")
 
@@ -62,6 +63,9 @@ class Item(QtWidgets.QListView):
             if len(indexes) <= 1 and event.pos().x() < 20:
                 for index in indexes:
                     self.toggled.emit(index, None)
+            if len(indexes) == 1 and event.pos().x() > self.width()-40:
+                for index in indexes:
+                    self.show_perspective.emit(index)
 
         return super(Item, self).mouseReleaseEvent(event)
 
