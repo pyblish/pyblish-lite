@@ -58,11 +58,23 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         body_rect = QtCore.QRectF(option.rect)
 
+
+        check_rect = QtCore.QRectF(body_rect)
+
         check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
         check_rect.adjust(6, 6, -6, -6)
 
         check_color = colors["idle"]
+
+        perspective_icon = icons["angle-right"]
+        perspective_rect = QtCore.QRectF(body_rect)
+        perspective_rect.setWidth(check_rect.height())
+        perspective_rect.setHeight(check_rect.height())
+        perspective_rect.translate(
+            body_rect.width()-(perspective_rect.width()+5),
+            (body_rect.height()/2)-(perspective_rect.height()/2)
+        )
 
         if index.data(model.IsProcessing) is True:
             check_color = colors["active"]
@@ -94,6 +106,11 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
+
+        # Draw perspective icon
+        painter.setFont(fonts["h4"])
+        painter.setPen(QtGui.QPen(font_color))
+        painter.drawText(perspective_rect, perspective_icon)
 
         # Draw label
         painter.setFont(fonts["h4"])
