@@ -338,9 +338,8 @@ class PerspectiveWidget(QtWidgets.QWidget):
         else:
             existence_error = True
             fname, line_no, func, exc = error.traceback
-
             error_msg += '<b>Message:</b> {} <br/>'.format(
-                exc.replace('\n','<br/>')
+                str(error).replace('\n','<br/>')
             )
             error_msg += '<b>Filename:</b> {} <br/>'.format(fname)
             error_msg += '<b>Line:</b> {} <br/>'.format(line_no)
