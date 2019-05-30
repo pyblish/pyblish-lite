@@ -197,6 +197,76 @@ class Details(QtWidgets.QDialog):
 
         self.updateGeometry()
         self.setVisible(True)
+
+
+class PerspectiveWidget(QtWidgets.QWidget):
+    l_doc = '   Documentation'
+    l_er = '   Error'
+    l_rec = '   Records'
+    l_path = '   Path'
+
+    def __init__(self, parent):
+        super(PerspectiveWidget, self).__init__(parent)
+        # self.setStyleSheet("border:1px solid rgb(0, 255, 0); ")
+        self.parent_widget = parent
+        main_layout = QtWidgets.QVBoxLayout(self)
+
+        toggleButton = QtWidgets.QToolButton()
+        font = toggleButton.font()
+        font.setPointSize(26)
+        toggleButton.setFont(font)
+        toggleButton.setText(delegate.icons["angle-left"])
+        toggleButton.setStyleSheet(
+            "border-bottom: 2px solid #232323;"
+            "border-top: 0px;"
+            "border-right: 2px solid #232323;"
+            "border-left: 0px;"
+        )
+        toggleButton.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+
+        name = QtWidgets.QLabel('*Name of inspected')
+        font = QtGui.QFont()
+        font.setPointSize(16)
+        font.setBold(True)
+        font.setWeight(50)
+        font.setKerning(True)
+        name.setFont(font)
+
+        top_layout = QtWidgets.QHBoxLayout(self)
+        top_layout.setAlignment(QtCore.Qt.AlignLeft)
+        top_layout.addWidget(toggleButton)
+        top_layout.addWidget(name)
+
+        main_layout.setAlignment(QtCore.Qt.AlignTop)
+        main_layout.addLayout(top_layout)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setAlignment(QtCore.Qt.AlignTop)
+        layout.setContentsMargins(0,0,0,0)
+
+        documentation = ExpandableWidget(self, self.l_doc)
+        layout.addWidget(documentation)
+
+        records = ExpandableWidget(self, self.l_rec)
+        layout.addWidget(records)
+
+        error = ExpandableWidget(self, self.l_er)
+        layout.addWidget(error)
+
+        path = ExpandableWidget(self, self.l_path)
+        layout.addWidget(path)
+
+        self.toggleButton = toggleButton
+        self.name_widget = name
+        self.documentation = documentation
+        self.records = records
+        self.error = error
+        self.path = path
+
+        main_layout.addLayout(layout)
+        self.setLayout(main_layout)
+
+        self.toggleButton.clicked.connect(self.toggle_me)
 class ExpandableWidget(QtWidgets.QWidget):
     maximum_policy = QtWidgets.QSizePolicy(
         QtWidgets.QSizePolicy.Preferred,
