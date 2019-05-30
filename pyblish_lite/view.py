@@ -267,6 +267,80 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.setLayout(main_layout)
 
         self.toggleButton.clicked.connect(self.toggle_me)
+
+    def set_context(self, index):
+        models = self.parent_widget.data['models']
+        doc = None
+        if index.data(model.Type) == "instance":
+            cur_model = models['instances']
+            is_plugin = False
+        elif index.data(model.Type) == "plugin":
+            cur_model = models['plugins']
+            doc = cur_model.data(index, model.Docstring)
+            doc_str = ''
+            is_doc = False
+            if doc:
+                is_doc = True
+                doc_str = doc
+            self.documentation.toggle_content(is_doc)
+            doc_label = QtWidgets.QLabel(doc_str)
+            doc_label.setWordWrap(True)
+            doc_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            self.documentation.set_content(doc_label)
+            is_plugin = True
+        else:
+            return
+
+        label = cur_model.data(index, model.Label)
+        self.name_widget.setText(label)
+
+        self.path.setVisible(is_plugin)
+        self.documentation.setVisible(is_plugin)
+
+        records = cur_model.data(index, model.LogRecord) or []
+        error = cur_model.data(index, model.ErrorRecord)
+
+        rec_widget = LogView(self.records.content_widget)
+        rec_delegate = delegate.Terminal()
+        rec_model = model.Terminal()
+        data = {
+            'records': records,
+            'error': error
+        }
+        len_records = 0
+        if records:
+            len_records += len(records)
+        if error:
+            len_records += 1
+        rec_model.update_with_result(data)
+        rec_widget.setItemDelegate(rec_delegate)
+        rec_widget.setModel(rec_model)
+        self.records.button_toggle.setText(
+            '{} ({})'.format(self.l_rec, len_records)
+        )
+        self.records.set_content(rec_widget)
+        self.records.toggle_content(len_records > 0)
+
+        error_msg = ''
+        if not error:
+            existence_error = False
+        else:
+            existence_error = True
+            fname, line_no, func, exc = error.traceback
+
+            error_msg += '<b>Message:</b> {} <br/>'.format(
+                exc.replace('\n','<br/>')
+            )
+            error_msg += '<b>Filename:</b> {} <br/>'.format(fname)
+            error_msg += '<b>Line:</b> {} <br/>'.format(line_no)
+            error_msg += '<b>Function:</b> {} <br/>'.format(func)
+
+        er_widget = QtWidgets.QLabel(error_msg)
+        er_widget.setWordWrap(True)
+        er_widget.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        self.error.set_content(er_widget)
+        self.error.toggle_content(existence_error)
+
     def toggle_me(self):
         self.parent_widget.toggle_perspective_widget()
 
