@@ -68,6 +68,7 @@ ActionIconVisible = QtCore.Qt.UserRole + 13
 ActionIdle = QtCore.Qt.UserRole + 15
 ActionFailed = QtCore.Qt.UserRole + 17
 Docstring = QtCore.Qt.UserRole + 12
+PathModule = QtCore.Qt.UserRole + 17
 
 LogRecord = QtCore.Qt.UserRole + 40
 ErrorRecord = QtCore.Qt.UserRole + 41
@@ -202,7 +203,6 @@ class Plugin(Item):
         item._action_processing = False
         item._action_succeeded = False
         item._action_failed = False
-        print(item.__module__)
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
@@ -284,6 +284,8 @@ class Plugin(Item):
 
             return actions
 
+        if role == PathModule:
+            return item.__module__
         key = self.schema.get(role)
         value = getattr(item, key, None) if key is not None else None
         if value is None:

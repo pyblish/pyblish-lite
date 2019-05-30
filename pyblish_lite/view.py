@@ -276,22 +276,29 @@ class PerspectiveWidget(QtWidgets.QWidget):
         models = self.parent_widget.data['models']
         doc = None
         if index.data(model.Type) == "instance":
-            cur_model = models['instances']
             is_plugin = False
+            cur_model = models['instances']
         elif index.data(model.Type) == "plugin":
+            is_plugin = True
             cur_model = models['plugins']
             doc = cur_model.data(index, model.Docstring)
             doc_str = ''
-            is_doc = False
+            have_doc = False
             if doc:
-                is_doc = True
+                have_doc = True
                 doc_str = doc
-            self.documentation.toggle_content(is_doc)
+            self.documentation.toggle_content(have_doc)
             doc_label = QtWidgets.QLabel(doc_str)
             doc_label.setWordWrap(True)
             doc_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.documentation.set_content(doc_label)
-            is_plugin = True
+            path = cur_model.data(index, model.PathModule) or ''
+
+            self.path.toggle_content(path.strip() != '')
+            path_label = QtWidgets.QLabel(path)
+            path_label.setWordWrap(True)
+            path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            self.path.set_content(path_label)
         else:
             return
 
@@ -398,6 +405,7 @@ class ExpandableWidget(QtWidgets.QWidget):
 
     def set_content(self, in_widget):
         if self.content:
+            self.content.hide()
             self.content_layout.removeWidget(self.content)
         self.content_layout.addWidget(in_widget)
         self.content = in_widget
