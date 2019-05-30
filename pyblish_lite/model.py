@@ -69,6 +69,8 @@ ActionIdle = QtCore.Qt.UserRole + 15
 ActionFailed = QtCore.Qt.UserRole + 17
 Docstring = QtCore.Qt.UserRole + 12
 
+LogRecord = QtCore.Qt.UserRole + 40
+ErrorRecord = QtCore.Qt.UserRole + 41
 # LOG RECORDS
 
 LogThreadName = QtCore.Qt.UserRole + 50
@@ -105,6 +107,7 @@ class Abstract(QtCore.QAbstractListModel):
                              self.rowCount())
 
         self.items.append(item)
+
         self.endInsertRows()
 
     def rowCount(self, parent=None):
@@ -176,6 +179,8 @@ class Plugin(Item):
             Docstring: "__doc__",
             ActionIdle: "_action_idle",
             ActionFailed: "_action_failed",
+            LogRecord: "_log",
+            ErrorRecord: "_error"
         })
 
     def append(self, item):
@@ -197,7 +202,7 @@ class Plugin(Item):
         item._action_processing = False
         item._action_succeeded = False
         item._action_failed = False
-
+        print(item.__module__)
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
@@ -281,10 +286,8 @@ class Plugin(Item):
 
         key = self.schema.get(role)
         value = getattr(item, key, None) if key is not None else None
-
         if value is None:
             value = super(Plugin, self).data(index, role)
-
         return value
 
     def setData(self, index, value, role):
@@ -300,17 +303,18 @@ class Plugin(Item):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        return True
 
     def update_with_result(self, result, action=False):
         item = result["plugin"]
-
         index = self.items.index(item)
         index = self.createIndex(index, 0)
-
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
+        self.setData(index, result['records'], LogRecord)
+        self.setData(index, result['error'], ErrorRecord)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
@@ -326,7 +330,8 @@ class Instance(Item):
         self.ids = []
         self.schema.update({
             IsChecked: "publish",
-
+            LogRecord: "_log",
+            ErrorRecord: "_error",
             # Merge copy of both family and families data members
             Families: "__families__",
         })
@@ -400,6 +405,8 @@ class Instance(Item):
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
 
+        self.setData(index, result.get('records', []), LogRecord)
+        self.setData(index, result.get('error', []), ErrorRecord)
         # Once failed, never go back.
         if not self.data(index, HasFailed):
             self.setData(index, not result["success"], HasFailed)
