@@ -267,6 +267,10 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.setLayout(main_layout)
 
         self.toggleButton.clicked.connect(self.toggle_me)
+    def toggle_me(self):
+        self.parent_widget.toggle_perspective_widget()
+
+
 class ExpandableWidget(QtWidgets.QWidget):
     maximum_policy = QtWidgets.QSizePolicy(
         QtWidgets.QSizePolicy.Preferred,
