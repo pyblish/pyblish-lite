@@ -236,7 +236,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
         font.setKerning(True)
         name.setFont(font)
 
-        top_layout = QtWidgets.QHBoxLayout(self)
+        top_layout = QtWidgets.QHBoxLayout()
         top_layout.setAlignment(QtCore.Qt.AlignLeft)
         top_layout.addWidget(toggleButton)
         top_layout.addWidget(name)
@@ -244,7 +244,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
         main_layout.setAlignment(QtCore.Qt.AlignTop)
         main_layout.addLayout(top_layout)
 
-        layout = QtWidgets.QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
         layout.setContentsMargins(0,0,0,0)
 
