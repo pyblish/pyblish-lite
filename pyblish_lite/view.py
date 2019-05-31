@@ -323,6 +323,11 @@ class PerspectiveWidget(QtWidgets.QWidget):
             len_records += len(records)
         if error:
             len_records += 1
+
+        rec_widget.setMinimumHeight(20)
+        height = len_records*rec_delegate.HEIGHT
+        rec_widget.setMaximumHeight(height)
+
         rec_model.update_with_result(data)
         rec_widget.setItemDelegate(rec_delegate)
         rec_widget.setModel(rec_model)
