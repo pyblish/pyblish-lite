@@ -1,5 +1,6 @@
 from .vendor.Qt import QtCore, QtWidgets, QtGui
 from . import model, delegate
+import traceback
 
 
 class Item(QtWidgets.QListView):
@@ -206,6 +207,7 @@ class Details(QtWidgets.QDialog):
 class PerspectiveWidget(QtWidgets.QWidget):
     l_doc = '   Documentation'
     l_er = '   Error'
+    l_trc = '   Traceback'
     l_rec = '   Records'
     l_path = '   Path'
 
@@ -257,6 +259,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
         error = ExpandableWidget(self, self.l_er)
         layout.addWidget(error)
 
+        traceback_part = ExpandableWidget(self, self.l_trc)
+        layout.addWidget(traceback_part)
+
         path = ExpandableWidget(self, self.l_path)
         layout.addWidget(path)
 
@@ -265,6 +270,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.documentation = documentation
         self.records = records
         self.error = error
+        self.traceback_part = traceback_part
         self.path = path
 
         main_layout.addLayout(layout)
@@ -338,23 +344,34 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.records.toggle_content(len_records > 0)
 
         error_msg = ''
-        if not error:
-            existence_error = False
-        else:
+        trc_lines = []
+        existence_error = False
+        if error:
             existence_error = True
             fname, line_no, func, exc = error.traceback
-            error_msg += '<b>Message:</b> {} <br/>'.format(
+            trc_lines = traceback.format_tb(error.__traceback__)
+
+            error_msg += '<b>Message</b><br/>{}<br/>'.format(
                 str(error).replace('\n','<br/>')
             )
-            error_msg += '<b>Filename:</b> {} <br/>'.format(fname)
-            error_msg += '<b>Line:</b> {} <br/>'.format(line_no)
-            error_msg += '<b>Function:</b> {} <br/>'.format(func)
+            error_msg += '<b>Filename</b><br/>{}<br/>'.format(fname)
+            error_msg += '<b>Line</b><br/>{}<br/>'.format(line_no)
+            error_msg += '<b>Function</b><br/>{}<br/>'.format(func)
+
+            trc_widget = QtWidgets.QLabel(''.join(trc_lines))
+            trc_widget.setWordWrap(True)
+            trc_widget.setTextFormat(QtCore.Qt.PlainText)
+            self.traceback_part.set_content(trc_widget)
 
         er_widget = QtWidgets.QLabel(error_msg)
         er_widget.setWordWrap(True)
         er_widget.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
         self.error.set_content(er_widget)
+
         self.error.toggle_content(existence_error)
+
+        self.traceback_part.toggle_content(False)
+        self.traceback_part.setVisible(existence_error)
 
     def toggle_me(self):
         self.parent_widget.toggle_perspective_widget()
