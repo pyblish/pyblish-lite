@@ -310,7 +310,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
 
 class Terminal(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
-
+    HEIGHT = 20
     def paint(self, painter, option, index):
         """Paint text"""
 
@@ -367,4 +367,4 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20)
+        return QtCore.QSize(option.rect.width(), self.HEIGHT)
