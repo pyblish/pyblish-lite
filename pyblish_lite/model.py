@@ -481,7 +481,7 @@ class Terminal(Abstract):
             if record.levelno < settings.TerminalLoglevel:
                 continue
             self.append({
-                "label": text_type(record.msg) % record.args,
+                "label": text_type(record.msg),
                 "type": "record",
 
                 # Native
