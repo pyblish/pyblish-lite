@@ -385,7 +385,7 @@ class ExpandableWidget(QtWidgets.QWidget):
     content = None
 
     def __init__(self, parent, title):
-        super().__init__(parent)
+        super(ExpandableWidget, self).__init__(parent)
         self.setSizePolicy(self.maximum_policy)
         button_size = QtCore.QSize(5, 5)
         button_toggle = QtWidgets.QToolButton()
