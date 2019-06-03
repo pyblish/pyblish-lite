@@ -771,16 +771,11 @@ class Window(QtWidgets.QDialog):
 
         menu.popup(self.data["views"]["right"].viewport().mapToGlobal(pos))
 
-    def on_was_discovered(self, load_collector):
+    def on_was_discovered(self):
         models = self.data["models"]
-        for key, value in self.controller.plugins.items():
-            if (
-                (load_collector and key!=self.controller.PART_COLLECT) or
-                (not load_collector and key == self.controller.PART_COLLECT)
-            ):
-                continue
-            for plugin in value:
-                models["plugins"].append(plugin)
+
+        for Plugin in self.controller.plugins:
+            models["plugins"].append(Plugin)
 
     def on_was_reset(self):
         models = self.data["models"]
