@@ -52,7 +52,7 @@ class Item(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
         """Paint checkbox and text
          _
-        |_|  My label
+        |_|  My label    >
 
         """
 
@@ -71,7 +71,7 @@ class Item(QtWidgets.QStyledItemDelegate):
         perspective_rect = QtCore.QRectF(body_rect)
         perspective_rect.setWidth(perspective_rect.height())
         perspective_rect.translate(
-            body_rect.width()-(perspective_rect.width()),
+            body_rect.width()-(perspective_rect.width()-5),
             0
         )
 
