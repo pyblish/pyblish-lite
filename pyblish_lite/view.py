@@ -210,6 +210,24 @@ class PerspectiveWidget(QtWidgets.QWidget):
     l_trc = '   Traceback'
     l_rec = '   Records'
     l_path = '   Path'
+    indicator_colors = {
+        "idle": {
+            "bg": "#ffffff",
+            "font": "#333333"
+        },
+        "active": {
+            "bg": "#99CEEE",
+            "font": "#ffffff"
+        },
+        "warning": {
+            "bg": "#cc4a4a",
+            "font": "#ffffff"
+        },
+        "ok": {
+            "bg": "#69a567",
+            "font": "#ffffff"
+        }
+    }
 
     def __init__(self, parent):
         super(PerspectiveWidget, self).__init__(parent)
@@ -217,20 +235,25 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.parent_widget = parent
         main_layout = QtWidgets.QVBoxLayout(self)
 
-        toggleButton = QtWidgets.QToolButton()
-        font = toggleButton.font()
+        header_widget = QtWidgets.QWidget()
+
+        toggle_button = QtWidgets.QToolButton(header_widget)
+        font = toggle_button.font()
         font.setPointSize(26)
-        toggleButton.setFont(font)
-        toggleButton.setText(delegate.icons["angle-left"])
-        toggleButton.setStyleSheet(
-            "border-bottom: 2px solid #232323;"
+        toggle_button.setFont(font)
+        toggle_button.setText(delegate.icons["angle-left"])
+        toggle_button.setStyleSheet(
+            "border-bottom: 3px solid lightblue;"
             "border-top: 0px;"
-            "border-right: 2px solid #232323;"
+            "border-right: 1px solid #232323;"
             "border-left: 0px;"
         )
-        toggleButton.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        toggle_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
 
-        name = QtWidgets.QLabel('*Name of inspected')
+        indicator = QtWidgets.QLabel('', parent=header_widget)
+        indicator.setMinimumWidth(12)
+
+        name = QtWidgets.QLabel('*Name of inspected', parent=header_widget)
         font = QtGui.QFont()
         font.setPointSize(16)
         font.setBold(True)
@@ -238,13 +261,19 @@ class PerspectiveWidget(QtWidgets.QWidget):
         font.setKerning(True)
         name.setFont(font)
 
-        top_layout = QtWidgets.QHBoxLayout()
-        top_layout.setAlignment(QtCore.Qt.AlignLeft)
-        top_layout.addWidget(toggleButton)
-        top_layout.addWidget(name)
+        indicator.setFont(font)
+
+        header_layout = QtWidgets.QHBoxLayout(header_widget)
+        header_layout.setAlignment(QtCore.Qt.AlignLeft)
+        header_layout.addWidget(toggle_button)
+        header_layout.addWidget(indicator)
+        header_layout.addWidget(name)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(10)
+        header_widget.setLayout(header_layout)
 
         main_layout.setAlignment(QtCore.Qt.AlignTop)
-        main_layout.addLayout(top_layout)
+        main_layout.addWidget(header_widget)
 
         layout = QtWidgets.QVBoxLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
@@ -275,9 +304,10 @@ class PerspectiveWidget(QtWidgets.QWidget):
         scroll_widget.setWidgetResizable(True)
         scroll_widget.setWidget(contents_widget)
 
+        self.indicator = indicator
         self.scroll_widget = scroll_widget
         self.contents_widget = contents_widget
-        self.toggleButton = toggleButton
+        self.toggle_button = toggle_button
         self.name_widget = name
         self.documentation = documentation
         self.records = records
@@ -286,17 +316,20 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.path = path
 
         main_layout.setContentsMargins(0,0,0,0)
+        main_layout.setSpacing(0)
         main_layout.addWidget(scroll_widget)
         self.setLayout(main_layout)
 
-        self.toggleButton.clicked.connect(self.toggle_me)
+        self.toggle_button.clicked.connect(self.toggle_me)
 
     def set_context(self, index):
         models = self.parent_widget.data['models']
         doc = None
         if index.data(model.Type) == "instance":
+            self.indicator.setText('I')
             is_plugin = False
         elif index.data(model.Type) == "plugin":
+            self.indicator.setText('P')
             is_plugin = True
             doc = index.data(model.Docstring)
             doc_str = ''
@@ -318,6 +351,22 @@ class PerspectiveWidget(QtWidgets.QWidget):
             self.path.set_content(path_label)
         else:
             return
+
+        check_color = self.indicator_colors["idle"]
+        if index.data(model.IsProcessing) is True:
+            check_color = self.indicator_colors["active"]
+        elif index.data(model.HasFailed) is True:
+            check_color = self.indicator_colors["warning"]
+        elif index.data(model.HasSucceeded) is True:
+            check_color = self.indicator_colors["ok"]
+        elif index.data(model.HasProcessed) is True:
+            check_color = self.indicator_colors["ok"]
+        self.indicator.setStyleSheet(
+            'padding: 5px;'
+            'background: {};color: {}'.format(
+                check_color['bg'], check_color['font']
+            )
+        )
 
         label = index.data(model.Label)
         self.name_widget.setText(label)
