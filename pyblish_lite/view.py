@@ -429,7 +429,11 @@ class ExpandableWidget(QtWidgets.QWidget):
         self.content_layout = content_layout
         self.button_toggle.clicked.connect(self.toggle_content)
 
-    def toggle_content(self, checked):
+    def toggle_content(self, *args):
+        if len(args) > 0:
+            checked = args[0]
+        else:
+            checked = not self.button_toggle.IsChecked()
         arrow_type = QtCore.Qt.RightArrow
         if checked:
             arrow_type = QtCore.Qt.DownArrow
