@@ -101,14 +101,14 @@ class Controller(QtCore.QObject):
 
         for plugin in plugins:
             if load_collector:
-                if plugin.order < 1:
+                if plugin.order < (pyblish.api.CollectorOrder + 0.5):
                     collectors.append(plugin)
             else:
-                if plugin.order < 1:
+                if plugin.order < (pyblish.api.CollectorOrder + 0.5):
                     continue
-                elif plugin.order < 2:
+                elif plugin.order < (pyblish.api.ValidatorOrder + 0.5):
                     validators.append(plugin)
-                elif plugin.order < 3:
+                elif plugin.order < (pyblish.api.ExtractorOrder + 0.5):
                     extractors.append(plugin)
                 else:
                     conforms.append(plugin)
