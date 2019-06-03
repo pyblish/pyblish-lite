@@ -169,7 +169,9 @@ class Controller(QtCore.QObject):
             result = pyblish.plugin.process(plugin, self.context, instance)
 
         except Exception as e:
-            raise Exception("Unknown error: %s" % e)
+            raise Exception("Unknown error({}): {}".format(
+                plugin.__name__, str(e)
+            ))
 
         else:
             # Make note of the order at which the
