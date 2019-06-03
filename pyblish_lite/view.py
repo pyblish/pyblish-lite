@@ -431,7 +431,7 @@ class ExpandableWidget(QtWidgets.QWidget):
         if len(args) > 0:
             checked = args[0]
         else:
-            checked = not self.button_toggle.IsChecked()
+            checked = self.button_toggle.isChecked()
         arrow_type = QtCore.Qt.RightArrow
         if checked:
             arrow_type = QtCore.Qt.DownArrow
