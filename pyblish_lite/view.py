@@ -265,6 +265,18 @@ class PerspectiveWidget(QtWidgets.QWidget):
         path = ExpandableWidget(self, self.l_path)
         layout.addWidget(path)
 
+        scroll_widget = QtWidgets.QScrollArea(self)
+        contents_widget = QtWidgets.QWidget(scroll_widget)
+        contents_widget.setLayout(layout)
+        contents_widget.setStyleSheet(
+            'padding: 0px;'
+            'background: "#444";'
+        )
+        scroll_widget.setWidgetResizable(True)
+        scroll_widget.setWidget(contents_widget)
+
+        self.scroll_widget = scroll_widget
+        self.contents_widget = contents_widget
         self.toggleButton = toggleButton
         self.name_widget = name
         self.documentation = documentation
@@ -273,7 +285,8 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.traceback_part = traceback_part
         self.path = path
 
-        main_layout.addLayout(layout)
+        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.addWidget(scroll_widget)
         self.setLayout(main_layout)
 
         self.toggleButton.clicked.connect(self.toggle_me)
