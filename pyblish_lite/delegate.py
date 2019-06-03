@@ -69,11 +69,10 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         perspective_icon = icons["angle-right"]
         perspective_rect = QtCore.QRectF(body_rect)
-        perspective_rect.setWidth(check_rect.height())
-        perspective_rect.setHeight(check_rect.height())
+        perspective_rect.setWidth(perspective_rect.height())
         perspective_rect.translate(
-            body_rect.width()-(perspective_rect.width()+5),
-            (body_rect.height()/2)-(perspective_rect.height()/2)
+            body_rect.width()-(perspective_rect.width()),
+            0
         )
 
         if index.data(model.IsProcessing) is True:
