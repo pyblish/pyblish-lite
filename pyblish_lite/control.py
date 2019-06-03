@@ -218,28 +218,31 @@ class Controller(QtCore.QObject):
         """
         try:
             for pair in self._plugin_collect(self.plugins[self.PART_COLLECT], True):
-                plug, instance = pair
-                if not plug.active:
-                    continue
+                try:
+                    plug, instance = pair
+                    if not plug.active:
+                        continue
 
-                self.about_to_process.emit(*pair)
+                    self.about_to_process.emit(*pair)
 
-                self.processing["nextOrder"] = plug.order
+                    self.processing["nextOrder"] = plug.order
 
-                if self.test(**self.processing):
-                    raise StopIteration("Stopped due to %s" % test(
-                        **self.processing))
+                    if self.test(**self.processing):
+                        raise StopIteration("Stopped due to %s" % test(
+                            **self.processing))
 
-                result = self._process(*pair)
+                    result = self._process(*pair)
 
-                if result["error"] is not None:
-                    self.current_error = result["error"]
+                    if result["error"] is not None:
+                        self.current_error = result["error"]
 
-                self.was_processed.emit(result)
+                    self.was_processed.emit(result)
 
+                except Exception as e:
+                    stack = traceback.format_exc(e)
+                    util.u_print(u"An unexpected error occurred:\n %s" % stack)
         except Exception as e:
-            stack = traceback.format_exc(e)
-            util.u_print(u"An unexpected error occurred:\n %s" % error)
+            traceback.print_tb(e.__traceback__)
         finally:
             self.was_reset.emit()
             self.was_finished.emit()
