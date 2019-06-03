@@ -296,11 +296,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
         doc = None
         if index.data(model.Type) == "instance":
             is_plugin = False
-            cur_model = models['instances']
         elif index.data(model.Type) == "plugin":
             is_plugin = True
-            cur_model = models['plugins']
-            doc = cur_model.data(index, model.Docstring)
+            doc = index.data(model.Docstring)
             doc_str = ''
             have_doc = False
             if doc:
@@ -311,7 +309,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
             doc_label.setWordWrap(True)
             doc_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.documentation.set_content(doc_label)
-            path = cur_model.data(index, model.PathModule) or ''
+            path = index.data(model.PathModule) or ''
 
             self.path.toggle_content(path.strip() != '')
             path_label = QtWidgets.QLabel(path)
@@ -321,14 +319,14 @@ class PerspectiveWidget(QtWidgets.QWidget):
         else:
             return
 
-        label = cur_model.data(index, model.Label)
+        label = index.data(model.Label)
         self.name_widget.setText(label)
 
         self.path.setVisible(is_plugin)
         self.documentation.setVisible(is_plugin)
 
-        records = cur_model.data(index, model.LogRecord) or []
-        error = cur_model.data(index, model.ErrorRecord)
+        records = index.data(model.LogRecord) or []
+        error = index.data( model.ErrorRecord)
 
         rec_widget = LogView(self.records.content_widget)
         rec_delegate = delegate.Terminal()
