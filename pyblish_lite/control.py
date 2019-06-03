@@ -239,7 +239,7 @@ class Controller(QtCore.QObject):
 
         except Exception as e:
             stack = traceback.format_exc(e)
-            util.u_print(u"An unexpected error occurred:\n %s" % error)
+            util.u_print(u"An unexpected error occurred:\n %s" % stack)
         finally:
             self.was_reset.emit()
             self.was_finished.emit()
