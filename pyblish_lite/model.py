@@ -406,8 +406,9 @@ class Instance(Item):
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
-
-        self.setData(index, result.get('records', []), LogRecord)
+        records = index.data(LogRecord) or []
+        records.extend(result.get('records', []))
+        self.setData(index, records, LogRecord)
         self.setData(index, result.get('error', []), ErrorRecord)
         # Once failed, never go back.
         if not self.data(index, HasFailed):
