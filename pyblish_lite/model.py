@@ -24,6 +24,7 @@ Roles:
 
 """
 from __future__ import unicode_literals
+import traceback
 
 from . import settings
 from .awesome import tags as awesome
@@ -171,6 +172,27 @@ class Item(Abstract):
                     break
 
 
+def error_from_result(result):
+    in_error = result.get('error')
+    in_error_info = result.get('error_info')
+    error = {}
+    if in_error and isinstance(in_error, dict):
+        error = in_error
+    elif in_error:
+        trc_lines = list()
+        if in_error_info:
+            trc_lines = traceback.format_exception(*in_error_info)
+        fname, line_no, func, exc = in_error.traceback
+        error = {
+            'message': str(in_error),
+            'fname': fname,
+            'line_no': line_no,
+            'func': func,
+            'traceback': trc_lines
+        }
+    return error
+
+
 class Plugin(Item):
     def __init__(self):
         super(Plugin, self).__init__()
@@ -316,7 +338,7 @@ class Plugin(Item):
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
         self.setData(index, result['records'], LogRecord)
-        self.setData(index, result['error'], ErrorRecord)
+        self.setData(index, error_from_result(result), ErrorRecord)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
@@ -409,7 +431,8 @@ class Instance(Item):
         records = index.data(LogRecord) or []
         records.extend(result.get('records', []))
         self.setData(index, records, LogRecord)
-        self.setData(index, result.get('error', []), ErrorRecord)
+        self.setData(index, error_from_result(result), ErrorRecord)
+
         # Once failed, never go back.
         if not self.data(index, HasFailed):
             self.setData(index, not result["success"], HasFailed)
@@ -496,16 +519,26 @@ class Terminal(Abstract):
             })
 
         error = result["error"]
-        if error is not None:
-            fname, line_no, func, exc = error.traceback
-            self.append({
-                "label": text_type(error),
-                "type": "error",
-                "fname": fname,
-                "line_number": line_no,
-                "func": func,
-                "exc": exc,
-            })
+        if error:
+            if isinstance(error, dict):
+                self.append({
+                    'label': text_type(error['message']),
+                    'type': 'error',
+                    'fname': error['fname'],
+                    'line_number': error['line_no'],
+                    'func': error['func'],
+                    'exc': error['message']
+                })
+            else:
+                fname, line_no, func, exc = error.traceback
+                self.append({
+                    "label": text_type(error),
+                    "type": "error",
+                    "fname": fname,
+                    "line_number": line_no,
+                    "func": func,
+                    "exc": exc,
+                })
 
 
 class ProxyModel(QtCore.QSortFilterProxyModel):

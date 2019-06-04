@@ -375,7 +375,18 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.documentation.setVisible(is_plugin)
 
         records = index.data(model.LogRecord) or []
-        error = index.data( model.ErrorRecord)
+        error = index.data(model.ErrorRecord)
+
+        len_records = 0
+        if records:
+            len_records += len(records)
+        if error:
+            error_msg = error['message']
+            error_fname = error['fname']
+            error_line_no = error['line_no']
+            error_func = error['func']
+            error_traceback = error['traceback']
+            len_records += 1
 
         rec_widget = LogView(self.records.content_widget)
         rec_delegate = delegate.Terminal()
@@ -384,11 +395,6 @@ class PerspectiveWidget(QtWidgets.QWidget):
             'records': records,
             'error': error
         }
-        len_records = 0
-        if records:
-            len_records += len(records)
-        if error:
-            len_records += 1
 
         height = 20
         if len_records > 0:
@@ -405,27 +411,29 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.records.set_content(rec_widget)
         self.records.toggle_content(len_records > 0)
 
-        error_msg = ''
         trc_lines = []
         existence_error = False
+        error_cnt = ''
         if error:
             existence_error = True
-            fname, line_no, func, exc = error.traceback
-            trc_lines = traceback.format_tb(error.__traceback__)
-
-            error_msg += '<b>Message</b><br/>{}<br/>'.format(
-                str(error).replace('\n','<br/>')
+            error_cnt += '<b>Message</b><br/>{}<br/>'.format(
+                error_msg.replace('\n','<br/>')
             )
-            error_msg += '<b>Filename</b><br/>{}<br/>'.format(fname)
-            error_msg += '<b>Line</b><br/>{}<br/>'.format(line_no)
-            error_msg += '<b>Function</b><br/>{}<br/>'.format(func)
+            error_cnt += '<b>Filename</b><br/>{}<br/>'.format(error_fname)
+            error_cnt += '<b>Line</b><br/>{}<br/>'.format(error_line_no)
+            error_cnt += '<b>Function</b><br/>{}<br/>'.format(error_func)
 
-            trc_widget = QtWidgets.QLabel(''.join(trc_lines))
+            trc_widget = QtWidgets.QLabel(''.join(error_traceback))
             trc_widget.setWordWrap(True)
             trc_widget.setTextFormat(QtCore.Qt.PlainText)
+            trc_widget.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.traceback_part.set_content(trc_widget)
+            isTraceback = True
+            if not error_traceback:
+                isTraceback = False
+            self.traceback_part.setVisible(isTraceback)
 
-        er_widget = QtWidgets.QLabel(error_msg)
+        er_widget = QtWidgets.QLabel(error_cnt)
         er_widget.setWordWrap(True)
         er_widget.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
         self.error.set_content(er_widget)
