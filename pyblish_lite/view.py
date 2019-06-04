@@ -280,19 +280,19 @@ class PerspectiveWidget(QtWidgets.QWidget):
         layout.setContentsMargins(0,0,0,0)
 
         documentation = ExpandableWidget(self, self.l_doc)
-        layout.addWidget(documentation)
+        layout.addWidget(documentation, alignment=QtCore.Qt.AlignTop)
 
         records = ExpandableWidget(self, self.l_rec)
-        layout.addWidget(records)
+        layout.addWidget(records, alignment=QtCore.Qt.AlignTop)
 
         error = ExpandableWidget(self, self.l_er)
-        layout.addWidget(error)
+        layout.addWidget(error, alignment=QtCore.Qt.AlignTop)
 
         traceback_part = ExpandableWidget(self, self.l_trc)
-        layout.addWidget(traceback_part)
+        layout.addWidget(traceback_part, alignment=QtCore.Qt.AlignTop)
 
         path = ExpandableWidget(self, self.l_path)
-        layout.addWidget(path)
+        layout.addWidget(path, alignment=QtCore.Qt.AlignTop)
 
         scroll_widget = QtWidgets.QScrollArea(self)
         contents_widget = QtWidgets.QWidget(scroll_widget)
