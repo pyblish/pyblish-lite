@@ -453,7 +453,7 @@ class ExpandableWidget(QtWidgets.QWidget):
         button_toggle = QtWidgets.QToolButton()
 
         button_toggle.setIconSize(button_size)
-        button_toggle.setStyleSheet("QToolButton { border: none; }")
+        button_toggle.setStyleSheet("border: none; background: none;")
         button_toggle.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
         button_toggle.setArrowType(QtCore.Qt.RightArrow)
         button_toggle.setText(str(title))
