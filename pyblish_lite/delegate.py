@@ -41,6 +41,8 @@ icons = {
     "file": awesome["file"],
     "error": awesome["exclamation-triangle"],
     "action": awesome["adn"],
+    "angle-right": awesome["angle-right"],
+    "angle-left": awesome["angle-left"]
 }
 
 
@@ -50,17 +52,28 @@ class Item(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
         """Paint checkbox and text
          _
-        |_|  My label
+        |_|  My label    >
 
         """
 
         body_rect = QtCore.QRectF(option.rect)
+
+
+        check_rect = QtCore.QRectF(body_rect)
 
         check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
         check_rect.adjust(6, 6, -6, -6)
 
         check_color = colors["idle"]
+
+        perspective_icon = icons["angle-right"]
+        perspective_rect = QtCore.QRectF(body_rect)
+        perspective_rect.setWidth(perspective_rect.height())
+        perspective_rect.translate(
+            body_rect.width()-(perspective_rect.width()-5),
+            0
+        )
 
         if index.data(model.IsProcessing) is True:
             check_color = colors["active"]
@@ -92,6 +105,11 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
+
+        # Draw perspective icon
+        painter.setFont(fonts["h4"])
+        painter.setPen(QtGui.QPen(font_color))
+        painter.drawText(perspective_rect, perspective_icon)
 
         # Draw label
         painter.setFont(fonts["h4"])
@@ -152,11 +170,11 @@ class Artist(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
         """Paint checkbox and text
 
-         _________________________________________
-        |       |  label              | duration  |
-        |toggle |_____________________|           |
-        |       |  families           |           |
-        |_______|_____________________|___________|
+         _______________________________________________
+        |       |  label              | duration  |arrow|
+        |toggle |_____________________|           | to  |
+        |       |  families           |           |persp|
+        |_______|_____________________|___________|_____|
 
         """
 
@@ -187,6 +205,14 @@ class Artist(QtWidgets.QStyledItemDelegate):
         families_rect = QtCore.QRectF(label_rect)
         families_rect.translate(0, label_rect.height())
 
+        perspective_rect = QtCore.QRectF(body_rect)
+        perspective_rect.setWidth(35)
+        perspective_rect.setHeight(35)
+        perspective_rect.translate(
+            content_rect.width()-(perspective_rect.width()/2),
+            (content_rect.height()/2)-(perspective_rect.height()/2)
+        )
+
         # Colors
         check_color = colors["idle"]
 
@@ -203,6 +229,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
             check_color = colors["ok"]
 
         icon = index.data(model.Icon) or icons["file"]
+        perspective_icon = icons["angle-right"]
         label = index.data(model.Label)
         families = ", ".join(index.data(model.Families))
 
@@ -219,6 +246,15 @@ class Artist(QtWidgets.QStyledItemDelegate):
         if not index.data(model.IsChecked):
             font_color = colors["inactive"]
 
+        perspective_color = colors['inactive']
+        if (
+            option.state &
+            (
+                QtWidgets.QStyle.State_MouseOver or
+                QtWidgets.QStyle.State_Selected
+            )
+        ):
+            perspective_color = colors['idle']
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
@@ -237,6 +273,10 @@ class Artist(QtWidgets.QStyledItemDelegate):
         painter.setFont(fonts["h5"])
         painter.setPen(QtGui.QPen(colors["inactive"]))
         painter.drawText(families_rect, families)
+
+        painter.setFont(fonts["largeAwesome"])
+        painter.setPen(QtGui.QPen(perspective_color))
+        painter.drawText(perspective_rect, perspective_icon)
 
         # Draw checkbox
         pen = QtGui.QPen(check_color, 1)
@@ -269,7 +309,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
 
 class Terminal(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
-
+    HEIGHT = 20
     def paint(self, painter, option, index):
         """Paint text"""
 
@@ -326,4 +366,4 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20)
+        return QtCore.QSize(option.rect.width(), self.HEIGHT)

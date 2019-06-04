@@ -1,11 +1,9 @@
 """The Controller in a Model/View/Controller-based application
-
 The graphical components of Pyblish Lite use this object to perform
 publishing. It communicates via the Qt Signals/Slots mechanism
 and has no direct connection to any graphics. This is important,
 because this is how unittests are able to run without requiring
 an active window manager; such as via Travis-CI.
-
 """
 
 import traceback
@@ -116,15 +114,12 @@ class Controller(QtCore.QObject):
 
     def _process(self, plugin, instance=None):
         """Produce `result` from `plugin` and `instance`
-
         :func:`process` shares state with :func:`_iterator` such that
         an instance/plugin pair can be fetched and processed in isolation.
-
         Arguments:
             plugin (pyblish.api.Plugin): Produce result using plug-in
             instance (optional, pyblish.api.Instance): Process this instance,
                 if no instance is provided, context is processed.
-
         """
 
         self.processing["nextOrder"] = plugin.order
@@ -146,13 +141,11 @@ class Controller(QtCore.QObject):
 
     def _run(self, until=float("inf"), on_finished=lambda: None):
         """Process current pair and store next pair for next process
-
         Arguments:
             until (pyblish.api.Order, optional): Keep fetching next()
                 until this order, default value is infinity.
             on_finished (callable, optional): What to do when finishing,
                 defaults to doing nothing.
-
         """
 
         def on_next():
@@ -225,11 +218,9 @@ class Controller(QtCore.QObject):
 
     def _iterator(self, plugins, context):
         """Yield next plug-in and instance to process.
-
         Arguments:
             plugins (list): Plug-ins to process
             context (pyblish.api.Context): Context to process
-
         """
 
         test = pyblish.logic.registered_test()
@@ -254,19 +245,15 @@ class Controller(QtCore.QObject):
 
     def cleanup(self):
         """Forcefully delete objects from memory
-
         In an ideal world, this shouldn't be necessary. Garbage
         collection guarantees that anything without reference
         is automatically removed.
-
         However, because this application is designed to be run
         multiple times from the same interpreter process, extra
         case must be taken to ensure there are no memory leaks.
-
         Explicitly deleting objects shines a light on where objects
         may still be referenced in the form of an error. No errors
         means this was uneccesary, but that's ok.
-
         """
 
         for instance in self.context:
