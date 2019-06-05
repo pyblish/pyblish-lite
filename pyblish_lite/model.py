@@ -24,6 +24,7 @@ Roles:
 
 """
 from __future__ import unicode_literals
+import traceback
 
 from . import settings
 from .awesome import tags as awesome
@@ -68,7 +69,10 @@ ActionIconVisible = QtCore.Qt.UserRole + 13
 ActionIdle = QtCore.Qt.UserRole + 15
 ActionFailed = QtCore.Qt.UserRole + 17
 Docstring = QtCore.Qt.UserRole + 12
+PathModule = QtCore.Qt.UserRole + 17
 
+LogRecord = QtCore.Qt.UserRole + 40
+ErrorRecord = QtCore.Qt.UserRole + 41
 # LOG RECORDS
 
 LogThreadName = QtCore.Qt.UserRole + 50
@@ -105,6 +109,7 @@ class Abstract(QtCore.QAbstractListModel):
                              self.rowCount())
 
         self.items.append(item)
+
         self.endInsertRows()
 
     def rowCount(self, parent=None):
@@ -167,6 +172,27 @@ class Item(Abstract):
                     break
 
 
+def error_from_result(result):
+    in_error = result.get('error')
+    in_error_info = result.get('error_info')
+    error = {}
+    if in_error and isinstance(in_error, dict):
+        error = in_error
+    elif in_error:
+        trc_lines = list()
+        if in_error_info:
+            trc_lines = traceback.format_exception(*in_error_info)
+        fname, line_no, func, exc = in_error.traceback
+        error = {
+            'message': str(in_error),
+            'fname': fname,
+            'line_no': line_no,
+            'func': func,
+            'traceback': trc_lines
+        }
+    return error
+
+
 class Plugin(Item):
     def __init__(self):
         super(Plugin, self).__init__()
@@ -176,6 +202,8 @@ class Plugin(Item):
             Docstring: "__doc__",
             ActionIdle: "_action_idle",
             ActionFailed: "_action_failed",
+            LogRecord: "_log",
+            ErrorRecord: "_error"
         })
 
     def append(self, item):
@@ -197,7 +225,6 @@ class Plugin(Item):
         item._action_processing = False
         item._action_succeeded = False
         item._action_failed = False
-
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
@@ -279,12 +306,12 @@ class Plugin(Item):
 
             return actions
 
+        if role == PathModule:
+            return item.__module__
         key = self.schema.get(role)
         value = getattr(item, key, None) if key is not None else None
-
         if value is None:
             value = super(Plugin, self).data(index, role)
-
         return value
 
     def setData(self, index, value, role):
@@ -304,14 +331,14 @@ class Plugin(Item):
 
     def update_with_result(self, result, action=False):
         item = result["plugin"]
-
         index = self.items.index(item)
         index = self.createIndex(index, 0)
-
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
+        self.setData(index, result['records'], LogRecord)
+        self.setData(index, error_from_result(result), ErrorRecord)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
@@ -327,7 +354,8 @@ class Instance(Item):
         self.ids = []
         self.schema.update({
             IsChecked: "publish",
-
+            LogRecord: "_log",
+            ErrorRecord: "_error",
             # Merge copy of both family and families data members
             Families: "__families__",
         })
@@ -400,6 +428,10 @@ class Instance(Item):
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
+        records = index.data(LogRecord) or []
+        records.extend(result.get('records', []))
+        self.setData(index, records, LogRecord)
+        self.setData(index, error_from_result(result), ErrorRecord)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
@@ -472,7 +504,7 @@ class Terminal(Abstract):
             if record.levelno < settings.TerminalLoglevel:
                 continue
             self.append({
-                "label": text_type(record.msg) % record.args,
+                "label": text_type(record.msg),
                 "type": "record",
 
                 # Native
@@ -487,16 +519,26 @@ class Terminal(Abstract):
             })
 
         error = result["error"]
-        if error is not None:
-            fname, line_no, func, exc = error.traceback
-            self.append({
-                "label": text_type(error),
-                "type": "error",
-                "fname": fname,
-                "line_number": line_no,
-                "func": func,
-                "exc": exc,
-            })
+        if error:
+            if isinstance(error, dict):
+                self.append({
+                    'label': text_type(error['message']),
+                    'type': 'error',
+                    'fname': error['fname'],
+                    'line_number': error['line_no'],
+                    'func': error['func'],
+                    'exc': error['message']
+                })
+            else:
+                fname, line_no, func, exc = error.traceback
+                self.append({
+                    "label": text_type(error),
+                    "type": "error",
+                    "fname": fname,
+                    "line_number": line_no,
+                    "func": func,
+                    "exc": exc,
+                })
 
 
 class ProxyModel(QtCore.QSortFilterProxyModel):

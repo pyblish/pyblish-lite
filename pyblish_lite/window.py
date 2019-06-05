@@ -111,6 +111,7 @@ class Window(QtWidgets.QDialog):
         artist_page = QtWidgets.QWidget()
 
         artist_view = view.Item()
+        artist_view.show_perspective.connect(self.toggle_perspective_widget)
 
         artist_delegate = delegate.Artist()
         artist_view.setItemDelegate(artist_delegate)
@@ -135,7 +136,9 @@ class Window(QtWidgets.QDialog):
         overview_page = QtWidgets.QWidget()
 
         left_view = view.Item()
+        left_view.show_perspective.connect(self.toggle_perspective_widget)
         right_view = view.Item()
+        right_view.show_perspective.connect(self.toggle_perspective_widget)
 
         item_delegate = delegate.Item()
         left_view.setItemDelegate(item_delegate)
@@ -279,7 +282,8 @@ class Window(QtWidgets.QDialog):
         closing_placeholder.hide()
 
         # Main layout
-        layout = QtWidgets.QVBoxLayout(self)
+        self.main_widget = QtWidgets.QWidget(self)
+        layout = QtWidgets.QVBoxLayout(self.main_widget)
         layout.addWidget(header, 0)
         layout.addWidget(body, 3)
         layout.addWidget(closing_placeholder, 1)
@@ -287,7 +291,16 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(footer, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        self.main_widget.setLayout(layout)
 
+        self.perspective_widget = view.PerspectiveWidget(self)
+        self.perspective_widget.hide()
+
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
+        self.main_layout.addWidget(self.main_widget)
+        self.main_layout.addWidget(self.perspective_widget)
         """Animation
            ___
           /   \
@@ -543,6 +556,13 @@ class Window(QtWidgets.QDialog):
     # Event handlers
     #
     # -------------------------------------------------------------------------
+    def toggle_perspective_widget(self, index=None):
+        show = False
+        if index:
+            show = True
+            self.perspective_widget.set_context(index)
+        self.main_widget.setVisible(not show)
+        self.perspective_widget.setVisible(show)
 
     def on_item_expanded(self, index, state):
         if not index.data(model.IsExpandable):
