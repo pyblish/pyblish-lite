@@ -59,9 +59,21 @@ class Controller(QtCore.QObject):
     def reset(self):
         """Discover plug-ins and run collection"""
         self.context = pyblish.api.Context()
+        self.last_plugins = self.plugins
         self.plugins = pyblish.api.discover()
 
         self.was_discovered.emit()
+
+        for plugin_last in self.last_plugins:
+            if not plugin_last.optional:
+                continue
+            for plugin_current in self.plugins:
+                if plugin_current.label == plugin_last.label:
+                    if not plugin_current.optional:
+                        break
+                    setattr(plugin_current, 'active', plugin_last.active)
+                    break
+        self.last_plugins = list()
 
         self.pair_generator = None
         self.current_pair = (None, None)
