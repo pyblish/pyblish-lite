@@ -300,6 +300,7 @@ class Plugin(Item):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        return True
 
     def update_with_result(self, result, action=False):
         item = result["plugin"]
