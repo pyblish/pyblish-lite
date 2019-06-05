@@ -41,11 +41,12 @@ class Controller(QtCore.QObject):
     PART_VALIDATE = 'validate'
     PART_EXTRACT = 'extract'
     PART_CONFORM = 'conform'
+
     def __init__(self, parent=None):
         super(Controller, self).__init__(parent)
 
         self.context = list()
-        self.plugins = list()
+        self.plugins = {}
 
         # Data internal to the GUI itself
         self.is_running = False
@@ -65,13 +66,14 @@ class Controller(QtCore.QObject):
     def reset(self):
         """Discover plug-ins and run collection"""
         self.validated = False
-        self.all_plugins = []
+        self.extracted = False
         self.context = pyblish.api.Context()
         self.all_plugins = pyblish.api.discover()
         # Load collectors
         self.load_plugins(True)
-        # Load rest of plugins wth collected instances
-        self._load()
+        self.current_error = None
+        # Process collectors load rest of plugins with collected instances
+        self.collect()
 
         self.pair_generator = None
         self.current_pair = (None, None)
@@ -145,11 +147,6 @@ class Controller(QtCore.QObject):
     def emit_(self, signal, kwargs):
         pyblish.api.emit(signal, **kwargs)
 
-    def _load(self):
-        """Initiate new generator and load first pair"""
-        self.collect()
-        self.current_error = None
-
     def _process(self, plugin, instance=None):
         """Produce `result` from `plugin` and `instance`
 
@@ -182,7 +179,7 @@ class Controller(QtCore.QObject):
 
         return result
 
-    def _plugin_collect(self, plugins, collect=False):
+    def _plugin_collect(self, plugins, collect):
         output = []
         for plugin in plugins:
             if not plugin.active:
@@ -210,128 +207,80 @@ class Controller(QtCore.QObject):
                 output.append([plugin, None])
         return output
 
-    def collect(self):
-        """Yield next plug-in and instance to process.
-
-        Arguments:
-            plugins (list): Plug-ins to process
-            context (pyblish.api.Context): Context to process
-
+    def iterate_and_process(self, plugins, is_collect=False):
+        """ Iterating inserted plugins with current context.
+        Collectors do not contain instances, they are None when collecting!
+        This process don't stop on one
         """
-        try:
-            for pair in self._plugin_collect(self.plugins[self.PART_COLLECT], True):
-                try:
-                    plug, instance = pair
-                    if not plug.active:
-                        continue
+        for pair in self._plugin_collect(plugins, is_collect):
+            plug, instance = pair
+            if not plug.active:
+                continue
+            try:
+                self.about_to_process.emit(plug, instance)
+                if not is_collect and not instance.data.get("publish"):
+                    continue
 
-                    self.about_to_process.emit(*pair)
+                self.processing["nextOrder"] = plug.order
 
-                    self.processing["nextOrder"] = plug.order
+                if self.test(**self.processing):
+                    raise StopIteration(
+                        "Stopped due to %s" % test(**self.processing)
+                    )
+                result = self._process(plug, instance)
 
-                    if self.test(**self.processing):
-                        raise StopIteration("Stopped due to %s" % test(
-                            **self.processing))
+                if result["error"] is not None:
+                    self.current_error = result["error"]
 
-                    result = self._process(*pair)
+                self.was_processed.emit(result)
+            except Exception as e:
+                stack = traceback.format_exc(e)
+                util.u_print(u"An unexpected error occurred:\n %s" % stack)
 
-                    if result["error"] is not None:
-                        self.current_error = result["error"]
+    def collect(self):
+        """ Iterate and process Collect plugins
+        - load_plugins method is launched again when finished
+        """
+        self.iterate_and_process(self.plugins[self.PART_COLLECT], True)
 
-                    self.was_processed.emit(result)
-
-                except Exception as e:
-                    stack = traceback.format_exc(e)
-                    util.u_print(u"An unexpected error occurred:\n %s" % stack)
-        except Exception as e:
-            traceback.print_tb(e.__traceback__)
-        finally:
-            self.was_reset.emit()
-            self.was_finished.emit()
-            self.load_plugins()
+        self.was_reset.emit()
+        self.was_finished.emit()
+        self.load_plugins()
 
     def validate(self):
-        """Yield next plug-in and instance to process.
-
-        Arguments:
-            plugins (list): Plug-ins to process
-            context (pyblish.api.Context): Context to process
-
+        """ Iterate and process Validate plugins
+        - self.validated is set to True when done so we know was processed
         """
+        self.iterate_and_process(self.plugins[self.PART_VALIDATE])
+        self.validated = True
 
-        try:
-            for pair in self._plugin_collect(self.plugins[self.PART_VALIDATE]):
-                plug, instance = pair
-                if not plug.active:
-                    continue
-                try:
-                    self.about_to_process.emit(plug, instance)
-                    if not instance.data.get("publish"):
-                        continue
+        self.on_validated()
+        self.was_finished.emit()
 
-                    self.processing["nextOrder"] = plug.order
-
-                    if self.test(**self.processing):
-                        raise StopIteration("Stopped due to %s" % test(
-                            **self.processing))
-
-
-                    result = self._process(*pair)
-                    if result["error"] is not None:
-                        self.current_error = result["error"]
-
-                    self.was_processed.emit(result)
-
-                except Exception as e:
-                    stack = traceback.format_exc(e)
-                    util.u_print(u"An unexpected error occurred:\n %s" % error)
-            self.validated = True
-        except Exception as e:
-            traceback.print_tb(e.__traceback__)
-        finally:
-            self.on_validated()
-            self.was_finished.emit()
-
-    def publish(self):
+    def extract(self):
+        """ Iterate and process Extract plugins
+        """
         if not self.validated:
             self.validate()
         if self.current_error:
             return
 
-        publish_plugins = []
-        publish_plugins.extend(self.plugins[self.PART_EXTRACT])
-        publish_plugins.extend(self.plugins[self.PART_CONFORM])
-        try:
-            for pair in self._plugin_collect(publish_plugins):
-                plug, instance = pair
-                if not plug.active:
-                    continue
-                try:
-                    self.about_to_process.emit(plug, instance)
-                    if not instance.data.get("publish"):
-                        continue
+        self.iterate_and_process(self.plugins[self.PART_EXTRACT])
+        self.extracted = True
 
-                    self.processing["nextOrder"] = plug.order
+    def publish(self):
+        """ Iterate and process Conform(Integrate) plugins
+        - won't start if any extractor fails
+        """
+        if not self.extracted:
+            self.extract()
+        if self.current_error:
+            return
 
-                    if self.test(**self.processing):
-                        raise StopIteration("Stopped due to %s" % test(
-                            **self.processing))
+        self.iterate_and_process(self.plugins[self.PART_CONFORM])
 
-
-                    result = self._process(*pair)
-                    if result["error"] is not None:
-                        self.current_error = result["error"]
-
-                    self.was_processed.emit(result)
-
-                except Exception as e:
-                    error = traceback.format_tb(e.__traceback__)
-                    util.u_print(u"An unexpected error occurred:\n %s" % error)
-        except Exception as e:
-            traceback.print_tb(e.__traceback__)
-        finally:
-            self.on_published()
-            self.was_finished.emit()
+        self.on_published()
+        self.was_finished.emit()
 
     def cleanup(self):
         """Forcefully delete objects from memory
