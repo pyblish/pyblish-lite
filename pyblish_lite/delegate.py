@@ -15,6 +15,7 @@ colors = {
     "hover": QtGui.QColor(255, 255, 255, 10),
     "selected": QtGui.QColor(255, 255, 255, 20),
     "outline": QtGui.QColor("#333"),
+    "group_bg": QtGui.QColor("#333")
 }
 
 record_colors = {
@@ -42,7 +43,9 @@ icons = {
     "error": awesome["exclamation-triangle"],
     "action": awesome["adn"],
     "angle-right": awesome["angle-right"],
-    "angle-left": awesome["angle-left"]
+    "angle-left": awesome["angle-left"],
+    "plus-sign": awesome['plus'],
+    "minus-sign": awesome['minus']
 }
 
 
@@ -163,6 +166,7 @@ class Item(QtWidgets.QStyledItemDelegate):
     def sizeHint(self, option, index):
         return QtCore.QSize(option.rect.width(), 20)
 
+
 class Section(QtWidgets.QStyledItemDelegate):
     """Generic delegate for section header"""
 
@@ -183,21 +187,35 @@ class Section(QtWidgets.QStyledItemDelegate):
 
         metrics = painter.fontMetrics()
 
-        label_rect = QtCore.QRectF(option.rect.adjusted(0, 2, 0, -2))
+        expander_rect = QtCore.QRectF(body_rect)
+        expander_rect.setWidth(expander_rect.height())
+        expander_rect.adjust(6, 5, -6, -2)
+
+        expander_color = colors["idle"]
+
+        label_rect = QtCore.QRectF(option.rect.adjusted(
+            expander_rect.width() + 12, 2, 0, -2
+        ))
 
         assert label_rect.width() > 0
 
+        expander_icon = icons['plus-sign']
+        group = index.data(model.GroupObject)
+        if group.expanded:
+            expander_icon = icons['minus-sign']
         label = index.data(model.Label)
-        label = metrics.elidedText(label,
-                                   QtCore.Qt.ElideRight,
-                                   label_rect.width())
+        label = metrics.elidedText(
+            label, QtCore.Qt.ElideRight, label_rect.width()
+        )
 
         font_color = colors["idle"]
-        if not index.data(model.IsChecked):
-            font_color = colors["inactive"]
 
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
+
+        painter.setFont(fonts['smallAwesome'])
+        painter.setPen(QtGui.QPen(expander_color))
+        painter.drawText(expander_rect, expander_icon)
 
         # Draw label
         painter.setFont(fonts["h4"])
