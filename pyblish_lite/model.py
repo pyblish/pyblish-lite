@@ -49,6 +49,7 @@ Type = QtCore.Qt.UserRole + 10
 Label = QtCore.Qt.DisplayRole + 0
 Families = QtCore.Qt.DisplayRole + 1
 Icon = QtCore.Qt.DisplayRole + 13
+Order = QtCore.Qt.UserRole + 62
 
 # The item has not been used
 IsIdle = QtCore.Qt.UserRole + 2
@@ -139,6 +140,7 @@ class Item(Abstract):
             Actions: "actions",
             IsOptional: "optional",
             Icon: "icon",
+            Order: "order",
 
             # GUI-only data
             Type: "_type",
