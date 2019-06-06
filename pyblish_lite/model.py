@@ -230,6 +230,11 @@ class Plugin(Item):
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
+        # This is because of bug without known cause
+        # - on "reset" are called data for already removed indexes
+        if index.row() >= len(self.items):
+            return
+
         item = self.items[index.row()]
 
         if role == Data:
@@ -387,6 +392,10 @@ class Instance(Item):
         return super(Instance, self).append(item)
 
     def data(self, index, role):
+        # This is because of bug without known cause
+        # - on "reset" are called data for already removed indexes
+        if index.row() >= len(self.items):
+            return
         item = self.items[index.row()]
 
         if role == Data:
