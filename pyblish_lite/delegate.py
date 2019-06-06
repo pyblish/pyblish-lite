@@ -171,8 +171,15 @@ class Section(QtWidgets.QStyledItemDelegate):
          _
         My label
         """
-
         body_rect = QtCore.QRectF(option.rect)
+        bg_rect = QtCore.QRectF(
+            body_rect.left(), body_rect.top(),
+            body_rect.width()-5, body_rect.height()
+        )
+        radius = 7.0
+        bg_path = QtGui.QPainterPath()
+        bg_path.addRoundedRect(bg_rect, radius, radius);
+        painter.fillPath(bg_path, colors['group_bg'])
 
         metrics = painter.fontMetrics()
 
@@ -198,10 +205,10 @@ class Section(QtWidgets.QStyledItemDelegate):
         painter.drawText(label_rect, label)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
-            painter.fillRect(body_rect, colors["hover"])
+            painter.fillPath(bg_path, colors["hover"])
 
         if option.state & QtWidgets.QStyle.State_Selected:
-            painter.fillRect(body_rect, colors["selected"])
+            painter.fillPath(bg_path, colors["selected"])
 
         # Ok, we're done, tidy up.
         painter.restore()
