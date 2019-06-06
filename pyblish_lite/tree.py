@@ -370,6 +370,9 @@ class View(QtWidgets.QTreeView):
                             self.collapse(index)
                         else:
                             self.expand(index)
+                    else:
+                        # TODO: select all children
+                        pass
                     self.clearSelection()
             # Deselect all group labels
             if len(indexes) > 0:
