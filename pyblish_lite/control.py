@@ -65,6 +65,7 @@ class Controller(QtCore.QObject):
         self.validated = False
         self.extracted = False
         self.context = pyblish.api.Context()
+
         self.all_plugins = pyblish.api.discover()
         # Load collectors
         self.load_plugins(True)
