@@ -238,9 +238,9 @@ class Controller(QtCore.QObject):
         """
         self.iterate_and_process(self.plugins[self.PART_COLLECT], True)
 
+        self.load_plugins()
         self.was_reset.emit()
         self.was_finished.emit()
-        self.load_plugins()
 
     def validate(self):
         """ Iterate and process Validate plugins
