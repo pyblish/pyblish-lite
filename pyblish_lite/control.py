@@ -5,8 +5,7 @@ and has no direct connection to any graphics. This is important,
 because this is how unittests are able to run without requiring
 an active window manager; such as via Travis-CI.
 """
-
-import traceback
+import sys
 
 from .vendor.Qt import QtCore
 
@@ -213,8 +212,9 @@ class Controller(QtCore.QObject):
                 continue
             try:
                 self.about_to_process.emit(plug, instance)
-                if not is_collect and not instance.data.get("publish"):
-                    continue
+                if not is_collect:
+                    if not instance.data.get("publish"):
+                        continue
 
                 self.processing["nextOrder"] = plug.order
 
@@ -228,9 +228,9 @@ class Controller(QtCore.QObject):
                     self.current_error = result["error"]
 
                 self.was_processed.emit(result)
-            except Exception as e:
-                stack = traceback.format_exc(e)
-                util.u_print(u"An unexpected error occurred:\n %s" % stack)
+            except Exception:
+                exc_type, exc_msg, exc_tb = sys.exc_info()
+                util.u_print(u"An unexpected error occurred:\n %s" % exc_msg)
 
     def collect(self):
         """ Iterate and process Collect plugins
