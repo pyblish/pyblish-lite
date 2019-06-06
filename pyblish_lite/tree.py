@@ -53,8 +53,16 @@ class ProxyItem(Item):
 
 class ProxySectionItem(Item):
     def __init__(self, label):
+        self._expanded = True
         super(ProxySectionItem, self).__init__()
         self.label = "{0}".format(label)
+
+    def setIsExpanded(self, in_bool):
+        self._expanded = in_bool
+
+    @property
+    def expanded(self):
+        return self._expanded
 
     def data(self, role=QtCore.Qt.DisplayRole):
 
@@ -298,6 +306,14 @@ class View(QtWidgets.QTreeView):
         self.setHeaderHidden(True)
         self.setRootIsDecorated(False)
         self.setIndentation(0)
+
+        self.expanded.connect(self.change_expanded)
+        self.collapsed.connect(self.change_expanded)
+
+    def change_expanded(self, index):
+        group = index.data(model.GroupObject)
+        if group:
+            group.setIsExpanded(self.isExpanded(index))
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
