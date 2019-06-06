@@ -240,8 +240,9 @@ class PluginOrderGroupProxy(Proxy):
     """
 
     def groupby_key(self, source_index):
-        plugin_order = super(PluginOrderGroupProxy,
-                             self).groupby_key(source_index)
+        plugin_order = super(
+            PluginOrderGroupProxy, self
+        ).groupby_key(source_index)
         label = "Other"
 
         mapping = {pyblish.plugin.CollectorOrder: "Collector",
@@ -269,7 +270,7 @@ class FamilyGroupProxy(Proxy):
 class View(QtWidgets.QTreeView):
     # An item is requesting to be toggled, with optional forced-state
     toggled = QtCore.Signal("QModelIndex", object)
-
+    show_perspective = QtCore.Signal("QModelIndex")
     # An item is requesting details
     inspected = QtCore.Signal("QModelIndex")
 
@@ -326,8 +327,11 @@ class View(QtWidgets.QTreeView):
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             indexes = self.selectionModel().selectedIndexes()
-            if len(indexes) <= 1 and event.pos().x() < 20:
-                for index in indexes:
-                    self.toggled.emit(index, None)
+            if len(indexes) == 1 and event.pos().x() < 20:
+                index = indexes[0]
+                self.toggled.emit(index, None)
+            if len(indexes) == 1 and event.pos().x() > self.width()-20:
+                index = indexes[0]
+                self.show_perspective.emit(index)
 
         return super(View, self).mouseReleaseEvent(event)
