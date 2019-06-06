@@ -164,6 +164,7 @@ class Proxy(QtCore.QAbstractProxyModel):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        self.layoutChanged.emit()
 
     def is_header(self, index):
         """Return whether index is a header"""
