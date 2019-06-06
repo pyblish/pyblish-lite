@@ -695,21 +695,24 @@ class Window(QtWidgets.QDialog):
 
         # Emit signals
         if index.data(model.Type) == "instance":
-            instance = self.data["models"]["instances"].items[index.row()]
-            util.defer(
-                100, lambda: self.controller.emit_(
-                    signal="instanceToggled",
-                    kwargs={"new_value": state,
-                            "old_value": not state,
-                            "instance": instance}))
+            util.defer(100, lambda: self.controller.emit_(
+                signal="instanceToggled",
+                kwargs={
+                    "new_value": state,
+                    "old_value": not state,
+                    "instance": index.data(model.Object)
+                }
+            ))
 
         if index.data(model.Type) == "plugin":
-            util.defer(
-                100, lambda: self.controller.emit_(
-                    signal="pluginToggled",
-                    kwargs={"new_value": state,
-                            "old_value": not state,
-                            "plugin": index.data(model.Object)}))
+            util.defer(100, lambda: self.controller.emit_(
+                signal="pluginToggled",
+                kwargs={
+                    "new_value": state,
+                    "old_value": not state,
+                    "plugin": index.data(model.Object)
+                }
+            ))
 
     def on_tab_changed(self, target):
         for page in self.data["pages"].values():
