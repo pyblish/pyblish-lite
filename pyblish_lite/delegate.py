@@ -210,6 +210,18 @@ class Section(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20)
 
 
+class ItemAndSection(Item):
+    """Generic delegate for model items in proxy tree view"""
+    def paint(self, painter, option, index):
+
+        index_model = index.model()
+        if index_model.is_header(index):
+            Section().paint(painter, option, index)
+            return
+
+        super(ItemAndSection, self).paint(painter, option, index)
+
+
 class Artist(QtWidgets.QStyledItemDelegate):
     """Delegate used on Artist page"""
 
