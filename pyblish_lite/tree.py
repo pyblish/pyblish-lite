@@ -114,9 +114,7 @@ class Proxy(QtCore.QAbstractProxyModel):
         changes in this list (for example new indices, less indices or update
         sections)
         """
-
         self.beginResetModel()
-
         # Start with new root node
         self.root = Item()
 
@@ -137,11 +135,9 @@ class Proxy(QtCore.QAbstractProxyModel):
             for i, index in enumerate(group):
                 proxy_item = ProxyItem(index)
                 section_item.addChild(proxy_item)
-
         self.endResetModel()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
-
         if not index.isValid():
             return
 
@@ -168,14 +164,12 @@ class Proxy(QtCore.QAbstractProxyModel):
 
     def is_header(self, index):
         """Return whether index is a header"""
-
         if index.isValid() and not self.mapToSource(index).isValid():
             return True
         else:
             return False
 
     def mapFromSource(self, index):
-
         for section_item in self.root.children():
             for item in section_item.children():
                 if item.source_index == index:
@@ -186,7 +180,6 @@ class Proxy(QtCore.QAbstractProxyModel):
         return QtCore.QModelIndex()
 
     def mapToSource(self, index):
-
         if not index.isValid():
             return QtCore.QModelIndex()
 
@@ -196,7 +189,6 @@ class Proxy(QtCore.QAbstractProxyModel):
 
         if not hasattr(node, "source_index"):
             return QtCore.QModelIndex()
-
         return node.source_index
 
     def columnCount(self, parent=QtCore.QModelIndex()):
@@ -215,7 +207,6 @@ class Proxy(QtCore.QAbstractProxyModel):
         return node.rowCount()
 
     def index(self, row, column, parent):
-
         if parent and parent.isValid():
             parent_node = parent.internalPointer()
         else:
@@ -228,7 +219,6 @@ class Proxy(QtCore.QAbstractProxyModel):
             return QtCore.QModelIndex()
 
     def parent(self, index):
-
         if not index.isValid():
             return QtCore.QModelIndex()
 
@@ -271,8 +261,7 @@ class FamilyGroupProxy(Proxy):
     """
 
     def groupby_key(self, source_index):
-        families = super(FamilyGroupProxy,
-                         self).groupby_key(source_index)
+        families = super(FamilyGroupProxy, self).groupby_key(source_index)
         family = families[0]
         return family
 

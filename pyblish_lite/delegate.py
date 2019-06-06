@@ -149,7 +149,7 @@ class Item(QtWidgets.QStyledItemDelegate):
                 painter.fillRect(check_rect, check_color)
 
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
-                painter.fillRect(check_rect, check_color)
+            painter.fillRect(check_rect, check_color)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
             painter.fillRect(body_rect, colors["hover"])
