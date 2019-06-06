@@ -37,6 +37,11 @@ QListView {
 	background: "transparent"
 }
 
+QTreeView {
+	border: 0px;
+	background: "transparent"
+}
+
 QPushButton {
 	width: 27px;
 	height: 27px;
