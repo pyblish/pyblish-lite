@@ -73,6 +73,9 @@ class ProxySectionItem(Item):
         elif role == QtCore.Qt.BackgroundColorRole:
             return QtWidgets.QColor(220, 220, 220)
 
+        elif role == model.GroupObject:
+            return self
+
 
 class Proxy(QtCore.QAbstractProxyModel):
     """Proxy that groups by based on a specific role
@@ -337,11 +340,27 @@ class View(QtWidgets.QTreeView):
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             indexes = self.selectionModel().selectedIndexes()
-            if len(indexes) == 1 and event.pos().x() < 20:
+            if len(indexes) == 1:
                 index = indexes[0]
-                self.toggled.emit(index, None)
-            if len(indexes) == 1 and event.pos().x() > self.width()-20:
-                index = indexes[0]
-                self.show_perspective.emit(index)
+                # If instance or Plugin
+                if index.data(model.Object) is not None:
+                    if event.pos().x() < 20:
+                        self.toggled.emit(index, None)
+                    if event.pos().x() > self.width()-20:
+                        self.show_perspective.emit(index)
+                else:
+                    if event.pos().x() < 20:
+                        if self.isExpanded(index):
+                            self.collapse(index)
+                        else:
+                            self.expand(index)
+                    self.clearSelection()
+            # Deselect all group labels
+            if len(indexes) > 0:
+                for index in indexes:
+                    if index.data(model.Object) is None:
+                        self.selectionModel().select(
+                            index, QtCore.QItemSelectionModel.Deselect
+                        )
 
         return super(View, self).mouseReleaseEvent(event)
