@@ -87,6 +87,12 @@ class Proxy(QtCore.QAbstractProxyModel):
     def set_group_role(self, role):
         self.group_role = role
 
+    def flags(self, index):
+        return (
+            QtCore.Qt.ItemIsEnabled |
+            QtCore.Qt.ItemIsSelectable
+        )
+        
     def groupby_key(self, source_index):
         """Returns the data to group by.
         Override this in subclasses to group by customized data instead of
