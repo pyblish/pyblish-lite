@@ -177,8 +177,8 @@ class Section(QtWidgets.QStyledItemDelegate):
         """
         body_rect = QtCore.QRectF(option.rect)
         bg_rect = QtCore.QRectF(
-            body_rect.left(), body_rect.top(),
-            body_rect.width()-5, body_rect.height()
+            body_rect.left(), body_rect.top()+1,
+            body_rect.width()-5, body_rect.height()-2
         )
         radius = 7.0
         bg_path = QtGui.QPainterPath()
