@@ -66,27 +66,12 @@ class Controller(QtCore.QObject):
         self.extracted = False
         self.context = pyblish.api.Context()
 
-        self.last_plugins = self.plugins
         self.all_plugins = pyblish.api.discover()
         # Load collectors
         self.load_plugins(True)
         self.current_error = None
         # Process collectors load rest of plugins with collected instances
         self.collect()
-
-        self.was_discovered.emit()
-
-        for group, plugins_last in self.last_plugins.items():
-            for plugin_last in plugins_last:
-                if not plugin_last.optional:
-                    continue
-                for plugin_current in self.plugins.get(group, []):
-                    if plugin_current.label == plugin_last.label:
-                        if not plugin_current.optional:
-                            break
-                        setattr(plugin_current, 'active', plugin_last.active)
-                        break
-        self.last_plugins = list()
 
         self.pair_generator = None
         self.current_pair = (None, None)
