@@ -49,6 +49,8 @@ Type = QtCore.Qt.UserRole + 10
 Label = QtCore.Qt.DisplayRole + 0
 Families = QtCore.Qt.DisplayRole + 1
 Icon = QtCore.Qt.DisplayRole + 13
+Order = QtCore.Qt.UserRole + 62
+GroupObject = QtCore.Qt.UserRole + 63
 
 # The item has not been used
 IsIdle = QtCore.Qt.UserRole + 2
@@ -139,6 +141,7 @@ class Item(Abstract):
             Actions: "actions",
             IsOptional: "optional",
             Icon: "icon",
+            Order: "order",
 
             # GUI-only data
             Type: "_type",
@@ -228,6 +231,11 @@ class Plugin(Item):
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
+        # This is because of bug without known cause
+        # - on "reset" are called data for already removed indexes
+        if index.row() >= len(self.items):
+            return
+
         item = self.items[index.row()]
 
         if role == Data:
@@ -385,6 +393,10 @@ class Instance(Item):
         return super(Instance, self).append(item)
 
     def data(self, index, role):
+        # This is because of bug without known cause
+        # - on "reset" are called data for already removed indexes
+        if index.row() >= len(self.items):
+            return
         item = self.items[index.row()]
 
         if role == Data:
