@@ -1,5 +1,6 @@
 import pyblish
 
+from . import model
 from .vendor.Qt import QtWidgets, QtCore, __binding__
 from itertools import groupby
 
@@ -148,14 +149,16 @@ class Proxy(QtCore.QAbstractProxyModel):
 
         return node.data(role)
 
-    def setData(self, index, data, role):
-
-        source_idx = self.mapToSource(index)
+    def setData(self, in_index, data, role):
+        source_idx = self.mapToSource(in_index)
         if not source_idx.isValid():
             return
 
-        model = source_idx.model()
-        model.setData(index, data, role)
+        source_model = source_idx.model()
+        item = in_index.data(model.Object)
+        index = source_model.items.index(item)
+        index = source_model.createIndex(index, 0)
+        source_model.setData(index, data, role)
 
         if __binding__ in ("PyQt4", "PySide"):
             self.dataChanged.emit(index, index)
