@@ -50,6 +50,7 @@ Label = QtCore.Qt.DisplayRole + 0
 Families = QtCore.Qt.DisplayRole + 1
 Icon = QtCore.Qt.DisplayRole + 13
 Order = QtCore.Qt.UserRole + 62
+GroupObject = QtCore.Qt.UserRole + 63
 
 # The item has not been used
 IsIdle = QtCore.Qt.UserRole + 2
