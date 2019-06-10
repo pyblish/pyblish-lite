@@ -74,7 +74,7 @@ class Item(QtWidgets.QStyledItemDelegate):
         perspective_rect = QtCore.QRectF(body_rect)
         perspective_rect.setWidth(perspective_rect.height())
         perspective_rect.translate(
-            body_rect.width()-(perspective_rect.width()-5),
+            body_rect.width()-(perspective_rect.width()/2+2),
             0
         )
 
