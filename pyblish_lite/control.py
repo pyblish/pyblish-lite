@@ -188,19 +188,16 @@ class Controller(QtCore.QObject):
                 raise pyblish.logic.StopIteration("Stopped due to %s" % message)
 
             instances = pyblish.logic.instances_by_plugin(self.context, plugin)
-            if collect:
-                output.append([plugin, None])
-            elif plugin.__instanceEnabled__:
+
+            if plugin.__instanceEnabled__:
                 for instance in instances:
                     if instance.data.get("publish") is False:
                         pyblish.logic.log.debug("%s was inactive, skipping.." % instance)
                         continue
 
-                    output.append([plugin, instance])
-
+                    yield plugin, instance
             else:
-                output.append([plugin, None])
-        return output
+                yield plugin, None
 
     def iterate_and_process(self, plugins, is_collect=False):
         """ Iterating inserted plugins with current context.
@@ -213,7 +210,7 @@ class Controller(QtCore.QObject):
                 continue
             try:
                 self.about_to_process.emit(plug, instance)
-                if not is_collect:
+                if not is_collect and instance is not None:
                     if not instance.data.get("publish"):
                         continue
 
