@@ -210,7 +210,7 @@ class Controller(QtCore.QObject):
                 continue
             try:
                 self.about_to_process.emit(plug, instance)
-                if not is_collect:
+                if not is_collect and instance is not None:
                     if not instance.data.get("publish"):
                         continue
 
