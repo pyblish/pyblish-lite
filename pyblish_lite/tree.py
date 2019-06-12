@@ -172,9 +172,12 @@ class Proxy(QtCore.QAbstractProxyModel):
             return
 
         source_model = source_idx.model()
-        item = in_index.data(model.Object)
-        index = source_model.items.index(item)
-        index = source_model.createIndex(index, 0)
+        node = in_index.internalPointer()
+
+        if not node:
+            return
+
+        index = node.source_index
         source_model.setData(index, data, role)
 
         if __binding__ in ("PyQt4", "PySide"):
