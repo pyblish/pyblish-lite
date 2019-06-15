@@ -139,7 +139,7 @@ class Item(QtWidgets.QStyledItemDelegate):
             painter.setPen(QtGui.QPen(color))
 
             icon_rect = QtCore.QRectF(option.rect.adjusted(
-                label_rect.width() + 1, label_rect.height() / 3, 0, 0))
+                label_rect.width() - perspective_rect.width()/2, label_rect.height() / 3, 0, 0))
             painter.drawText(icon_rect, icons["action"])
 
             painter.restore()
