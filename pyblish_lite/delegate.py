@@ -75,6 +75,7 @@ class Item(QtWidgets.QStyledItemDelegate):
         perspective_icon = icons["angle-right"]
         perspective_rect = QtCore.QRectF(body_rect)
         perspective_rect.setWidth(perspective_rect.height())
+        perspective_rect.adjust(0, 3, 0, 0)
         perspective_rect.translate(
             body_rect.width()-(perspective_rect.width()/2+2),
             0
@@ -193,7 +194,7 @@ class Section(QtWidgets.QStyledItemDelegate):
 
         expander_rect = QtCore.QRectF(body_rect)
         expander_rect.setWidth(expander_rect.height())
-        expander_rect.adjust(6, 5, -6, -2)
+        expander_rect.adjust(6, 6, -8, -2)
 
         expander_color = colors["idle"]
 

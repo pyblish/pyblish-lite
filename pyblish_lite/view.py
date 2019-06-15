@@ -236,8 +236,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout(self)
 
         header_widget = QtWidgets.QWidget()
-
         toggle_button = QtWidgets.QToolButton(header_widget)
+        toggle_button.setMinimumHeight(50)
+
         font = toggle_button.font()
         font.setFamily('FontAwesome')
         font.setPointSize(26)
