@@ -239,6 +239,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
         toggle_button = QtWidgets.QToolButton(header_widget)
         font = toggle_button.font()
+        font.setFamily('FontAwesome')
         font.setPointSize(26)
         toggle_button.setFont(font)
         toggle_button.setText(delegate.icons["angle-left"])

@@ -32,6 +32,8 @@ fonts = {
     "h3": QtGui.QFont("Open Sans", 10 * scale_factor, 900),
     "h4": QtGui.QFont("Open Sans", 8 * scale_factor, 400),
     "h5": QtGui.QFont("Open Sans", 8 * scale_factor, 800),
+    "awesome6": QtGui.QFont("FontAwesome", 6 * scale_factor),
+    "awesome10": QtGui.QFont("FontAwesome", 10 * scale_factor),
     "smallAwesome": QtGui.QFont("FontAwesome", 8 * scale_factor),
     "largeAwesome": QtGui.QFont("FontAwesome", 16 * scale_factor),
 }
@@ -110,7 +112,7 @@ class Item(QtWidgets.QStyledItemDelegate):
         painter.save()
 
         # Draw perspective icon
-        painter.setFont(fonts["h4"])
+        painter.setFont(fonts["awesome10"])
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(perspective_rect, perspective_icon)
 
@@ -215,7 +217,7 @@ class Section(QtWidgets.QStyledItemDelegate):
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
 
-        painter.setFont(fonts['smallAwesome'])
+        painter.setFont(fonts['awesome6'])
         painter.setPen(QtGui.QPen(expander_color))
         painter.drawText(expander_rect, expander_icon)
 
