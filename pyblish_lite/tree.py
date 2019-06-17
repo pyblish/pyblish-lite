@@ -151,6 +151,12 @@ class Proxy(QtCore.QAbstractProxyModel):
 
             #  items in section
             for i, index in enumerate(group):
+                # Ignore plugins without compatible instances
+                if (
+                    index.data(model.Type).lower() == 'plugin' and
+                    not index.data(model.HasCompatible)
+                ):
+                    continue
                 proxy_item = ProxyItem(index)
                 section_item.addChild(proxy_item)
         self.endResetModel()
