@@ -73,6 +73,8 @@ ActionFailed = QtCore.Qt.UserRole + 17
 Docstring = QtCore.Qt.UserRole + 12
 PathModule = QtCore.Qt.UserRole + 17
 
+HasCompatible = QtCore.Qt.UserRole + 64
+
 LogRecord = QtCore.Qt.UserRole + 40
 ErrorRecord = QtCore.Qt.UserRole + 41
 # LOG RECORDS
@@ -206,7 +208,8 @@ class Plugin(Item):
             ActionIdle: "_action_idle",
             ActionFailed: "_action_failed",
             LogRecord: "_log",
-            ErrorRecord: "_error"
+            ErrorRecord: "_error",
+            HasCompatible: "hasCompatible"
         })
 
     def append(self, item):
@@ -228,6 +231,9 @@ class Plugin(Item):
         item._action_processing = False
         item._action_succeeded = False
         item._action_failed = False
+
+        item.hasCompatible = True
+
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
