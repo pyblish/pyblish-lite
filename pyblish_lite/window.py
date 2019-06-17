@@ -448,6 +448,10 @@ class Window(QtWidgets.QDialog):
             "modals": {
                 "details": details,
             },
+            "proxies": {
+                "plugins": right_proxy,
+                "instances": left_proxy
+            },
             "models": {
                 "instances": instance_model,
                 "plugins": plugin_model,
