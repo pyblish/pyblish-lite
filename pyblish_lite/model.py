@@ -26,6 +26,8 @@ Roles:
 from __future__ import unicode_literals
 import traceback
 
+import pyblish
+
 from . import settings
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, __binding__
@@ -359,6 +361,25 @@ class Plugin(Item):
             self.setData(index, not result["success"], HasFailed)
 
         super(Plugin, self).update_with_result(result)
+
+    def update_compatibility(self, context, instances):
+        for plugin in self.items:
+            has_compatible = False
+            if plugin.__instanceEnabled__:
+                compatibleInstances = pyblish.logic.instances_by_plugin(
+                    context, plugin
+                )
+                for instance in instances:
+                    if not instance.data.get("publish"):
+                        continue
+
+                    if instance in compatibleInstances:
+                        has_compatible = True
+                        break
+            else:
+                has_compatible = True
+
+            plugin.hasCompatible = has_compatible
 
 
 class Instance(Item):
