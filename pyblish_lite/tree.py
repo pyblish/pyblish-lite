@@ -147,8 +147,6 @@ class Proxy(QtCore.QAbstractProxyModel):
             # section
             label = self.groupby_label(section)
             section_item = ProxySectionItem(label)
-            self.root.addChild(section_item)
-
             #  items in section
             for i, index in enumerate(group):
                 # Ignore plugins without compatible instances
@@ -159,6 +157,9 @@ class Proxy(QtCore.QAbstractProxyModel):
                     continue
                 proxy_item = ProxyItem(index)
                 section_item.addChild(proxy_item)
+            # Add only sections with at least one child
+            if section_item.rowCount() > 0:
+                self.root.addChild(section_item)
         self.endResetModel()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
