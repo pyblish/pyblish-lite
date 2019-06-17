@@ -26,6 +26,8 @@ Roles:
 from __future__ import unicode_literals
 import traceback
 
+import pyblish
+
 from . import settings
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, __binding__
@@ -72,6 +74,8 @@ ActionIdle = QtCore.Qt.UserRole + 15
 ActionFailed = QtCore.Qt.UserRole + 17
 Docstring = QtCore.Qt.UserRole + 12
 PathModule = QtCore.Qt.UserRole + 17
+
+HasCompatible = QtCore.Qt.UserRole + 64
 
 LogRecord = QtCore.Qt.UserRole + 40
 ErrorRecord = QtCore.Qt.UserRole + 41
@@ -206,7 +210,8 @@ class Plugin(Item):
             ActionIdle: "_action_idle",
             ActionFailed: "_action_failed",
             LogRecord: "_log",
-            ErrorRecord: "_error"
+            ErrorRecord: "_error",
+            HasCompatible: "hasCompatible"
         })
 
     def append(self, item):
@@ -228,6 +233,9 @@ class Plugin(Item):
         item._action_processing = False
         item._action_succeeded = False
         item._action_failed = False
+
+        item.hasCompatible = True
+
         return super(Plugin, self).append(item)
 
     def data(self, index, role):
@@ -353,6 +361,25 @@ class Plugin(Item):
             self.setData(index, not result["success"], HasFailed)
 
         super(Plugin, self).update_with_result(result)
+
+    def update_compatibility(self, context, instances):
+        for plugin in self.items:
+            has_compatible = False
+            if plugin.__instanceEnabled__:
+                compatibleInstances = pyblish.logic.instances_by_plugin(
+                    context, plugin
+                )
+                for instance in instances:
+                    if not instance.data.get("publish"):
+                        continue
+
+                    if instance in compatibleInstances:
+                        has_compatible = True
+                        break
+            else:
+                has_compatible = True
+
+            plugin.hasCompatible = has_compatible
 
 
 class Instance(Item):

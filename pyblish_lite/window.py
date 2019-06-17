@@ -448,6 +448,10 @@ class Window(QtWidgets.QDialog):
             "modals": {
                 "details": details,
             },
+            "proxies": {
+                "plugins": right_proxy,
+                "instances": left_proxy
+            },
             "models": {
                 "instances": instance_model,
                 "plugins": plugin_model,
@@ -703,6 +707,7 @@ class Window(QtWidgets.QDialog):
                     "instance": index.data(model.Object)
                 }
             ))
+            self.update_compatibility()
 
         if index.data(model.Type) == "plugin":
             util.defer(100, lambda: self.controller.emit_(
@@ -817,6 +822,22 @@ class Window(QtWidgets.QDialog):
                 continue
             for plugin in value:
                 models["plugins"].append(plugin)
+
+    def update_compatibility(self):
+        models = self.data["models"]
+        proxies = self.data["proxies"]
+
+        instances = models["instances"].items
+        models["plugins"].update_compatibility(
+            self.controller.context, instances
+        )
+        proxies["plugins"].rebuild()
+
+        right_view = self.data['views']['right']
+        right_view_model = right_view.model()
+        for child in right_view_model.root.children():
+            child_idx = right_view_model.createIndex(child.row(), 0, child)
+            right_view.expand(child_idx)
 
     def on_was_reset(self):
         models = self.data["models"]
@@ -939,6 +960,7 @@ class Window(QtWidgets.QDialog):
         else:
             self.info(self.tr("Finished successfully!"))
 
+        self.update_compatibility()
     # -------------------------------------------------------------------------
     #
     # Functions

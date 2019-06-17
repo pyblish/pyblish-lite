@@ -98,20 +98,18 @@ class Controller(QtCore.QObject):
         plugins = pyblish.logic.plugins_by_targets(
             self.all_plugins, targets
         )
-
         for plugin in plugins:
-            if load_collector:
-                if plugin.order < (pyblish.api.CollectorOrder + 0.5):
+            if plugin.order < (pyblish.api.CollectorOrder + 0.5):
+                if load_collector:
                     collectors.append(plugin)
+                continue
+
+            if plugin.order < (pyblish.api.ValidatorOrder + 0.5):
+                validators.append(plugin)
+            elif plugin.order < (pyblish.api.ExtractorOrder + 0.5):
+                extractors.append(plugin)
             else:
-                if plugin.order < (pyblish.api.CollectorOrder + 0.5):
-                    continue
-                elif plugin.order < (pyblish.api.ValidatorOrder + 0.5):
-                    validators.append(plugin)
-                elif plugin.order < (pyblish.api.ExtractorOrder + 0.5):
-                    extractors.append(plugin)
-                else:
-                    conforms.append(plugin)
+                conforms.append(plugin)
 
         if not load_collector:
             collectors = self.plugins[self.PART_COLLECT]
@@ -187,14 +185,16 @@ class Controller(QtCore.QObject):
             if message:
                 raise pyblish.logic.StopIteration("Stopped due to %s" % message)
 
-            instances = pyblish.logic.instances_by_plugin(self.context, plugin)
-
             if plugin.__instanceEnabled__:
+                instances = pyblish.logic.instances_by_plugin(
+                    self.context, plugin
+                )
                 for instance in instances:
                     if instance.data.get("publish") is False:
-                        pyblish.logic.log.debug("%s was inactive, skipping.." % instance)
+                        pyblish.logic.log.debug(
+                            "%s was inactive, skipping.." % instance
+                        )
                         continue
-
                     yield plugin, instance
             else:
                 yield plugin, None
