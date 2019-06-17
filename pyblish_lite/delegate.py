@@ -32,6 +32,8 @@ fonts = {
     "h3": QtGui.QFont("Open Sans", 10 * scale_factor, 900),
     "h4": QtGui.QFont("Open Sans", 8 * scale_factor, 400),
     "h5": QtGui.QFont("Open Sans", 8 * scale_factor, 800),
+    "awesome6": QtGui.QFont("FontAwesome", 6 * scale_factor),
+    "awesome10": QtGui.QFont("FontAwesome", 10 * scale_factor),
     "smallAwesome": QtGui.QFont("FontAwesome", 8 * scale_factor),
     "largeAwesome": QtGui.QFont("FontAwesome", 16 * scale_factor),
 }
@@ -73,6 +75,7 @@ class Item(QtWidgets.QStyledItemDelegate):
         perspective_icon = icons["angle-right"]
         perspective_rect = QtCore.QRectF(body_rect)
         perspective_rect.setWidth(perspective_rect.height())
+        perspective_rect.adjust(0, 3, 0, 0)
         perspective_rect.translate(
             body_rect.width()-(perspective_rect.width()/2+2),
             0
@@ -110,7 +113,7 @@ class Item(QtWidgets.QStyledItemDelegate):
         painter.save()
 
         # Draw perspective icon
-        painter.setFont(fonts["h4"])
+        painter.setFont(fonts["awesome10"])
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(perspective_rect, perspective_icon)
 
@@ -136,7 +139,7 @@ class Item(QtWidgets.QStyledItemDelegate):
             painter.setPen(QtGui.QPen(color))
 
             icon_rect = QtCore.QRectF(option.rect.adjusted(
-                label_rect.width() + 1, label_rect.height() / 3, 0, 0))
+                label_rect.width() - perspective_rect.width()/2, label_rect.height() / 3, 0, 0))
             painter.drawText(icon_rect, icons["action"])
 
             painter.restore()
@@ -191,7 +194,7 @@ class Section(QtWidgets.QStyledItemDelegate):
 
         expander_rect = QtCore.QRectF(body_rect)
         expander_rect.setWidth(expander_rect.height())
-        expander_rect.adjust(6, 5, -6, -2)
+        expander_rect.adjust(6, 6, -8, -2)
 
         expander_color = colors["idle"]
 
@@ -215,7 +218,7 @@ class Section(QtWidgets.QStyledItemDelegate):
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
 
-        painter.setFont(fonts['smallAwesome'])
+        painter.setFont(fonts['awesome6'])
         painter.setPen(QtGui.QPen(expander_color))
         painter.drawText(expander_rect, expander_icon)
 
