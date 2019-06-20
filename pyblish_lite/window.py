@@ -775,11 +775,20 @@ class Window(QtWidgets.QDialog):
             index = instance_model.items.index(instance)
             index = instance_model.createIndex(index, 0)
             instance_model.setData(index, True, model.IsProcessing)
+            # emit layoutChanged to update GUI
+            instance_proxies = self.data["proxies"]["instances"]
+            instance_proxies.layoutChanged.emit()
 
         plugin_model = self.data["models"]["plugins"]
         index = plugin_model.items.index(plugin)
         index = plugin_model.createIndex(index, 0)
+
         plugin_model.setData(index, True, model.IsProcessing)
+
+        # emit layoutChanged to update GUI
+        plugin_proxies = self.data["proxies"]["plugins"]
+        plugin_proxies.layoutChanged.emit()
+
         self.info("%s %s" % (self.tr("Processing"), index.data(model.Label)))
 
     def on_plugin_action_menu_requested(self, pos):
