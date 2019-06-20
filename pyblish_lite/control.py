@@ -64,6 +64,8 @@ class Controller(QtCore.QObject):
         """Discover plug-ins and run collection"""
         self.validated = False
         self.extracted = False
+        self.publishing = False
+
         self.context = pyblish.api.Context()
 
         self.all_plugins = pyblish.api.discover()
@@ -73,8 +75,6 @@ class Controller(QtCore.QObject):
         # Process collectors load rest of plugins with collected instances
         self.collect()
 
-        self.pair_generator = None
-        self.current_pair = (None, None)
         self.current_error = None
 
         self.processing = {
@@ -84,7 +84,7 @@ class Controller(QtCore.QObject):
 
     def load_plugins(self, load_collector=False):
         self.test = pyblish.logic.registered_test()
-        self.state = {
+        self.processing = {
             "nextOrder": None,
             "ordersWithError": set()
         }
@@ -126,8 +126,17 @@ class Controller(QtCore.QObject):
     def on_validated(self):
         pyblish.api.emit("validated", context=self.context)
         self.was_validated.emit()
+        self.validated = True
+        if self.publishing:
+            self.extract()
+
+    def on_extracted(self):
+        self.extracted = True
+        if self.publishing:
+            self.publish()
 
     def on_published(self):
+        self.was_finished.emit()
         pyblish.api.emit("published", context=self.context)
         self.was_published.emit()
 
@@ -172,18 +181,20 @@ class Controller(QtCore.QObject):
 
         return result
 
-    def _plugin_collect(self, plugins, collect):
-        output = []
+    def _pair_yielder(self, plugins, collect):
         for plugin in plugins:
             if not plugin.active:
                 pyblish.logic.log.debug("%s was inactive, skipping.." % plugin)
                 continue
 
-            self.state["nextOrder"] = plugin.order
+            self.processing["nextOrder"] = plugin.order
 
-            message = self.test(**self.state)
+            message = self.test(**self.processing)
             if message:
                 raise pyblish.logic.StopIteration("Stopped due to %s" % message)
+
+            if not self.is_running:
+                raise StopIteration("Stopped")
 
             if plugin.__instanceEnabled__:
                 instances = pyblish.logic.instances_by_plugin(
@@ -199,28 +210,22 @@ class Controller(QtCore.QObject):
             else:
                 yield plugin, None
 
-    def iterate_and_process(self, plugins, is_collect=False):
+    def iterate_and_process(
+        self, plugins, on_finished=lambda: None, is_collect=False
+    ):
         """ Iterating inserted plugins with current context.
         Collectors do not contain instances, they are None when collecting!
         This process don't stop on one
         """
-        for pair in self._plugin_collect(plugins, is_collect):
-            plug, instance = pair
-            if not plug.active:
-                continue
+        def on_next():
+            if self.current_pair == (None, None):
+                return util.defer(100, on_finished_)
+            self.about_to_process.emit(*self.current_pair)
+            util.defer(100, on_process)
+
+        def on_process():
             try:
-                self.about_to_process.emit(plug, instance)
-                if not is_collect and instance is not None:
-                    if not instance.data.get("publish"):
-                        continue
-
-                self.processing["nextOrder"] = plug.order
-
-                if self.test(**self.processing):
-                    raise StopIteration(
-                        "Stopped due to %s" % test(**self.processing)
-                    )
-                result = self._process(plug, instance)
+                result = self._process(*self.current_pair)
 
                 if result["error"] is not None:
                     self.current_error = result["error"]
@@ -228,52 +233,86 @@ class Controller(QtCore.QObject):
                 self.was_processed.emit(result)
             except Exception:
                 exc_type, exc_msg, exc_tb = sys.exc_info()
-                util.u_print(u"An unexpected error occurred:\n %s" % exc_msg)
+                return util.defer(
+                    500, lambda: on_unexpected_error(error=exc_msg)
+                )
+            try:
+                self.current_pair = next(self.pair_generator)
+
+            except StopIteration as e:
+                # All pairs were processed successfully!
+                self.current_pair = (None, None)
+                return util.defer(500, on_finished_)
+
+            except Exception as e:
+                # This is a bug
+                exc_type, exc_msg, exc_tb = sys.exc_info()
+                self.current_pair = (None, None)
+                return util.defer(
+                    500, lambda: on_unexpected_error(error=exc_msg)
+                )
+
+            util.defer(10, on_next)
+
+        def on_unexpected_error(error):
+            util.u_print(u"An unexpected error occurred:\n %s" % error)
+            return util.defer(500, on_finished_)
+
+        def on_finished_():
+            on_finished()
+
+        self.is_running = True
+        self.pair_generator = self._pair_yielder(plugins, is_collect)
+        self.current_pair = next(self.pair_generator, (None, None))
+        util.defer(10, on_next)
 
     def collect(self):
         """ Iterate and process Collect plugins
         - load_plugins method is launched again when finished
         """
-        self.iterate_and_process(self.plugins[self.PART_COLLECT], True)
+        self.iterate_and_process(
+            self.plugins[self.PART_COLLECT], self.was_reset.emit, True
+        )
 
         self.load_plugins()
-        self.was_reset.emit()
-        self.was_finished.emit()
 
     def validate(self):
         """ Iterate and process Validate plugins
         - self.validated is set to True when done so we know was processed
         """
-        self.iterate_and_process(self.plugins[self.PART_VALIDATE])
-        self.validated = True
-
-        self.on_validated()
-        self.was_finished.emit()
+        self.iterate_and_process(
+            self.plugins[self.PART_VALIDATE], self.on_validated
+        )
 
     def extract(self):
         """ Iterate and process Extract plugins
         """
         if not self.validated:
             self.validate()
+            return
         if self.current_error:
+            self.on_published()
             return
 
-        self.iterate_and_process(self.plugins[self.PART_EXTRACT])
-        self.extracted = True
+        self.iterate_and_process(
+            self.plugins[self.PART_EXTRACT], self.on_extracted
+        )
 
     def publish(self):
         """ Iterate and process Conform(Integrate) plugins
         - won't start if any extractor fails
         """
+        self.publishing = True
         if not self.extracted:
             self.extract()
+            return
         if self.current_error:
+            self.on_published()
             return
 
-        self.iterate_and_process(self.plugins[self.PART_CONFORM])
-
-        self.on_published()
-        self.was_finished.emit()
+        self.iterate_and_process(
+            self.plugins[self.PART_CONFORM], self.on_published
+        )
 
     def cleanup(self):
         """Forcefully delete objects from memory
