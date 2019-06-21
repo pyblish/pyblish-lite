@@ -67,3 +67,18 @@ def u_print(msg, **kwargs):
             pass
         msg = msg.encode(encoding or 'utf-8', 'replace')
     print(msg, **kwargs)
+
+
+def collect_families_from_instances(instances, only_active=False):
+    all_families = set()
+    for instance in instances:
+        if only_active:
+            if instance.data.get("publish") is False:
+                continue
+        family = instance.data.get("family")
+        families = [family] if family else []
+        families += instance.data.get("families", [])
+        for family in families:
+            all_families.add(family)
+
+    return list(all_families)

@@ -755,6 +755,13 @@ class Window(QtWidgets.QDialog):
         self.info("Stopping..")
         self.controller.is_running = False
 
+        buttons = self.data["buttons"]
+        buttons["reset"].show()
+        buttons["play"].hide()
+        buttons["stop"].hide()
+
+        self.on_finished()
+
     def on_comment_entered(self):
         """The user has typed a comment"""
         text_edit = self.findChild(QtWidgets.QWidget, "CommentBox")
@@ -775,11 +782,20 @@ class Window(QtWidgets.QDialog):
             index = instance_model.items.index(instance)
             index = instance_model.createIndex(index, 0)
             instance_model.setData(index, True, model.IsProcessing)
+            # emit layoutChanged to update GUI
+            instance_proxies = self.data["proxies"]["instances"]
+            instance_proxies.layoutChanged.emit()
 
         plugin_model = self.data["models"]["plugins"]
         index = plugin_model.items.index(plugin)
         index = plugin_model.createIndex(index, 0)
+
         plugin_model.setData(index, True, model.IsProcessing)
+
+        # emit layoutChanged to update GUI
+        plugin_proxies = self.data["proxies"]["plugins"]
+        plugin_proxies.layoutChanged.emit()
+
         self.info("%s %s" % (self.tr("Processing"), index.data(model.Label)))
 
     def on_plugin_action_menu_requested(self, pos):
@@ -812,14 +828,9 @@ class Window(QtWidgets.QDialog):
 
         menu.popup(self.data["views"]["right"].viewport().mapToGlobal(pos))
 
-    def on_was_discovered(self, load_collector):
+    def on_was_discovered(self):
         models = self.data["models"]
         for key, value in self.controller.plugins.items():
-            if (
-                (load_collector and key!=self.controller.PART_COLLECT) or
-                (not load_collector and key == self.controller.PART_COLLECT)
-            ):
-                continue
             for plugin in value:
                 models["plugins"].append(plugin)
 
