@@ -28,7 +28,7 @@ import traceback
 
 import pyblish
 
-from . import settings
+from . import settings, util
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, __binding__
 from .vendor.six import text_type
@@ -363,6 +363,7 @@ class Plugin(Item):
         super(Plugin, self).update_with_result(result)
 
     def update_compatibility(self, context, instances):
+        families = util.collect_families_from_instances(context, True)
         for plugin in self.items:
             has_compatible = False
             if plugin.__instanceEnabled__:
@@ -377,7 +378,9 @@ class Plugin(Item):
                         has_compatible = True
                         break
             else:
-                has_compatible = True
+                plugins = pyblish.logic.plugins_by_families([plugin,], families)
+                if plugins:
+                    has_compatible = True
 
             plugin.hasCompatible = has_compatible
 
