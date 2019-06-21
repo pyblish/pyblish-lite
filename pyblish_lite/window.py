@@ -743,6 +743,13 @@ class Window(QtWidgets.QDialog):
         self.info("Stopping..")
         self.controller.is_running = False
 
+        buttons = self.data["buttons"]
+        buttons["reset"].show()
+        buttons["play"].hide()
+        buttons["stop"].hide()
+
+        self.on_finished()
+
     def on_comment_entered(self):
         """The user has typed a comment"""
         text_edit = self.findChild(QtWidgets.QWidget, "CommentBox")
