@@ -25,7 +25,7 @@ class Controller(QtCore.QObject):
     # Emitted for each process
     was_processed = QtCore.Signal(dict)
 
-    was_discovered = QtCore.Signal(bool)
+    was_discovered = QtCore.Signal()
     was_reset = QtCore.Signal()
     was_validated = QtCore.Signal()
     was_published = QtCore.Signal()
@@ -68,9 +68,8 @@ class Controller(QtCore.QObject):
 
         self.context = pyblish.api.Context()
 
-        self.all_plugins = pyblish.api.discover()
         # Load collectors
-        self.load_plugins(True)
+        self.load_plugins()
         self.current_error = None
         # Process collectors load rest of plugins with collected instances
         self.collect()
@@ -82,37 +81,28 @@ class Controller(QtCore.QObject):
             "ordersWithError": set()
         }
 
-    def load_plugins(self, load_collector=False):
+    def load_plugins(self):
         self.test = pyblish.logic.registered_test()
         self.processing = {
             "nextOrder": None,
             "ordersWithError": set()
         }
 
-        targets = pyblish.logic.registered_targets() or ["default"]
-
         collectors = []
         validators = []
         extractors = []
         conforms = []
-        plugins = pyblish.logic.plugins_by_targets(
-            self.all_plugins, targets
-        )
+        plugins = pyblish.api.discover()
+
         for plugin in plugins:
             if plugin.order < (pyblish.api.CollectorOrder + 0.5):
-                if load_collector:
-                    collectors.append(plugin)
-                continue
-
-            if plugin.order < (pyblish.api.ValidatorOrder + 0.5):
+                collectors.append(plugin)
+            elif plugin.order < (pyblish.api.ValidatorOrder + 0.5):
                 validators.append(plugin)
             elif plugin.order < (pyblish.api.ExtractorOrder + 0.5):
                 extractors.append(plugin)
             else:
                 conforms.append(plugin)
-
-        if not load_collector:
-            collectors = self.plugins[self.PART_COLLECT]
 
         self.plugins = {
             self.PART_COLLECT: collectors,
@@ -121,10 +111,9 @@ class Controller(QtCore.QObject):
             self.PART_CONFORM: conforms
         }
 
-        self.was_discovered.emit(load_collector)
+        self.was_discovered.emit()
 
     def on_collected(self):
-        self.load_plugins()
         self.was_reset.emit()
 
     def on_validated(self):
@@ -186,6 +175,9 @@ class Controller(QtCore.QObject):
         return result
 
     def _pair_yielder(self, plugins):
+        targets = pyblish.logic.registered_targets() or ["default"]
+        plugins = pyblish.logic.plugins_by_targets(plugins, targets)
+
         for plugin in plugins:
             if not plugin.active:
                 pyblish.logic.log.debug("%s was inactive, skipping.." % plugin)
