@@ -533,18 +533,6 @@ class Window(QtWidgets.QDialog):
         controller.was_acted.connect(left_view.expandAll)
         controller.was_finished.connect(left_view.expandAll)
 
-        controller.was_reset.connect(right_proxy.rebuild)
-        controller.was_validated.connect(right_proxy.rebuild)
-        controller.was_published.connect(right_proxy.rebuild)
-        controller.was_acted.connect(right_proxy.rebuild)
-        controller.was_finished.connect(right_proxy.rebuild)
-
-        controller.was_reset.connect(right_view.expandAll)
-        controller.was_validated.connect(right_view.expandAll)
-        controller.was_published.connect(right_view.expandAll)
-        controller.was_acted.connect(right_view.expandAll)
-        controller.was_finished.connect(right_view.expandAll)
-
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
         # right away.
@@ -847,6 +835,13 @@ class Window(QtWidgets.QDialog):
         for child in right_view_model.root.children():
             child_idx = right_view_model.createIndex(child.row(), 0, child)
             right_view.expand(child_idx)
+            all_succeeded = True
+            for plugin_item in child.children():
+                if not plugin_item.data(model.HasSucceeded):
+                    all_succeeded = False
+                    break
+            if all_succeeded:
+                right_view.collapse(child_idx)
 
     def on_was_reset(self):
         models = self.data["models"]
