@@ -123,6 +123,10 @@ class Controller(QtCore.QObject):
 
         self.was_discovered.emit(load_collector)
 
+    def on_collected(self):
+        self.load_plugins()
+        self.was_reset.emit()
+
     def on_validated(self):
         pyblish.api.emit("validated", context=self.context)
         self.was_validated.emit()
@@ -181,7 +185,7 @@ class Controller(QtCore.QObject):
 
         return result
 
-    def _pair_yielder(self, plugins, collect):
+    def _pair_yielder(self, plugins):
         for plugin in plugins:
             if not plugin.active:
                 pyblish.logic.log.debug("%s was inactive, skipping.." % plugin)
@@ -211,7 +215,7 @@ class Controller(QtCore.QObject):
                 yield plugin, None
 
     def iterate_and_process(
-        self, plugins, on_finished=lambda: None, is_collect=False
+        self, plugins, on_finished=lambda: None
     ):
         """ Iterating inserted plugins with current context.
         Collectors do not contain instances, they are None when collecting!
@@ -266,7 +270,7 @@ class Controller(QtCore.QObject):
                 on_finished()
 
         self.is_running = True
-        self.pair_generator = self._pair_yielder(plugins, is_collect)
+        self.pair_generator = self._pair_yielder(plugins)
         self.current_pair = next(self.pair_generator, (None, None))
         util.defer(10, on_next)
 
@@ -275,10 +279,8 @@ class Controller(QtCore.QObject):
         - load_plugins method is launched again when finished
         """
         self.iterate_and_process(
-            self.plugins[self.PART_COLLECT], self.was_reset.emit, True
+            self.plugins[self.PART_COLLECT], self.on_collected
         )
-
-        self.load_plugins()
 
     def validate(self):
         """ Iterate and process Validate plugins
