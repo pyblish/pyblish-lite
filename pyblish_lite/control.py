@@ -212,6 +212,12 @@ class Controller(QtCore.QObject):
                         continue
                     yield plugin, instance
             else:
+                families = util.collect_families_from_instances(
+                    self.context, only_active=True
+                )
+                plugins = pyblish.logic.plugins_by_families([plugin,], families)
+                if not plugins:
+                    continue
                 yield plugin, None
 
     def iterate_and_process(
