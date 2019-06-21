@@ -259,7 +259,11 @@ class Controller(QtCore.QObject):
             return util.defer(500, on_finished_)
 
         def on_finished_():
-            on_finished()
+            ''' if `self.is_running` is False then processing was stopped by
+            Stop button so we do not want to execute on_finish method!
+            '''
+            if self.is_running:
+                on_finished()
 
         self.is_running = True
         self.pair_generator = self._pair_yielder(plugins, is_collect)
