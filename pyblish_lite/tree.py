@@ -5,7 +5,7 @@ from .vendor.Qt import QtWidgets, QtCore, __binding__
 from itertools import groupby
 
 
-class Item(object):
+class TreeItem(object):
     """Base class for an Item in the Group By Proxy"""
     def __init__(self):
         self._parent = None
@@ -42,7 +42,7 @@ class Item(object):
         return None
 
 
-class ProxyItem(Item):
+class ProxyItem(TreeItem):
     def __init__(self, source_index):
         super(ProxyItem, self).__init__()
         self.source_index = source_index
@@ -51,11 +51,11 @@ class ProxyItem(Item):
         return self.source_index.data(role)
 
 
-class ProxySectionItem(Item):
+class ProxySectionItem(TreeItem):
     def __init__(self, label):
         self._expanded = True
         super(ProxySectionItem, self).__init__()
-        self.label = "{0}".format(label)
+        self.label = str(label)
 
     def setIsExpanded(self, in_bool):
         self._expanded = in_bool
@@ -92,7 +92,7 @@ class Proxy(QtCore.QAbstractProxyModel):
 
     def __init__(self):
         super(Proxy, self).__init__()
-        self.root = Item()
+        self.root = TreeItem()
         self.group_role = QtCore.Qt.DisplayRole
 
     def set_group_role(self, role):
@@ -103,7 +103,7 @@ class Proxy(QtCore.QAbstractProxyModel):
             QtCore.Qt.ItemIsEnabled |
             QtCore.Qt.ItemIsSelectable
         )
-        
+
     def groupby_key(self, source_index):
         """Returns the data to group by.
         Override this in subclasses to group by customized data instead of
@@ -134,7 +134,7 @@ class Proxy(QtCore.QAbstractProxyModel):
         """
         self.beginResetModel()
         # Start with new root node
-        self.root = Item()
+        self.root = TreeItem()
 
         # Get indices from source model
         source = self.sourceModel()
