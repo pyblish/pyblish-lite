@@ -395,7 +395,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 80)
 
 
-class Terminal(QtWidgets.QStyledItemDelegate):
+class TerminalItem(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
     HEIGHT = 20
     def paint(self, painter, option, index):
@@ -404,8 +404,8 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         icon_rect = QtCore.QRectF(option.rect).adjusted(3, 3, -3, -3)
         icon_rect.setWidth(14)
         icon_rect.setHeight(14)
-
         icon_color = colors["idle"]
+
         icon = icons[index.data(model.Type)]
 
         if index.data(model.Type) == "record":
@@ -422,9 +422,9 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         assert label_rect.width() > 0
 
         label = index.data(model.Label)
-        label = metrics.elidedText(label,
-                                   QtCore.Qt.ElideRight,
-                                   label_rect.width() - 20)
+        label = metrics.elidedText(
+            label, QtCore.Qt.ElideRight, label_rect.width() - 20
+        )
 
         font_color = colors["idle"]
 
