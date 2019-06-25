@@ -551,3 +551,22 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
         document.setTextWidth(option.rect.width())
 
         return QtCore.QSize(document.idealWidth(), document.size().height())
+
+
+class LogsAndDetails(TerminalDetail):
+    """Generic delegate for model items in proxy tree view"""
+    def paint(self, painter, option, index):
+
+        index_model = index.model()
+        if index_model.is_header(index):
+            TerminalItem().paint(painter, option, index)
+            return
+
+        super(LogsAndDetails, self).paint(painter, option, index)
+
+    def sizeHint(self, option, index):
+        index_model = index.model()
+        if index_model.is_header(index):
+            return TerminalItem().sizeHint(option, index)
+
+        return super(LogsAndDetails, self).sizeHint(option, index)
