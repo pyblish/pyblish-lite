@@ -89,7 +89,7 @@ LogLineNumber = QtCore.Qt.UserRole + 54
 LogMessage = QtCore.Qt.UserRole + 55
 LogMilliseconds = QtCore.Qt.UserRole + 56
 LogLevel = QtCore.Qt.UserRole + 61
-
+LogSize = QtCore.Qt.UserRole + 62
 # EXCEPTIONS
 
 ExcFname = QtCore.Qt.UserRole + 57
@@ -491,6 +491,8 @@ class Terminal(Abstract):
         self.schema = {
             Type: "type",
             Label: "label",
+
+            LogSize: 'size',
 
             # Records
             LogThreadName: "threadName",
