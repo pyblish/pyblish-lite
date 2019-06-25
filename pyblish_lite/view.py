@@ -71,26 +71,84 @@ class Item(QtWidgets.QListView):
         return super(Item, self).mouseReleaseEvent(event)
 
 
-class LogView(QtWidgets.QListView):
-
-    # An item is requesting details
-    inspected = QtCore.Signal("QModelIndex")
+class TerminalView(QtWidgets.QTreeView):
+    # An item is requesting to be toggled, with optional forced-state
+    toggled = QtCore.Signal("QModelIndex", object)
 
     def __init__(self, parent=None):
-        super(LogView, self).__init__(parent)
+        super(TerminalView, self).__init__(parent)
 
         self.horizontalScrollBar().hide()
         self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.setSelectionMode(QtWidgets.QListView.ExtendedSelection)
-        self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollPerPixel)
+        self.setHeaderHidden(True)
+        self.setRootIsDecorated(False)
+        self.setIndentation(0)
 
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.MidButton:
-            index = self.indexAt(event.pos())
-            self.inspected.emit(index) if index.isValid() else None
+        self.expanded.connect(self.change_expanded)
+        self.collapsed.connect(self.change_expanded)
 
-        return super(LogView, self).mousePressEvent(event)
+    def change_expanded(self, index):
+        group = index.data(model.GroupObject)
+        if group:
+            group.setIsExpanded(self.isExpanded(index))
+
+    def event(self, event):
+        if not event.type() == QtCore.QEvent.KeyPress:
+            return super(TerminalView, self).event(event)
+
+        elif event.key() == QtCore.Qt.Key_Space:
+            for index in self.selectionModel().selectedIndexes():
+                if self.isExpanded(index):
+                    self.collapse(index)
+                else:
+                    self.expand(index)
+
+            return True
+
+        elif event.key() == QtCore.Qt.Key_Backspace:
+            for index in self.selectionModel().selectedIndexes():
+                self.collapse(index)
+
+            return True
+
+        elif event.key() == QtCore.Qt.Key_Return:
+            for index in self.selectionModel().selectedIndexes():
+                self.expand(index)
+
+            return True
+
+        return super(TerminalView, self).event(event)
+
+    def focusOutEvent(self, event):
+        self.selectionModel().clear()
+
+    def leaveEvent(self, event):
+        self._inspecting = False
+        super(TerminalView, self).leaveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            indexes = self.selectionModel().selectedIndexes()
+            if len(indexes) == 1:
+                index = indexes[0]
+                if index.data(model.GroupObject):
+                    if self.isExpanded(index):
+                        self.collapse(index)
+                    else:
+                        self.expand(index)
+
+            # Deselect all group labels
+            if len(indexes) > 0:
+                for index in indexes:
+                    if index.data(model.GroupObject):
+                        self.selectionModel().select(
+                            index, QtCore.QItemSelectionModel.Deselect
+                        )
+
+        return super(TerminalView, self).mouseReleaseEvent(event)
 
     def rowsInserted(self, parent, start, end):
         """Automatically scroll to bottom on each new item added
@@ -102,7 +160,7 @@ class LogView(QtWidgets.QListView):
 
         """
 
-        super(LogView, self).rowsInserted(parent, start, end)
+        super(TerminalView, self).rowsInserted(parent, start, end)
 
         # IMPORTANT: This must be done *after* the superclass to get
         # an accurate value of the delegate's height.
