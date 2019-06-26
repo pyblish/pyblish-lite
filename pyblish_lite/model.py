@@ -366,7 +366,10 @@ class Plugin(Item):
         families = util.collect_families_from_instances(context, True)
         for plugin in self.items:
             has_compatible = False
-            if plugin.__instanceEnabled__:
+            # A plugin should always show if it has processed.
+            if plugin._has_processed:
+                has_compatible = True
+            elif plugin.__instanceEnabled__:
                 compatibleInstances = pyblish.logic.instances_by_plugin(
                     context, plugin
                 )
