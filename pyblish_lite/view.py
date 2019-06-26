@@ -448,27 +448,28 @@ class PerspectiveWidget(QtWidgets.QWidget):
             error_traceback = error['traceback']
             len_records += 1
 
-        rec_widget = LogView(self.records.content_widget)
-        rec_delegate = delegate.Terminal()
+        rec_delegate = delegate.LogsAndDetails()
+        rec_view = TerminalView()
+        rec_view.setItemDelegate(rec_delegate)
+
         rec_model = model.Terminal()
+
+        rec_proxy = model.TerminalProxy()
+        rec_proxy.setSourceModel(rec_model)
+
+        rec_view.setModel(rec_proxy)
+
         data = {
             'records': records,
             'error': error
         }
-
-        height = 20
-        if len_records > 0:
-            height = len_records*rec_delegate.HEIGHT
-        rec_widget.setMinimumHeight(height)
-        rec_widget.setMaximumHeight(height)
-
         rec_model.update_with_result(data)
-        rec_widget.setItemDelegate(rec_delegate)
-        rec_widget.setModel(rec_model)
+        rec_proxy.rebuild()
+
         self.records.button_toggle.setText(
             '{} ({})'.format(self.l_rec, len_records)
         )
-        self.records.set_content(rec_widget)
+        self.records.set_content(rec_view)
         self.records.toggle_content(len_records > 0)
 
         trc_lines = []

@@ -555,6 +555,8 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
 
 class LogsAndDetails(TerminalDetail):
     """Generic delegate for model items in proxy tree view"""
+    HEIGHT = TerminalItem.HEIGHT
+    
     def paint(self, painter, option, index):
 
         index_model = index.model()
