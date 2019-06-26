@@ -381,7 +381,7 @@ class Plugin(Item):
                         has_compatible = True
                         break
             else:
-                plugins = pyblish.logic.plugins_by_families([plugin,], families)
+                plugins = pyblish.logic.plugins_by_families([plugin], families)
                 if plugins:
                     has_compatible = True
 
