@@ -5,44 +5,7 @@ from .vendor.Qt import QtWidgets, QtCore, __binding__
 from itertools import groupby
 
 
-class TreeItem(object):
-    """Base class for an Item in the Group By Proxy"""
-    def __init__(self):
-        self._parent = None
-        self._children = list()
-
-    def parent(self):
-        return self._parent
-
-    def addChild(self, node):
-        node._parent = self
-        self._children.append(node)
-
-    def rowCount(self):
-        return len(self._children)
-
-    def row(self):
-
-        parent = self.parent()
-        if not parent:
-            return 0
-        else:
-            return self.parent().children().index(self)
-
-    def columnCount(self):
-        return 1
-
-    def child(self, row):
-        return self._children[row]
-
-    def children(self):
-        return self._children
-
-    def data(self, role=QtCore.Qt.DisplayRole):
-        return None
-
-
-class ProxyItem(TreeItem):
+class ProxyItem(model.TreeItem):
     def __init__(self, source_index):
         super(ProxyItem, self).__init__()
         self.source_index = source_index
@@ -51,7 +14,7 @@ class ProxyItem(TreeItem):
         return self.source_index.data(role)
 
 
-class ProxySectionItem(TreeItem):
+class ProxySectionItem(model.TreeItem):
     def __init__(self, label):
         self._expanded = True
         super(ProxySectionItem, self).__init__()
@@ -92,7 +55,7 @@ class Proxy(QtCore.QAbstractProxyModel):
 
     def __init__(self):
         super(Proxy, self).__init__()
-        self.root = TreeItem()
+        self.root = model.TreeItem()
         self.group_role = QtCore.Qt.DisplayRole
 
     def set_group_role(self, role):

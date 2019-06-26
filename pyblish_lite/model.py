@@ -32,7 +32,6 @@ from . import settings, util
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, __binding__
 from .vendor.six import text_type
-from .tree import TreeItem
 
 # GENERAL
 
@@ -748,6 +747,43 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return super(ProxyModel, self).rowCount(parent)
+
+
+class TreeItem(object):
+    """Base class for an Item in the Group By Proxy"""
+    def __init__(self):
+        self._parent = None
+        self._children = list()
+
+    def parent(self):
+        return self._parent
+
+    def addChild(self, node):
+        node._parent = self
+        self._children.append(node)
+
+    def rowCount(self):
+        return len(self._children)
+
+    def row(self):
+
+        parent = self.parent()
+        if not parent:
+            return 0
+        else:
+            return self.parent().children().index(self)
+
+    def columnCount(self):
+        return 1
+
+    def child(self, row):
+        return self._children[row]
+
+    def children(self):
+        return self._children
+
+    def data(self, role=QtCore.Qt.DisplayRole):
+        return None
 
 
 class ProxyTerminalItem(TreeItem):
