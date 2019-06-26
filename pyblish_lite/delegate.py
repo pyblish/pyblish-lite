@@ -476,7 +476,10 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
         html_text = ''
         for role, title in self.show_roles.items():
             text = index.model().data(index, role)
-            if not text:
+            # TODO Fix this issue:
+            # Maya and Nuke have LogFilename and LogPath in strange str object.
+            # When printed, empty string is show and value is equal to <string>
+            if not text or text == '<string>':
                 continue
 
             text = str(text).replace('\n', '<br/>')

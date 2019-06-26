@@ -557,7 +557,7 @@ class Terminal(Abstract):
                 "filename": record.filename,
                 "pathname": record.pathname,
                 "lineno": record.lineno,
-                "msg": record.msg,
+                "msg": text_type(record.msg),
                 "msecs": record.msecs,
                 "levelname": record.levelname,
             })
