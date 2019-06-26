@@ -97,7 +97,7 @@ class Proxy(QtCore.QAbstractProxyModel):
         """
         self.beginResetModel()
         # Start with new root node
-        self.root = TreeItem()
+        self.root = model.TreeItem()
 
         # Get indices from source model
         source = self.sourceModel()
