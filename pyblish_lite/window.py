@@ -163,9 +163,16 @@ class Window(QtWidgets.QDialog):
 
         terminal_container = QtWidgets.QWidget()
 
-        terminal_delegate = delegate.Terminal()
-        terminal_view = view.LogView()
+        terminal_delegate = delegate.LogsAndDetails()
+        terminal_view = view.TerminalView()
         terminal_view.setItemDelegate(terminal_delegate)
+
+        terminal_model = model.Terminal()
+
+        terminal_proxy = model.TerminalProxy()
+        terminal_proxy.setSourceModel(terminal_model)
+
+        terminal_view.setModel(terminal_proxy)
 
         layout = QtWidgets.QVBoxLayout(terminal_container)
         layout.addWidget(terminal_view)
@@ -367,12 +374,10 @@ class Window(QtWidgets.QDialog):
 
         instance_model = model.Instance()
         plugin_model = model.Plugin()
-        terminal_model = model.Terminal()
 
         filter_model = model.ProxyModel(plugin_model)
 
         artist_view.setModel(instance_model)
-        terminal_view.setModel(terminal_model)
 
         left_proxy = tree.FamilyGroupProxy()
         left_proxy.setSourceModel(instance_model)
@@ -450,7 +455,8 @@ class Window(QtWidgets.QDialog):
             },
             "proxies": {
                 "plugins": right_proxy,
-                "instances": left_proxy
+                "instances": left_proxy,
+                "terminal": terminal_proxy
             },
             "models": {
                 "instances": instance_model,
@@ -554,7 +560,6 @@ class Window(QtWidgets.QDialog):
         artist_view.inspected.connect(self.on_item_inspected)
         left_view.inspected.connect(self.on_item_inspected)
         right_view.inspected.connect(self.on_item_inspected)
-        terminal_view.inspected.connect(self.on_item_inspected)
 
         reset.clicked.connect(self.on_reset_clicked)
         validate.clicked.connect(self.on_validate_clicked)
@@ -936,6 +941,8 @@ class Window(QtWidgets.QDialog):
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
+
+        self.data['proxies']['terminal'].rebuild()
 
     def on_was_acted(self, result):
         buttons = self.data["buttons"]

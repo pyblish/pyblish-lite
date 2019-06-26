@@ -89,7 +89,7 @@ LogLineNumber = QtCore.Qt.UserRole + 54
 LogMessage = QtCore.Qt.UserRole + 55
 LogMilliseconds = QtCore.Qt.UserRole + 56
 LogLevel = QtCore.Qt.UserRole + 61
-
+LogSize = QtCore.Qt.UserRole + 62
 # EXCEPTIONS
 
 ExcFname = QtCore.Qt.UserRole + 57
@@ -495,6 +495,8 @@ class Terminal(Abstract):
             Type: "type",
             Label: "label",
 
+            LogSize: 'size',
+
             # Records
             LogThreadName: "threadName",
             LogName: "name",
@@ -558,7 +560,7 @@ class Terminal(Abstract):
                 "filename": record.filename,
                 "pathname": record.pathname,
                 "lineno": record.lineno,
-                "msg": record.msg,
+                "msg": text_type(record.msg),
                 "msecs": record.msecs,
                 "levelname": record.levelname,
             })
@@ -748,3 +750,214 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return super(ProxyModel, self).rowCount(parent)
+
+
+class TreeItem(object):
+    """Base class for an Item in the Group By Proxy"""
+    def __init__(self):
+        self._parent = None
+        self._children = list()
+
+    def parent(self):
+        return self._parent
+
+    def addChild(self, node):
+        node._parent = self
+        self._children.append(node)
+
+    def rowCount(self):
+        return len(self._children)
+
+    def row(self):
+
+        parent = self.parent()
+        if not parent:
+            return 0
+        else:
+            return self.parent().children().index(self)
+
+    def columnCount(self):
+        return 1
+
+    def child(self, row):
+        return self._children[row]
+
+    def children(self):
+        return self._children
+
+    def data(self, role=QtCore.Qt.DisplayRole):
+        return None
+
+
+class ProxyTerminalItem(TreeItem):
+    def __init__(self, source_index):
+        self._expanded = True
+        super(ProxyTerminalItem, self).__init__()
+        self.model_index = source_index
+
+    def setIsExpanded(self, in_bool):
+        self._expanded = in_bool
+
+    @property
+    def expanded(self):
+        return self._expanded
+
+    def data(self, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+            return self.model_index.data(Label)
+
+        elif role == GroupObject:
+            return self
+
+        return self.model_index.data(role)
+
+
+class ProxyTerminalDetail(TreeItem):
+    def __init__(self, source_index):
+        super(ProxyTerminalDetail, self).__init__()
+        self.source_index = source_index
+
+    def data(self, role=QtCore.Qt.DisplayRole):
+        return self.source_index.data(role)
+
+
+class TerminalProxy(QtCore.QAbstractProxyModel):
+    """Proxy that groups by based on a specific role
+    This assumes the source data is a flat list and not a tree.
+    """
+
+    def __init__(self):
+        super(TerminalProxy, self).__init__()
+        self.root = TreeItem()
+
+    def flags(self, index):
+        return (
+            QtCore.Qt.ItemIsEnabled |
+            QtCore.Qt.ItemIsSelectable
+        )
+
+    def rebuild(self):
+        """Update proxy sections and items
+        This should be called after changes in the source model that require
+        changes in this list (for example new indices, less indices or update
+        sections)
+        """
+        self.beginResetModel()
+        # Start with new root node
+        self.root = TreeItem()
+
+        # Get indices from source model
+        source = self.sourceModel()
+        source_rows = source.rowCount()
+        source_indexes = [source.index(i, 0) for i in range(source_rows)]
+
+        for index in source_indexes:
+            log_label = ProxyTerminalItem(index)
+            if index.data(LogMessage) or index.data(Type)=='error':
+                log_item = ProxyTerminalDetail(index)
+                log_label.addChild(log_item)
+            self.root.addChild(log_label)
+
+        self.endResetModel()
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return
+
+        node = index.internalPointer()
+
+        if not node:
+            return
+
+        return node.data(role)
+
+    def setData(self, in_index, data, role):
+        source_idx = self.mapToSource(in_index)
+        if not source_idx.isValid():
+            return
+
+        source_model = source_idx.model()
+        node = in_index.internalPointer()
+
+        if not node:
+            return
+
+        index = node.source_index
+        source_model.setData(index, data, role)
+
+        if __binding__ in ("PyQt4", "PySide"):
+            self.dataChanged.emit(index, index)
+        else:
+            self.dataChanged.emit(index, index, [role])
+        self.layoutChanged.emit()
+
+    def is_header(self, index):
+        """Return whether index is a header"""
+        if index.isValid() and index.data(GroupObject):
+            return True
+        else:
+            return False
+
+    def mapFromSource(self, index):
+        for section_item in self.root.children():
+            for item in section_item.children():
+                if item.source_index == index:
+                    return self.createIndex(
+                        item.row(), index.column(), item
+                    )
+
+        return QtCore.QModelIndex()
+
+    def mapToSource(self, index):
+        if not index.isValid():
+            return QtCore.QModelIndex()
+
+        node = index.internalPointer()
+        if not node:
+            return QtCore.QModelIndex()
+
+        if not hasattr(node, "source_index"):
+            return QtCore.QModelIndex()
+        return node.source_index
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 1
+
+    def rowCount(self, parent):
+
+        if not parent.isValid():
+            node = self.root
+        else:
+            node = parent.internalPointer()
+
+        if not node:
+            return 0
+
+        return node.rowCount()
+
+    def index(self, row, column, parent):
+        if parent and parent.isValid():
+            parent_node = parent.internalPointer()
+        else:
+            parent_node = self.root
+
+        item = parent_node.child(row)
+        if item:
+            return self.createIndex(row, column, item)
+        else:
+            return QtCore.QModelIndex()
+
+    def parent(self, index):
+        if not index.isValid():
+            return QtCore.QModelIndex()
+
+        node = index.internalPointer()
+        if not node:
+            return QtCore.QModelIndex()
+        else:
+            parent = node.parent()
+            if not parent:
+                return QtCore.QModelIndex()
+
+            row = parent.row()
+            return self.createIndex(row, 0, parent)

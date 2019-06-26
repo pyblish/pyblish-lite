@@ -395,7 +395,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 80)
 
 
-class Terminal(QtWidgets.QStyledItemDelegate):
+class TerminalItem(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
     HEIGHT = 20
     def paint(self, painter, option, index):
@@ -404,8 +404,8 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         icon_rect = QtCore.QRectF(option.rect).adjusted(3, 3, -3, -3)
         icon_rect.setWidth(14)
         icon_rect.setHeight(14)
-
         icon_color = colors["idle"]
+
         icon = icons[index.data(model.Type)]
 
         if index.data(model.Type) == "record":
@@ -422,9 +422,9 @@ class Terminal(QtWidgets.QStyledItemDelegate):
         assert label_rect.width() > 0
 
         label = index.data(model.Label)
-        label = metrics.elidedText(label,
-                                   QtCore.Qt.ElideRight,
-                                   label_rect.width() - 20)
+        label = metrics.elidedText(
+            label, QtCore.Qt.ElideRight, label_rect.width() - 20
+        )
 
         font_color = colors["idle"]
 
@@ -455,3 +455,123 @@ class Terminal(QtWidgets.QStyledItemDelegate):
 
     def sizeHint(self, option, index):
         return QtCore.QSize(option.rect.width(), self.HEIGHT)
+
+
+class TerminalDetail(QtWidgets.QStyledItemDelegate):
+    """Delegate used exclusively for the Terminal"""
+
+    show_roles = {
+        model.LogLevel: 'Level',
+        model.QtCore.Qt.DisplayRole: 'Message',
+        model.LogThreadName: 'Thread',
+        model.LogName: 'Plugin',
+        model.LogFilename: 'File',
+        model.LogPath: 'Path',
+        model.LogLineNumber: 'Line',
+        model.LogMilliseconds: 'Millis'
+    }
+
+    def paint(self, painter, option, index):
+        """Paint text"""
+        html_text = ''
+        for role, title in self.show_roles.items():
+            text = index.model().data(index, role)
+            # TODO Fix this issue:
+            # Maya and Nuke have LogFilename and LogPath in strange str object.
+            # When printed, empty string is show and value is equal to <string>
+            if not text or text == '<string>':
+                continue
+
+            text = str(text).replace('\n', '<br/>')
+
+            title_tag = (
+                '<span style=\" font-size:8pt; font-weight:600;'
+                # ' background-color:#bbb; color:#333;\" >{}:</span> '
+                ' color:#fff;\" >{}:</span> '
+            ).format(title)
+
+            html_text += (
+                '<tr><td align=right><nobr>{}</nobr></td>'
+                '<td width="100%">{}</td></tr>'
+            ).format(title_tag, text)
+
+        html_text = '<table width="100%" cellspacing="3">{}</table>'.format(
+            html_text
+        )
+        document = QtGui.QTextDocument()
+        document.setHtml(html_text)
+        document.setTextWidth(option.rect.width())
+
+        painter.save()
+
+        font_color = QtGui.QColor("#aaa")
+        bg_color = QtGui.QColor("#333")
+
+        if (
+            option.state & QtWidgets.QStyle.State_MouseOver and
+            option.state & QtWidgets.QStyle.State_Selected
+        ):
+            bg_color = QtGui.QColor("#353535")
+
+        elif option.state & QtWidgets.QStyle.State_MouseOver:
+            bg_color = QtGui.QColor("#3b3b3b")
+
+        elif option.state & QtWidgets.QStyle.State_Selected:
+            bg_color = QtGui.QColor("#303030")
+
+        # Rounded corners of background rectangle
+        radius = 7.0
+        bg_path = QtGui.QPainterPath()
+        bg_path.addRoundedRect(QtCore.QRectF(option.rect), radius, radius);
+        painter.fillPath(bg_path, bg_color)
+
+        painter.translate(option.rect.x(), option.rect.y())
+
+        # Set default color for text
+        ctx = QtGui.QAbstractTextDocumentLayout.PaintContext()
+        ctx.palette.setColor(QtGui.QPalette.Text, font_color)
+        document.documentLayout().draw(painter, ctx)
+
+        painter.restore()
+
+        # Store height of detail to index data for sizeHint
+        log_size = QtCore.QSize(
+            document.idealWidth(),
+            document.size().height()
+        )
+        index.model().setData(index, log_size, model.LogSize)
+
+    def sizeHint(self, option, index):
+        size = index.data(model.LogSize)
+        if size:
+            return size
+
+        # This part is for cases when height is not set yet (not work correct)
+        text = index.model().data(index, QtCore.Qt.DisplayRole)
+
+        document = QtGui.QTextDocument()
+        document.setPlainText(text)
+        document.setTextWidth(option.rect.width())
+
+        return QtCore.QSize(document.idealWidth(), document.size().height())
+
+
+class LogsAndDetails(TerminalDetail):
+    """Generic delegate for model items in proxy tree view"""
+    HEIGHT = TerminalItem.HEIGHT
+    
+    def paint(self, painter, option, index):
+
+        index_model = index.model()
+        if index_model.is_header(index):
+            TerminalItem().paint(painter, option, index)
+            return
+
+        super(LogsAndDetails, self).paint(painter, option, index)
+
+    def sizeHint(self, option, index):
+        index_model = index.model()
+        if index_model.is_header(index):
+            return TerminalItem().sizeHint(option, index)
+
+        return super(LogsAndDetails, self).sizeHint(option, index)
