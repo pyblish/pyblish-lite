@@ -94,6 +94,9 @@ class Controller(QtCore.QObject):
         conforms = []
         plugins = pyblish.api.discover()
 
+        targets = pyblish.logic.registered_targets() or ["default"]
+        plugins = pyblish.logic.plugins_by_targets(plugins, targets)
+
         for plugin in plugins:
             if plugin.order < (pyblish.api.CollectorOrder + 0.5):
                 collectors.append(plugin)
@@ -175,8 +178,6 @@ class Controller(QtCore.QObject):
         return result
 
     def _pair_yielder(self, plugins):
-        targets = pyblish.logic.registered_targets() or ["default"]
-        plugins = pyblish.logic.plugins_by_targets(plugins, targets)
 
         for plugin in plugins:
             if not plugin.active:
