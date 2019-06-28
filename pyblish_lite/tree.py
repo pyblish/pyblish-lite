@@ -338,14 +338,11 @@ class View(QtWidgets.QTreeView):
                     if event.pos().x() > self.width()-20:
                         self.show_perspective.emit(index)
                 else:
-                    if event.pos().x() < 20:
-                        if self.isExpanded(index):
-                            self.collapse(index)
-                        else:
-                            self.expand(index)
+                    if self.isExpanded(index):
+                        self.collapse(index)
                     else:
-                        # TODO: select all children
-                        pass
+                        self.expand(index)
+
                     self.clearSelection()
             # Deselect all group labels
             if len(indexes) > 0:
