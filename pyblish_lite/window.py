@@ -810,7 +810,7 @@ class Window(QtWidgets.QDialog):
             return
 
         menu = QtWidgets.QMenu(self)
-        plugins_index = self.data["models"]["filter"].mapToSource(index)
+        plugins_index = self.data["proxies"]["plugins"].mapToSource(index)
         plugin = self.data["models"]["plugins"].items[plugins_index.row()]
         print("plugin is: %s" % plugin)
 
