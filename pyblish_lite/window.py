@@ -286,11 +286,16 @@ class Window(QtWidgets.QDialog):
                                           QtWidgets.QSizePolicy.Expanding)
         closing_placeholder.hide()
 
+        self.last_persp_index = None
+        self.perspective_widget = view.PerspectiveWidget(self)
+        self.perspective_widget.hide()
+
         # Main layout
         self.main_widget = QtWidgets.QWidget(self)
         layout = QtWidgets.QVBoxLayout(self.main_widget)
         layout.addWidget(header, 0)
         layout.addWidget(body, 3)
+        layout.addWidget(self.perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
         layout.addWidget(comment_box, 0)
         layout.addWidget(footer, 0)
@@ -298,14 +303,10 @@ class Window(QtWidgets.QDialog):
         layout.setSpacing(0)
         self.main_widget.setLayout(layout)
 
-        self.perspective_widget = view.PerspectiveWidget(self)
-        self.perspective_widget.hide()
-
         self.main_layout = QtWidgets.QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
         self.main_layout.addWidget(self.main_widget)
-        self.main_layout.addWidget(self.perspective_widget)
         """Animation
            ___
           /   \
@@ -444,6 +445,8 @@ class Window(QtWidgets.QDialog):
             w.setAttribute(QtCore.Qt.WA_StyledBackground)
 
         self.data = {
+            "header": header,
+            "body": body,
             "views": {
                 "artist": artist_view,
                 "left": left_view,
@@ -588,10 +591,15 @@ class Window(QtWidgets.QDialog):
     # -------------------------------------------------------------------------
     def toggle_perspective_widget(self, index=None):
         show = False
+        self.last_persp_index = None
         if index:
             show = True
+            self.last_persp_index = index
             self.perspective_widget.set_context(index)
-        self.main_widget.setVisible(not show)
+
+        self.data['body'].setVisible(not show)
+        self.data['header'].setVisible(not show)
+
         self.perspective_widget.setVisible(show)
 
     def on_item_expanded(self, index, state):
@@ -943,6 +951,9 @@ class Window(QtWidgets.QDialog):
         models["terminal"].update_with_result(result)
 
         self.data['proxies']['terminal'].rebuild()
+
+        if self.last_persp_index:
+            self.perspective_widget.set_context(self.last_persp_index)
 
     def on_was_acted(self, result):
         buttons = self.data["buttons"]
