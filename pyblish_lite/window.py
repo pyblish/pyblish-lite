@@ -286,6 +286,7 @@ class Window(QtWidgets.QDialog):
                                           QtWidgets.QSizePolicy.Expanding)
         closing_placeholder.hide()
 
+        self.last_persp_index = None
         self.perspective_widget = view.PerspectiveWidget(self)
         self.perspective_widget.hide()
 
@@ -590,8 +591,10 @@ class Window(QtWidgets.QDialog):
     # -------------------------------------------------------------------------
     def toggle_perspective_widget(self, index=None):
         show = False
+        self.last_persp_index = None
         if index:
             show = True
+            self.last_persp_index = index
             self.perspective_widget.set_context(index)
 
         self.data['body'].setVisible(not show)
@@ -948,6 +951,9 @@ class Window(QtWidgets.QDialog):
         models["terminal"].update_with_result(result)
 
         self.data['proxies']['terminal'].rebuild()
+
+        if self.last_persp_index:
+            self.perspective_widget.set_context(self.last_persp_index)
 
     def on_was_acted(self, result):
         buttons = self.data["buttons"]
