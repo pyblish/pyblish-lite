@@ -286,11 +286,15 @@ class Window(QtWidgets.QDialog):
                                           QtWidgets.QSizePolicy.Expanding)
         closing_placeholder.hide()
 
+        self.perspective_widget = view.PerspectiveWidget(self)
+        self.perspective_widget.hide()
+
         # Main layout
         self.main_widget = QtWidgets.QWidget(self)
         layout = QtWidgets.QVBoxLayout(self.main_widget)
         layout.addWidget(header, 0)
         layout.addWidget(body, 3)
+        layout.addWidget(self.perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
         layout.addWidget(comment_box, 0)
         layout.addWidget(footer, 0)
@@ -298,14 +302,10 @@ class Window(QtWidgets.QDialog):
         layout.setSpacing(0)
         self.main_widget.setLayout(layout)
 
-        self.perspective_widget = view.PerspectiveWidget(self)
-        self.perspective_widget.hide()
-
         self.main_layout = QtWidgets.QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
         self.main_layout.addWidget(self.main_widget)
-        self.main_layout.addWidget(self.perspective_widget)
         """Animation
            ___
           /   \
@@ -444,6 +444,8 @@ class Window(QtWidgets.QDialog):
             w.setAttribute(QtCore.Qt.WA_StyledBackground)
 
         self.data = {
+            "header": header,
+            "body": body,
             "views": {
                 "artist": artist_view,
                 "left": left_view,
@@ -591,7 +593,10 @@ class Window(QtWidgets.QDialog):
         if index:
             show = True
             self.perspective_widget.set_context(index)
-        self.main_widget.setVisible(not show)
+
+        self.data['body'].setVisible(not show)
+        self.data['header'].setVisible(not show)
+
         self.perspective_widget.setVisible(show)
 
     def on_item_expanded(self, index, state):
