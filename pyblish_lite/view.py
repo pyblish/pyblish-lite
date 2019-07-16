@@ -509,11 +509,13 @@ class ExpandableWidget(QtWidgets.QWidget):
         button_toggle.setChecked(False)
 
         main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(9, 9, 9, 0)
 
         content = QtWidgets.QFrame(self)
+        content.setStyleSheet(
+            'border: none; background-color: #232323; color:#eeeeee;'
+        )
         content.setVisible(False)
-        content.setMinimumHeight(20)
-        content.setStyleSheet('background-color: #232323; color:#eeeeee;')
 
         content_layout = QtWidgets.QVBoxLayout(content)
 
