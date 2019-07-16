@@ -461,13 +461,13 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
 
     show_roles = {
-        model.LogLevel: 'Level',
         model.QtCore.Qt.DisplayRole: 'Message',
-        model.LogThreadName: 'Thread',
         model.LogName: 'Plugin',
-        model.LogFilename: 'File',
         model.LogPath: 'Path',
         model.LogLineNumber: 'Line',
+        model.ExcTraceback: 'Traceback',
+        model.LogLevel: 'Level',
+        model.LogThreadName: 'Thread',
         model.LogMilliseconds: 'Millis'
     }
 
