@@ -91,11 +91,11 @@ LogMilliseconds = QtCore.Qt.UserRole + 56
 LogLevel = QtCore.Qt.UserRole + 61
 LogSize = QtCore.Qt.UserRole + 62
 # EXCEPTIONS
-
-ExcFname = QtCore.Qt.UserRole + 57
-ExcLineNumber = QtCore.Qt.UserRole + 58
+# Duplicates with LogFilename and LogLineNumber
+# ExcFname = QtCore.Qt.UserRole + 57
+# ExcLineNumber = QtCore.Qt.UserRole + 58
 ExcFunc = QtCore.Qt.UserRole + 59
-ExcExc = QtCore.Qt.UserRole + 60
+ExcTraceback = QtCore.Qt.UserRole + 60
 
 
 class Abstract(QtCore.QAbstractListModel):
@@ -508,10 +508,8 @@ class Terminal(Abstract):
             LogLevel: "levelname",
 
             # Exceptions
-            ExcFname: "fname",
-            ExcLineNumber: "line_number",
             ExcFunc: "func",
-            ExcExc: "exc",
+            ExcTraceback: "traceback",
         }
 
     def data(self, index, role):
