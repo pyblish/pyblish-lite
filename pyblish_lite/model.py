@@ -185,6 +185,8 @@ def error_from_result(result):
     error = {}
     if in_error and isinstance(in_error, dict):
         error = in_error
+    elif in_error and isinstance(in_error_info, dict):
+        error = in_error_info
     elif in_error:
         trc_lines = list()
         if in_error_info:
@@ -353,8 +355,11 @@ class Plugin(Item):
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
-        self.setData(index, result['records'], LogRecord)
-        self.setData(index, error_from_result(result), ErrorRecord)
+
+        records = index.data(LogRecord) or []
+        records.extend(result.get('records', []))
+
+        self.setData(index, records, LogRecord)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
