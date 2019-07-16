@@ -382,6 +382,37 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
         self.toggle_button.clicked.connect(self.toggle_me)
 
+    def trim(self, docstring):
+        if not docstring:
+            return ''
+        # Convert tabs to spaces (following the normal Python rules)
+        # and split into a list of lines:
+        lines = docstring.expandtabs().splitlines()
+        # Determine minimum indentation (first line doesn't count):
+        try:
+            indent = sys.maxint
+            max = sys.maxint
+        except Exception:
+            indent = sys.maxsize
+            max = sys.maxsize
+
+        for line in lines[1:]:
+            stripped = line.lstrip()
+            if stripped:
+                indent = min(indent, len(line) - len(stripped))
+        # Remove indentation (first line is special):
+        trimmed = [lines[0].strip()]
+        if indent < max:
+            for line in lines[1:]:
+                trimmed.append(line[indent:].rstrip())
+        # Strip off trailing and leading blank lines:
+        while trimmed and not trimmed[-1]:
+            trimmed.pop()
+        while trimmed and not trimmed[0]:
+            trimmed.pop(0)
+        # Return a single string:
+        return '\n'.join(trimmed)
+
     def set_context(self, index):
         models = self.parent_widget.data['models']
         doc = None
@@ -396,7 +427,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
             have_doc = False
             if doc:
                 have_doc = True
-                doc_str = doc
+                doc_str = self.trim(doc)
             self.documentation.toggle_content(have_doc)
             doc_label = QtWidgets.QLabel(doc_str)
             doc_label.setWordWrap(True)
