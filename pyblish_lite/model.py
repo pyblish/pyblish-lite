@@ -546,12 +546,14 @@ class Terminal(Abstract):
 
     def update_with_result(self, result):
         for record in result["records"]:
-            if record.levelno < settings.TerminalLoglevel:
+            ## Filtering should be in view
+            # if record.levelno < settings.TerminalLoglevel:
+            #     continue
                 continue
             self.append({
                 "label": text_type(record.msg),
                 "type": "record",
-
+                "levelno": record.levelno,
                 # Native
                 "threadName": record.threadName,
                 "name": record.name,
@@ -560,7 +562,7 @@ class Terminal(Abstract):
                 "lineno": record.lineno,
                 "msg": text_type(record.msg),
                 "msecs": record.msecs,
-                "levelname": record.levelname,
+                "levelname": record.levelname
             })
 
 
