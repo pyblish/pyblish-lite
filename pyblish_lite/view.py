@@ -492,15 +492,11 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
 
 class ExpandableWidget(QtWidgets.QWidget):
-    maximum_policy = QtWidgets.QSizePolicy(
-        QtWidgets.QSizePolicy.Preferred,
-        QtWidgets.QSizePolicy.Maximum
-    )
+
     content = None
 
     def __init__(self, parent, title):
         super(ExpandableWidget, self).__init__(parent)
-        self.setSizePolicy(self.maximum_policy)
         button_size = QtCore.QSize(5, 5)
         button_toggle = QtWidgets.QToolButton()
 
