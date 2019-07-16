@@ -563,28 +563,6 @@ class Terminal(Abstract):
                 "levelname": record.levelname,
             })
 
-        error = result["error"]
-        if error:
-            if isinstance(error, dict):
-                self.append({
-                    'label': text_type(error['message']),
-                    'type': 'error',
-                    'fname': error['fname'],
-                    'line_number': error['line_no'],
-                    'func': error['func'],
-                    'exc': error['message']
-                })
-            else:
-                fname, line_no, func, exc = error.traceback
-                self.append({
-                    "label": text_type(error),
-                    "type": "error",
-                    "fname": fname,
-                    "line_number": line_no,
-                    "func": func,
-                    "exc": exc,
-                })
-
 
 class ProxyModel(QtCore.QSortFilterProxyModel):
     """A QSortFilterProxyModel with custom exclude and include rules
