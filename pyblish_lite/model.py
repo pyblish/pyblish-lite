@@ -71,7 +71,7 @@ Duration = QtCore.Qt.UserRole + 11
 Actions = QtCore.Qt.UserRole + 9
 ActionIconVisible = QtCore.Qt.UserRole + 13
 ActionIdle = QtCore.Qt.UserRole + 15
-ActionFailed = QtCore.Qt.UserRole + 18
+ActionFailed = QtCore.Qt.UserRole + 14
 Docstring = QtCore.Qt.UserRole + 12
 PathModule = QtCore.Qt.UserRole + 17
 
