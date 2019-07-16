@@ -791,7 +791,7 @@ class TreeItem(object):
 
 class ProxyTerminalItem(TreeItem):
     def __init__(self, source_index):
-        self._expanded = True
+        self._expanded = False
         super(ProxyTerminalItem, self).__init__()
         self.model_index = source_index
 
