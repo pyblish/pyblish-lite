@@ -549,6 +549,8 @@ class Terminal(Abstract):
             ## Filtering should be in view
             # if record.levelno < settings.TerminalLoglevel:
             #     continue
+            if isinstance(record, dict):
+                self.append(record)
                 continue
             self.append({
                 "label": text_type(record.msg),
