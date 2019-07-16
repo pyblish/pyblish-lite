@@ -491,8 +491,8 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
             ).format(title)
 
             html_text += (
-                '<tr><td align=right><nobr>{}</nobr></td>'
-                '<td width="100%">{}</td></tr>'
+                '<tr><td width="100%" align=left>{}</td></tr>'
+                '<tr><td width="100%">{}</td></tr>'
             ).format(title_tag, text)
 
         html_text = '<table width="100%" cellspacing="3">{}</table>'.format(
