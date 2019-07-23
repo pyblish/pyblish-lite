@@ -42,7 +42,7 @@ class Controller(QtCore.QObject):
     def __init__(self, parent=None):
         super(Controller, self).__init__(parent)
 
-        self.context = list()
+        self.context = pyblish.api.Context()
         self.plugins = {}
 
         # Data internal to the GUI itself
