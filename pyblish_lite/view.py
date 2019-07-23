@@ -435,6 +435,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
             path_label.setWordWrap(True)
             path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.path.set_content(path_label)
+        elif index.data(model.Type) == "context":
+            self.indicator.setText('C')
+            is_plugin = False
         else:
             return
 
