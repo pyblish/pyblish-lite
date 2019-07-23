@@ -405,6 +405,7 @@ class Instance(Item):
             # Merge copy of both family and families data members
             Families: "__families__",
         })
+        self.context_item = None
 
     def append(self, item):
         item.data["optional"] = item.data.get("optional", True)
