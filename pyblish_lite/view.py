@@ -312,7 +312,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
         toggle_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
 
         indicator = QtWidgets.QLabel('', parent=header_widget)
-        indicator.setMinimumWidth(12)
+        indicator.setMinimumWidth(30)
 
         name = QtWidgets.QLabel('*Name of inspected', parent=header_widget)
         font = QtGui.QFont()
