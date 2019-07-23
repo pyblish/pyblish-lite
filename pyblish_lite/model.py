@@ -408,6 +408,11 @@ class Instance(Item):
         self.context_item = None
 
     def append(self, item):
+        if item.data.get('_type') == 'context':
+            self.ids.append(item.id)
+            self.context_item = item
+            return super(Instance, self).append(item)
+
         item.data["optional"] = item.data.get("optional", True)
         item.data["publish"] = item.data.get("publish", True)
 
