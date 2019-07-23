@@ -297,7 +297,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
         perspective_rect.setWidth(35)
         perspective_rect.setHeight(35)
         perspective_rect.translate(
-            content_rect.width()-(perspective_rect.width()/2),
+            content_rect.width()-(perspective_rect.width()/2)+10,
             (content_rect.height()/2)-(perspective_rect.height()/2)
         )
 
