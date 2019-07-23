@@ -863,7 +863,6 @@ class Window(QtWidgets.QDialog):
 
         self.info(self.tr("Finishing up reset.."))
 
-        models["instances"].reset()
         for instance in self.controller.context:
             models["instances"].append(instance)
 
