@@ -1027,6 +1027,11 @@ class Window(QtWidgets.QDialog):
         comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
         comment_box.hide()
 
+        # Prepare Context object in controller (create new one)
+        self.controller.prepare_for_reset()
+        # Append context object to instances model
+        self.data["models"]["instances"].append(self.controller.context)
+        # Launch controller reset
         util.defer(500, self.controller.reset)
 
     def validate(self):
