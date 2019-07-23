@@ -475,10 +475,12 @@ class Instance(Item):
         item = result["instance"]
 
         if item is None:
-            return
-
-        index = self.items.index(item)
-        index = self.createIndex(index, 0)
+            # for item in self.
+            index = self.items.index(self.context_item)
+            index = self.createIndex(index, 0)
+        else:
+            index = self.items.index(item)
+            index = self.createIndex(index, 0)
 
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
