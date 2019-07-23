@@ -60,13 +60,38 @@ class Controller(QtCore.QObject):
             "ordersWithError": set()
         }
 
-    def reset(self):
-        """Discover plug-ins and run collection"""
+    def prepare_for_reset(self):
         self.validated = False
         self.extracted = False
         self.publishing = False
 
         self.context = pyblish.api.Context()
+        self.context.data["optional"] = False
+        self.context.data["publish"] = True
+
+        self.context.data["label"] = 'Context'
+        self.context.data["name"] = 'Context'
+        self.context.data["_type"] = 'context'
+
+        self.context.data["icon"] = 'book'
+
+        self.context.data["_has_succeeded"] = False
+        self.context.data["_has_failed"] = False
+        self.context.data["_is_idle"] = True
+
+        self.context.data["__families__"] = ('__context__',)
+
+    def reset(self):
+        """
+        Discover plug-ins and run collection
+        - prepare_for_reset should be run before
+            - was split because of `Context` in instance list
+            - reset logic should be used only in window.py in `reset` method
+        """
+        # This is just backup
+        if self.context:
+            # - Context probably won't be shown in instance list
+            self.prepare_for_reset()
 
         # Load collectors
         self.load_plugins()
