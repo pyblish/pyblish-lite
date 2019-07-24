@@ -1,3 +1,4 @@
+import sys
 from .vendor.Qt import QtCore, QtWidgets, QtGui
 from . import model, delegate
 import traceback
@@ -94,6 +95,8 @@ class TerminalView(QtWidgets.QTreeView):
         group = index.data(model.GroupObject)
         if group:
             group.setIsExpanded(self.isExpanded(index))
+        self.model().layoutChanged.emit()
+        self.updateGeometry()
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
@@ -264,8 +267,6 @@ class Details(QtWidgets.QDialog):
 
 class PerspectiveWidget(QtWidgets.QWidget):
     l_doc = '   Documentation'
-    l_er = '   Error'
-    l_trc = '   Traceback'
     l_rec = '   Records'
     l_path = '   Path'
     indicator_colors = {
@@ -337,22 +338,16 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
-        layout.setContentsMargins(0,0,0,0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         documentation = ExpandableWidget(self, self.l_doc)
-        layout.addWidget(documentation, alignment=QtCore.Qt.AlignTop)
-
-        records = ExpandableWidget(self, self.l_rec)
-        layout.addWidget(records, alignment=QtCore.Qt.AlignTop)
-
-        error = ExpandableWidget(self, self.l_er)
-        layout.addWidget(error, alignment=QtCore.Qt.AlignTop)
-
-        traceback_part = ExpandableWidget(self, self.l_trc)
-        layout.addWidget(traceback_part, alignment=QtCore.Qt.AlignTop)
+        layout.addWidget(documentation)
 
         path = ExpandableWidget(self, self.l_path)
-        layout.addWidget(path, alignment=QtCore.Qt.AlignTop)
+        layout.addWidget(path)
+
+        records = ExpandableWidget(self, self.l_rec)
+        layout.addWidget(records)
 
         scroll_widget = QtWidgets.QScrollArea(self)
         contents_widget = QtWidgets.QWidget(scroll_widget)
@@ -361,6 +356,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
             'padding: 0px;'
             'background: "#444";'
         )
+
         scroll_widget.setWidgetResizable(True)
         scroll_widget.setWidget(contents_widget)
 
@@ -370,17 +366,46 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.toggle_button = toggle_button
         self.name_widget = name
         self.documentation = documentation
-        self.records = records
-        self.error = error
-        self.traceback_part = traceback_part
         self.path = path
+        self.records = records
 
-        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         main_layout.addWidget(scroll_widget)
         self.setLayout(main_layout)
 
         self.toggle_button.clicked.connect(self.toggle_me)
+
+    def trim(self, docstring):
+        if not docstring:
+            return ''
+        # Convert tabs to spaces (following the normal Python rules)
+        # and split into a list of lines:
+        lines = docstring.expandtabs().splitlines()
+        # Determine minimum indentation (first line doesn't count):
+        try:
+            indent = sys.maxint
+            max = sys.maxint
+        except Exception:
+            indent = sys.maxsize
+            max = sys.maxsize
+
+        for line in lines[1:]:
+            stripped = line.lstrip()
+            if stripped:
+                indent = min(indent, len(line) - len(stripped))
+        # Remove indentation (first line is special):
+        trimmed = [lines[0].strip()]
+        if indent < max:
+            for line in lines[1:]:
+                trimmed.append(line[indent:].rstrip())
+        # Strip off trailing and leading blank lines:
+        while trimmed and not trimmed[-1]:
+            trimmed.pop()
+        while trimmed and not trimmed[0]:
+            trimmed.pop(0)
+        # Return a single string:
+        return '\n'.join(trimmed)
 
     def set_context(self, index):
         models = self.parent_widget.data['models']
@@ -396,7 +421,8 @@ class PerspectiveWidget(QtWidgets.QWidget):
             have_doc = False
             if doc:
                 have_doc = True
-                doc_str = doc
+                doc_str = self.trim(doc)
+
             self.documentation.toggle_content(have_doc)
             doc_label = QtWidgets.QLabel(doc_str)
             doc_label.setWordWrap(True)
@@ -435,18 +461,10 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.documentation.setVisible(is_plugin)
 
         records = index.data(model.LogRecord) or []
-        error = index.data(model.ErrorRecord)
 
         len_records = 0
         if records:
             len_records += len(records)
-        if error:
-            error_msg = error['message']
-            error_fname = error['fname']
-            error_line_no = error['line_no']
-            error_func = error['func']
-            error_traceback = error['traceback']
-            len_records += 1
 
         rec_delegate = delegate.LogsAndDetails()
         rec_view = TerminalView()
@@ -459,10 +477,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
         rec_view.setModel(rec_proxy)
 
-        data = {
-            'records': records,
-            'error': error
-        }
+        data = {'records': records}
         rec_model.update_with_result(data)
         rec_proxy.rebuild()
 
@@ -472,52 +487,16 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.records.set_content(rec_view)
         self.records.toggle_content(len_records > 0)
 
-        trc_lines = []
-        existence_error = False
-        error_cnt = ''
-        if error:
-            existence_error = True
-            error_cnt += '<b>Message</b><br/>{}<br/>'.format(
-                error_msg.replace('\n','<br/>')
-            )
-            error_cnt += '<b>Filename</b><br/>{}<br/>'.format(error_fname)
-            error_cnt += '<b>Line</b><br/>{}<br/>'.format(error_line_no)
-            error_cnt += '<b>Function</b><br/>{}<br/>'.format(error_func)
-
-            trc_widget = QtWidgets.QLabel(''.join(error_traceback))
-            trc_widget.setWordWrap(True)
-            trc_widget.setTextFormat(QtCore.Qt.PlainText)
-            trc_widget.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-            self.traceback_part.set_content(trc_widget)
-            isTraceback = True
-            if not error_traceback:
-                isTraceback = False
-            self.traceback_part.setVisible(isTraceback)
-
-        er_widget = QtWidgets.QLabel(error_cnt)
-        er_widget.setWordWrap(True)
-        er_widget.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-        self.error.set_content(er_widget)
-
-        self.error.toggle_content(existence_error)
-
-        self.traceback_part.toggle_content(False)
-        self.traceback_part.setVisible(existence_error)
-
     def toggle_me(self):
         self.parent_widget.toggle_perspective_widget()
 
 
 class ExpandableWidget(QtWidgets.QWidget):
-    maximum_policy = QtWidgets.QSizePolicy(
-        QtWidgets.QSizePolicy.Preferred,
-        QtWidgets.QSizePolicy.Maximum
-    )
+
     content = None
 
     def __init__(self, parent, title):
         super(ExpandableWidget, self).__init__(parent)
-        self.setSizePolicy(self.maximum_policy)
         button_size = QtCore.QSize(5, 5)
         button_toggle = QtWidgets.QToolButton()
 
@@ -530,11 +509,13 @@ class ExpandableWidget(QtWidgets.QWidget):
         button_toggle.setChecked(False)
 
         main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(9, 9, 9, 0)
 
         content = QtWidgets.QFrame(self)
+        content.setStyleSheet(
+            'border: none; background-color: #232323; color:#eeeeee;'
+        )
         content.setVisible(False)
-        content.setMinimumHeight(20)
-        content.setStyleSheet('background-color: #232323; color:#eeeeee;')
 
         content_layout = QtWidgets.QVBoxLayout(content)
 

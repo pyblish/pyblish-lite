@@ -71,7 +71,7 @@ Duration = QtCore.Qt.UserRole + 11
 Actions = QtCore.Qt.UserRole + 9
 ActionIconVisible = QtCore.Qt.UserRole + 13
 ActionIdle = QtCore.Qt.UserRole + 15
-ActionFailed = QtCore.Qt.UserRole + 18
+ActionFailed = QtCore.Qt.UserRole + 14
 Docstring = QtCore.Qt.UserRole + 12
 PathModule = QtCore.Qt.UserRole + 17
 
@@ -91,11 +91,11 @@ LogMilliseconds = QtCore.Qt.UserRole + 56
 LogLevel = QtCore.Qt.UserRole + 61
 LogSize = QtCore.Qt.UserRole + 62
 # EXCEPTIONS
-
-ExcFname = QtCore.Qt.UserRole + 57
-ExcLineNumber = QtCore.Qt.UserRole + 58
+# Duplicates with LogFilename and LogLineNumber
+# ExcFname = QtCore.Qt.UserRole + 57
+# ExcLineNumber = QtCore.Qt.UserRole + 58
 ExcFunc = QtCore.Qt.UserRole + 59
-ExcExc = QtCore.Qt.UserRole + 60
+ExcTraceback = QtCore.Qt.UserRole + 60
 
 
 class Abstract(QtCore.QAbstractListModel):
@@ -185,6 +185,8 @@ def error_from_result(result):
     error = {}
     if in_error and isinstance(in_error, dict):
         error = in_error
+    elif in_error and isinstance(in_error_info, dict):
+        error = in_error_info
     elif in_error:
         trc_lines = list()
         if in_error_info:
@@ -353,8 +355,11 @@ class Plugin(Item):
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
-        self.setData(index, result['records'], LogRecord)
-        self.setData(index, error_from_result(result), ErrorRecord)
+
+        records = index.data(LogRecord) or []
+        records.extend(result.get('records', []))
+
+        self.setData(index, records, LogRecord)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
@@ -508,10 +513,8 @@ class Terminal(Abstract):
             LogLevel: "levelname",
 
             # Exceptions
-            ExcFname: "fname",
-            ExcLineNumber: "line_number",
             ExcFunc: "func",
-            ExcExc: "exc",
+            ExcTraceback: "traceback",
         }
 
     def data(self, index, role):
@@ -548,12 +551,16 @@ class Terminal(Abstract):
 
     def update_with_result(self, result):
         for record in result["records"]:
-            if record.levelno < settings.TerminalLoglevel:
+            ## Filtering should be in view
+            # if record.levelno < settings.TerminalLoglevel:
+            #     continue
+            if isinstance(record, dict):
+                self.append(record)
                 continue
             self.append({
                 "label": text_type(record.msg),
                 "type": "record",
-
+                "levelno": record.levelno,
                 # Native
                 "threadName": record.threadName,
                 "name": record.name,
@@ -562,30 +569,8 @@ class Terminal(Abstract):
                 "lineno": record.lineno,
                 "msg": text_type(record.msg),
                 "msecs": record.msecs,
-                "levelname": record.levelname,
+                "levelname": record.levelname
             })
-
-        error = result["error"]
-        if error:
-            if isinstance(error, dict):
-                self.append({
-                    'label': text_type(error['message']),
-                    'type': 'error',
-                    'fname': error['fname'],
-                    'line_number': error['line_no'],
-                    'func': error['func'],
-                    'exc': error['message']
-                })
-            else:
-                fname, line_no, func, exc = error.traceback
-                self.append({
-                    "label": text_type(error),
-                    "type": "error",
-                    "fname": fname,
-                    "line_number": line_no,
-                    "func": func,
-                    "exc": exc,
-                })
 
 
 class ProxyModel(QtCore.QSortFilterProxyModel):
@@ -791,7 +776,7 @@ class TreeItem(object):
 
 class ProxyTerminalItem(TreeItem):
     def __init__(self, source_index):
-        self._expanded = True
+        self._expanded = False
         super(ProxyTerminalItem, self).__init__()
         self.model_index = source_index
 

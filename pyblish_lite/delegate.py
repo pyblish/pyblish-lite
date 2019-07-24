@@ -461,13 +461,13 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
 
     show_roles = {
-        model.LogLevel: 'Level',
         model.QtCore.Qt.DisplayRole: 'Message',
-        model.LogThreadName: 'Thread',
         model.LogName: 'Plugin',
-        model.LogFilename: 'File',
         model.LogPath: 'Path',
         model.LogLineNumber: 'Line',
+        model.ExcTraceback: 'Traceback',
+        model.LogLevel: 'Level',
+        model.LogThreadName: 'Thread',
         model.LogMilliseconds: 'Millis'
     }
 
@@ -482,7 +482,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
             if not text or text == '<string>':
                 continue
 
-            text = str(text).replace('\n', '<br/>')
+            text = str(text).replace('\n', '<br/>').replace(' ', '&nbsp;')
 
             title_tag = (
                 '<span style=\" font-size:8pt; font-weight:600;'
@@ -491,8 +491,8 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
             ).format(title)
 
             html_text += (
-                '<tr><td align=right><nobr>{}</nobr></td>'
-                '<td width="100%">{}</td></tr>'
+                '<tr><td width="100%" align=left>{}</td></tr>'
+                '<tr><td width="100%">{}</td></tr>'
             ).format(title_tag, text)
 
         html_text = '<table width="100%" cellspacing="3">{}</table>'.format(
