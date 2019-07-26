@@ -986,6 +986,25 @@ class Window(QtWidgets.QDialog):
         model_.setData(index, False, model.IsProcessing)
 
         models = self.data["models"]
+
+        error = result.get('error_info')
+        if error:
+            records = result.get('records') or []
+            error_traceback = error['traceback']
+
+            records.append({
+                'label': error['msg'],
+                'type': 'error',
+                'filename': error['filename'],
+                'lineno': error['lineno'],
+                'func': error['func'],
+                'traceback': error['traceback'],
+            })
+
+            result['records'] = records
+
+        models["plugins"].update_with_result(result)
+        models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
 
         self.on_finished()
