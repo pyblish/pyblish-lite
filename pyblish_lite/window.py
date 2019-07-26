@@ -863,6 +863,9 @@ class Window(QtWidgets.QDialog):
 
         self.info(self.tr("Finishing up reset.."))
 
+        context_item = models["instances"].context_item
+        models["instances"].reset()
+        models["instances"].append(context_item)
         for instance in self.controller.context:
             models["instances"].append(instance)
 
