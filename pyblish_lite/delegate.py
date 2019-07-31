@@ -319,7 +319,10 @@ class Artist(QtWidgets.QStyledItemDelegate):
         icon = index.data(model.Icon) or icons["file"]
         perspective_icon = icons["angle-right"]
         label = index.data(model.Label)
+
         families = ", ".join(index.data(model.Families))
+        if families == '__context__':
+            families = 'Context'
 
         # Elide
         label = metrics.elidedText(label,

@@ -110,6 +110,12 @@ class Proxy(QtCore.QAbstractProxyModel):
             # section
             label = self.groupby_label(section)
             section_item = ProxySectionItem(label)
+            if label == '__context__':
+                for i, index in enumerate(group):
+                    context_item = ProxyItem(index)
+                    self.root.addChild(context_item)
+                continue
+
             #  items in section
             for i, index in enumerate(group):
                 # Ignore plugins without compatible instances

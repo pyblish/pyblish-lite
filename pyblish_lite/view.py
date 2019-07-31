@@ -312,7 +312,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
         toggle_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
 
         indicator = QtWidgets.QLabel('', parent=header_widget)
-        indicator.setMinimumWidth(12)
+        indicator.setMinimumWidth(30)
 
         name = QtWidgets.QLabel('*Name of inspected', parent=header_widget)
         font = QtGui.QFont()
@@ -435,6 +435,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
             path_label.setWordWrap(True)
             path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.path.set_content(path_label)
+        elif index.data(model.Type) == "context":
+            self.indicator.setText('C')
+            is_plugin = False
         else:
             return
 
