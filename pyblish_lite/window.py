@@ -965,6 +965,10 @@ class Window(QtWidgets.QDialog):
 
             result['records'] = records
 
+            # Toggle from artist to overview tab on error
+            if self.data["tabs"]["artist"].isChecked():
+                self.data["tabs"]["overview"].toggle()
+
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
