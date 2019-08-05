@@ -905,15 +905,21 @@ class Window(QtWidgets.QDialog):
         plugin_model = self.data["models"]["plugins"]
         instance_model = self.data["models"]["instances"]
 
+        failed = False
         for index in plugin_model:
             index.model().setData(index, False, model.IsIdle)
+            if failed:
+                continue
+            if index.data(model.HasFailed):
+                failed = True
 
         for index in instance_model:
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
+        buttons["play"].setVisible(not failed)
+        buttons["validate"].hide()
         buttons["reset"].show()
-        buttons["play"].show()
         buttons["stop"].hide()
 
         self.on_finished()
