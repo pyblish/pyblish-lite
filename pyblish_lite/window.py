@@ -874,9 +874,15 @@ class Window(QtWidgets.QDialog):
         for instance in self.controller.context:
             models["instances"].append(instance)
 
+        failed = False
+        for index in self.data["models"]["plugins"]:
+            if index.data(model.HasFailed):
+                failed = True
+                break
+
         buttons = self.data["buttons"]
-        buttons["play"].show()
-        buttons["validate"].show()
+        buttons["play"].setVisible(not failed)
+        buttons["validate"].setVisible(not failed)
         buttons["reset"].show()
         buttons["stop"].hide()
 
@@ -903,15 +909,21 @@ class Window(QtWidgets.QDialog):
         plugin_model = self.data["models"]["plugins"]
         instance_model = self.data["models"]["instances"]
 
+        failed = False
         for index in plugin_model:
             index.model().setData(index, False, model.IsIdle)
+            if failed:
+                continue
+            if index.data(model.HasFailed):
+                failed = True
 
         for index in instance_model:
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
+        buttons["play"].setVisible(not failed)
+        buttons["validate"].hide()
         buttons["reset"].show()
-        buttons["play"].show()
         buttons["stop"].hide()
 
         self.on_finished()
@@ -927,6 +939,8 @@ class Window(QtWidgets.QDialog):
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
+        buttons["play"].hide()
+        buttons["validate"].hide()
         buttons["reset"].show()
         buttons["stop"].hide()
 
