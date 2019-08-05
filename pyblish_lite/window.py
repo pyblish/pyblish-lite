@@ -870,9 +870,15 @@ class Window(QtWidgets.QDialog):
         for instance in self.controller.context:
             models["instances"].append(instance)
 
+        failed = False
+        for index in self.data["models"]["plugins"]:
+            if index.data(model.HasFailed):
+                failed = True
+                break
+
         buttons = self.data["buttons"]
-        buttons["play"].show()
-        buttons["validate"].show()
+        buttons["play"].setVisible(not failed)
+        buttons["validate"].setVisible(not failed)
         buttons["reset"].show()
         buttons["stop"].hide()
 
