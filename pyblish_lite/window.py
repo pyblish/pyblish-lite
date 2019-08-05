@@ -935,6 +935,8 @@ class Window(QtWidgets.QDialog):
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
+        buttons["play"].hide()
+        buttons["validate"].hide()
         buttons["reset"].show()
         buttons["stop"].hide()
 
