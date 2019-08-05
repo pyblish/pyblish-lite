@@ -851,12 +851,16 @@ class Window(QtWidgets.QDialog):
         for child in right_view_model.root.children():
             child_idx = right_view_model.createIndex(child.row(), 0, child)
             right_view.expand(child_idx)
+            any_failed = False
             all_succeeded = True
             for plugin_item in child.children():
+                if plugin_item.data(model.HasFailed):
+                    any_failed = True
+                    break
                 if not plugin_item.data(model.HasSucceeded):
                     all_succeeded = False
                     break
-            if all_succeeded:
+            if all_succeeded and not any_failed:
                 right_view.collapse(child_idx)
 
     def on_was_reset(self):
@@ -964,6 +968,10 @@ class Window(QtWidgets.QDialog):
             })
 
             result['records'] = records
+
+            # Toggle from artist to overview tab on error
+            if self.data["tabs"]["artist"].isChecked():
+                self.data["tabs"]["overview"].toggle()
 
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
