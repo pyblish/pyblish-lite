@@ -99,8 +99,6 @@ class Controller(QtCore.QObject):
         # Process collectors load rest of plugins with collected instances
         self.collect()
 
-        self.current_error = None
-
         self.processing = {
             "nextOrder": None,
             "ordersWithError": set()

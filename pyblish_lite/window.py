@@ -902,7 +902,6 @@ class Window(QtWidgets.QDialog):
         # Refresh tab
         self.on_tab_changed(self.data["tabs"]["current"])
 
-        self.controller.current_error = None
         self.on_finished()
 
     def on_was_validated(self):
