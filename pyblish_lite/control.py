@@ -238,9 +238,7 @@ class Controller(QtCore.QObject):
                     continue
                 yield plugin, None
 
-    def iterate_and_process(
-        self, plugins, on_finished=lambda: None
-    ):
+    def iterate_and_process(self, plugins, on_finished=lambda: None):
         """ Iterating inserted plugins with current context.
         Collectors do not contain instances, they are None when collecting!
         This process don't stop on one
