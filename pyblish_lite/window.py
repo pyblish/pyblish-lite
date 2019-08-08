@@ -927,6 +927,15 @@ class Window(QtWidgets.QDialog):
         buttons["reset"].show()
         buttons["stop"].hide()
 
+        aditional_btns = self.data["aditional_btns"]
+        aditional_btns["presets_button"].clearMenu()
+        if self.controller.possible_presets:
+            aditional_btns["presets_button"].setEnabled(True)
+            for key in self.controller.possible_presets:
+                aditional_btns["presets_button"].addItem(
+                    key, partial(self.set_presets, key)
+                )
+
         models["instances"].restore_checkstate()
         models["plugins"].restore_checkstate()
 
@@ -1094,6 +1103,8 @@ class Window(QtWidgets.QDialog):
     def reset(self):
         """Prepare GUI for reset"""
         self.info(self.tr("About to reset.."))
+        
+        self.data["aditional_btns"]["presets_button"].setEnabled(False)
 
         models = self.data["models"]
 
