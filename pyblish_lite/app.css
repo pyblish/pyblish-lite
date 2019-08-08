@@ -140,6 +140,13 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
  	background: none;
 }
 
+QToolTip {
+	color: #eee;
+	background-color: #555;
+	border: none;
+	padding: 5px;
+}
+
 /* Specific CSS */
 
 #Terminal QComboBox::drop-down {
@@ -186,6 +193,29 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 
 #Header #OverviewTab {
 	background-image: url("img/tab-overview.png");
+}
+
+#ButtonWithMenu {
+	width: 27px;
+	height: 27px;
+	background: #555;
+	border: 1px solid #fff;
+	border-radius: 4px;
+	font-family: "FontAwesome";
+	font-size: 11pt;
+	color: white;
+}
+
+#ButtonWithMenu:pressed {background: #777;}
+
+#ButtonWithMenu:hover {
+	color: white;
+	background: #666;
+}
+#ButtonWithMenu:disabled {
+	background: #666;
+    color: #999;
+	border: 1px solid #999;
 }
 
 #Footer {
