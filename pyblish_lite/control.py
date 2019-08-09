@@ -48,6 +48,12 @@ class Controller(QtCore.QObject):
         # Data internal to the GUI itself
         self.is_running = False
 
+        # Bools to know in which part of publishing is right now
+        # TODO may be stored in `processing` dict?
+        self.validated = False
+        self.extracted = False
+        self.publishing = False
+
         # Transient state used during publishing.
         self.pair_generator = None        # Active producer of pairs
         self.current_pair = (None, None)  # Active pair
