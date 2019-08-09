@@ -25,6 +25,8 @@ Roles:
 """
 from __future__ import unicode_literals
 
+import logging
+
 from . import settings
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, __binding__
@@ -58,6 +60,7 @@ IsProcessing = QtCore.Qt.UserRole + 5
 HasFailed = QtCore.Qt.UserRole + 6
 HasSucceeded = QtCore.Qt.UserRole + 7
 HasProcessed = QtCore.Qt.UserRole + 8
+HasWarning = QtCore.Qt.UserRole + 62
 Duration = QtCore.Qt.UserRole + 11
 
 # PLUGINS
@@ -176,6 +179,7 @@ class Plugin(Item):
             Docstring: "__doc__",
             ActionIdle: "_action_idle",
             ActionFailed: "_action_failed",
+            HasWarning: "_has_warning",
         })
 
     def append(self, item):
@@ -191,6 +195,7 @@ class Plugin(Item):
         item._has_processed = False
         item._has_succeeded = False
         item._has_failed = False
+        item._has_warning = False
         item._type = "plugin"
 
         item._action_idle = True
@@ -306,9 +311,11 @@ class Plugin(Item):
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
+        hasWarning = any([record.levelno == logging.WARNING for record in result["records"]])
 
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
+        self.setData(index, hasWarning, HasWarning)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
 
