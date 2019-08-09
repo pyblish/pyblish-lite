@@ -854,6 +854,9 @@ class Window(QtWidgets.QDialog):
             any_failed = False
             all_succeeded = True
             for plugin_item in child.children():
+                if plugin_item.data(model.IsOptional):
+                    if not plugin_item.data(model.IsChecked):
+                        continue
                 if plugin_item.data(model.HasFailed):
                     any_failed = True
                     break
