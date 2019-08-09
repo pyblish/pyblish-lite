@@ -14,6 +14,7 @@ import pyblish.util
 import pyblish.logic
 
 from . import util
+from pypeapp import config
 
 
 class Controller(QtCore.QObject):
@@ -44,6 +45,7 @@ class Controller(QtCore.QObject):
 
         self.context = pyblish.api.Context()
         self.plugins = {}
+        self.optional_default = {}
 
         # Data internal to the GUI itself
         self.is_running = False
@@ -65,6 +67,27 @@ class Controller(QtCore.QObject):
             "nextOrder": None,
             "ordersWithError": set()
         }
+
+    def presets_by_hosts(self):
+        # Get global filters as base
+        presets = config.get_presets().get("plugins", {})
+        result = presets.get("global", {}).get("filter", {})
+
+        hosts = pyblish.api.registered_hosts()
+        for host in hosts:
+            host_presets = presets.get(host, {}).get("filter")
+            if not host_presets:
+                continue
+
+            for key, value in host_presets.items():
+                if value is None:
+                    if key in result:
+                        result.pop(key)
+                    continue
+
+                result[key] = value
+
+        return result
 
     def prepare_for_reset(self):
         self.validated = False
@@ -99,6 +122,7 @@ class Controller(QtCore.QObject):
             # - Context probably won't be shown in instance list
             self.prepare_for_reset()
 
+        self.possible_presets = self.presets_by_hosts()
         # Load collectors
         self.load_plugins()
         self.current_error = None
@@ -116,6 +140,7 @@ class Controller(QtCore.QObject):
             "nextOrder": None,
             "ordersWithError": set()
         }
+        self.optional_default = {}
 
         collectors = []
         validators = []
@@ -135,6 +160,11 @@ class Controller(QtCore.QObject):
                 extractors.append(plugin)
             else:
                 conforms.append(plugin)
+
+            if plugin.optional:
+                self.optional_default[plugin.__name__] = (
+                    plugin.__instanceEnabled__
+                )
 
         self.plugins = {
             self.PART_COLLECT: collectors,

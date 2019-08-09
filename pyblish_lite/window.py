@@ -82,17 +82,32 @@ class Window(QtWidgets.QDialog):
         """
 
         header = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(header)
 
+        tab_widget = QtWidgets.QWidget()
         artist_tab = QtWidgets.QRadioButton()
         overview_tab = QtWidgets.QRadioButton()
         terminal_tab = QtWidgets.QRadioButton()
         spacer = QtWidgets.QWidget()
 
-        layout = QtWidgets.QHBoxLayout(header)
-        layout.addWidget(artist_tab, 0)
-        layout.addWidget(overview_tab, 0)
-        layout.addWidget(terminal_tab, 0)
-        layout.addWidget(spacer, 1)  # Compress items to the left
+        aditional_btns = QtWidgets.QWidget()
+
+        aditional_btns_layout = QtWidgets.QHBoxLayout(aditional_btns)
+
+        presets_button = view.ButtonWithMenu(awesome["filter"])
+        presets_button.setEnabled(False)
+        aditional_btns_layout.addWidget(presets_button)
+
+        layout_tab = QtWidgets.QHBoxLayout(tab_widget)
+        layout_tab.addWidget(artist_tab, 0)
+        layout_tab.addWidget(overview_tab, 0)
+        layout_tab.addWidget(terminal_tab, 0)
+        layout_tab.addWidget(spacer, 1)  # Compress items to the left
+        layout_tab.addWidget(aditional_btns, 1)
+        layout_tab.setContentsMargins(0, 0, 0, 0)
+        layout_tab.setSpacing(0)
+
+        layout.addWidget(tab_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -493,6 +508,9 @@ class Window(QtWidgets.QDialog):
                 "stop": stop,
                 "reset": reset
             },
+            "aditional_btns": {
+                "presets_button": presets_button
+            },
             "animation": {
                 "display_info": info_animation,
             },
@@ -590,6 +608,29 @@ class Window(QtWidgets.QDialog):
     # Event handlers
     #
     # -------------------------------------------------------------------------
+    def set_presets(self, key):
+        plugin_settings = self.controller.possible_presets.get(key)
+        plugin_model = self.data["models"]["plugins"]
+
+        for plugin in plugin_model.items:
+            if not plugin.optional:
+                continue
+
+            value = plugin_settings.get(
+                plugin.__name__,
+                # if plugin is not in presets then set default value
+                self.controller.optional_default.get(plugin.__name__)
+            )
+            if value is None:
+                continue
+
+            index = plugin_model.items.index(plugin)
+            index = plugin_model.createIndex(index, 0)
+
+            plugin_model.setData(index, value, model.IsChecked)
+
+        self.data["proxies"]["plugins"].layoutChanged.emit()
+
     def toggle_perspective_widget(self, index=None):
         show = False
         self.last_persp_index = None
@@ -889,6 +930,15 @@ class Window(QtWidgets.QDialog):
         buttons["reset"].show()
         buttons["stop"].hide()
 
+        aditional_btns = self.data["aditional_btns"]
+        aditional_btns["presets_button"].clearMenu()
+        if self.controller.possible_presets:
+            aditional_btns["presets_button"].setEnabled(True)
+            for key in self.controller.possible_presets:
+                aditional_btns["presets_button"].addItem(
+                    key, partial(self.set_presets, key)
+                )
+
         models["instances"].restore_checkstate()
         models["plugins"].restore_checkstate()
 
@@ -1056,6 +1106,8 @@ class Window(QtWidgets.QDialog):
     def reset(self):
         """Prepare GUI for reset"""
         self.info(self.tr("About to reset.."))
+        
+        self.data["aditional_btns"]["presets_button"].setEnabled(False)
 
         models = self.data["models"]
 

@@ -549,3 +549,43 @@ class ExpandableWidget(QtWidgets.QWidget):
             self.content_layout.removeWidget(self.content)
         self.content_layout.addWidget(in_widget)
         self.content = in_widget
+
+
+class ButtonWithMenu(QtWidgets.QWidget):
+    def __init__(self, button_title, parent=None):
+        super(ButtonWithMenu, self).__init__(parent=parent)
+        self.setSizePolicy(QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        ))
+
+        self.layout = QtWidgets.QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+
+        self.menu = QtWidgets.QMenu()
+        self.menu.setStyleSheet("""
+            *{color: #fff; background-color: #555; border: 1px solid #222;}
+            ::item {background-color: transparent;padding: 5px;
+            padding-left: 10px;padding-right: 10px;}
+            ::item:selected {background-color: #666;}
+        """)
+
+        self.button = QtWidgets.QPushButton(button_title)
+        self.button.setObjectName("ButtonWithMenu")
+
+        self.layout.addWidget(self.button)
+
+        self.button.clicked.connect(self.btn_clicked)
+
+    def btn_clicked(self):
+        self.menu.popup(self.button.mapToGlobal(
+            QtCore.QPoint(0, self.button.height())
+        ))
+
+    def addItem(self, text, callback):
+        self.menu.addAction(text, callback)
+        self.button.setToolTip("Select to apply predefined presets")
+
+    def clearMenu(self):
+        self.menu.clear()
+        self.button.setToolTip("Presets not found")
