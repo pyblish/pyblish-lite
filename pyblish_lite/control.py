@@ -147,11 +147,13 @@ class Controller(QtCore.QObject):
 
     def on_collected(self):
         self.was_reset.emit()
+        self.was_finished.emit()
 
     def on_validated(self):
         pyblish.api.emit("validated", context=self.context)
         self.was_validated.emit()
         self.validated = True
+        self.was_finished.emit()
         if self.publishing:
             self.extract()
 
@@ -161,9 +163,9 @@ class Controller(QtCore.QObject):
             self.publish()
 
     def on_published(self):
-        self.was_finished.emit()
         pyblish.api.emit("published", context=self.context)
         self.was_published.emit()
+        self.was_finished.emit()
 
     def act(self, plugin, action):
         context = self.context
