@@ -955,8 +955,6 @@ class Window(QtWidgets.QDialog):
         # Refresh tab
         self.on_tab_changed(self.data["tabs"]["current"])
 
-        self.on_finished()
-
     def on_was_validated(self):
         plugin_model = self.data["models"]["plugins"]
         instance_model = self.data["models"]["instances"]
@@ -978,8 +976,6 @@ class Window(QtWidgets.QDialog):
         buttons["reset"].show()
         buttons["stop"].hide()
 
-        self.on_finished()
-
     def on_was_published(self):
         plugin_model = self.data["models"]["plugins"]
         instance_model = self.data["models"]["instances"]
@@ -998,8 +994,6 @@ class Window(QtWidgets.QDialog):
 
         comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
         comment_box.hide()
-
-        self.on_finished()
 
     def on_was_processed(self, result):
         models = self.data["models"]
