@@ -6,7 +6,7 @@ from . import model
 from .awesome import tags as awesome
 
 colors = {
-    "warning": QtGui.QColor("#ff4a4a"),
+    "failed": QtGui.QColor("#ff4a4a"),
     "ok": QtGui.QColor("#77AE24"),
     "active": QtGui.QColor("#99CEEE"),
     "idle": QtCore.Qt.white,
@@ -15,6 +15,7 @@ colors = {
     "hover": QtGui.QColor(255, 255, 255, 10),
     "selected": QtGui.QColor(255, 255, 255, 20),
     "outline": QtGui.QColor("#333"),
+    "warning": QtGui.QColor("#ffa700"),
 }
 
 record_colors = {
@@ -66,6 +67,9 @@ class Item(QtWidgets.QStyledItemDelegate):
             check_color = colors["active"]
 
         elif index.data(model.HasFailed) is True:
+            check_color = colors["failed"]
+
+        elif index.data(model.HasWarning) is True:
             check_color = colors["warning"]
 
         elif index.data(model.HasSucceeded) is True:
