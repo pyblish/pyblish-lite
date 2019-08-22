@@ -482,7 +482,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
             # TODO Fix this issue:
             # Maya and Nuke have LogFilename and LogPath in strange str object.
             # When printed, empty string is show and value is equal to <string>
-            if not text or text == '<string>':
+            if not text:
                 continue
 
             text = str(text).replace('\n', '<br/>').replace(' ', '&nbsp;')

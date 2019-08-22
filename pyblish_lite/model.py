@@ -180,26 +180,16 @@ class Item(Abstract):
 
 
 def error_from_result(result):
-    in_error = result.get('error')
-    in_error_info = result.get('error_info')
-    error = {}
-    if in_error and isinstance(in_error, dict):
-        error = in_error
-    elif in_error and isinstance(in_error_info, dict):
-        error = in_error_info
-    elif in_error:
-        trc_lines = list()
-        if in_error_info:
-            trc_lines = traceback.format_exception(*in_error_info)
-        fname, line_no, func, exc = in_error.traceback
-        error = {
-            'message': str(in_error),
-            'fname': fname,
-            'line_no': line_no,
-            'func': func,
-            'traceback': trc_lines
+    error = result.get('error')
+    if error:
+        fname, line_no, func, exc = error.traceback
+        return {
+            'message': str(error),
+            'fname': str(fname),
+            'line_no': str(line_no),
+            'func': str(func)
         }
-    return error
+    return {}
 
 
 class Plugin(Item):

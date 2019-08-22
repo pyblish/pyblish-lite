@@ -963,18 +963,17 @@ class Window(QtWidgets.QDialog):
                     plugins_filter = self.data["models"]["filter"]
                     plugins_filter.add_inclusion(role="families", value=f)
 
-        error = result.get('error_info')
+        error = result.get('error')
         if error:
+            fname, line_no, func, exc = error.traceback
             records = result.get('records') or []
-            error_traceback = error['traceback']
 
             records.append({
-                'label': error['msg'],
+                'label': str(error),
                 'type': 'error',
-                'filename': error['filename'],
-                'lineno': error['lineno'],
-                'func': error['func'],
-                'traceback': error['traceback'],
+                'filename': fname,
+                'lineno': line_no,
+                'func': func
             })
 
             result['records'] = records
@@ -1008,18 +1007,17 @@ class Window(QtWidgets.QDialog):
 
         models = self.data["models"]
 
-        error = result.get('error_info')
+        error = result.get('error')
         if error:
+            fname, line_no, func, exc = error.traceback
             records = result.get('records') or []
-            error_traceback = error['traceback']
 
             records.append({
-                'label': error['msg'],
+                'label': str(error),
                 'type': 'error',
-                'filename': error['filename'],
-                'lineno': error['lineno'],
-                'func': error['func'],
-                'traceback': error['traceback'],
+                'filename': fname,
+                'lineno': line_no,
+                'func': func
             })
 
             result['records'] = records
