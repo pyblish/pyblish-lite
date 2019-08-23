@@ -56,7 +56,7 @@ class Window(QtWidgets.QDialog):
                             QtCore.Qt.WindowMaximizeButtonHint |
                             QtCore.Qt.WindowMinimizeButtonHint |
                             QtCore.Qt.WindowCloseButtonHint |
-                            QtCore.Qt.WindowStaysOnTopHint)
+                            QtCore.Qt.Tool)
         self.setWindowIcon(icon)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
