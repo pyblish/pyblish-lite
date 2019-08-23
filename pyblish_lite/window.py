@@ -884,8 +884,8 @@ class Window(QtWidgets.QDialog):
                 break
 
         buttons = self.data["buttons"]
-        buttons["play"].setVisible(not failed)
-        buttons["validate"].setVisible(not failed)
+        buttons["play"].show()
+        buttons["validate"].show()
         buttons["reset"].show()
         buttons["stop"].hide()
 
