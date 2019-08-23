@@ -290,7 +290,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
     def __init__(self, parent):
         super(PerspectiveWidget, self).__init__(parent)
-        # self.setStyleSheet("border:1px solid rgb(0, 255, 0); ")
+
         self.parent_widget = parent
         main_layout = QtWidgets.QVBoxLayout(self)
 
@@ -350,12 +350,14 @@ class PerspectiveWidget(QtWidgets.QWidget):
         layout.addWidget(records)
 
         scroll_widget = QtWidgets.QScrollArea(self)
+        scroll_widget.setStyleSheet((
+            "color: #fff;"
+            "padding: 0px;"
+            "background: #444;"
+        ))
+
         contents_widget = QtWidgets.QWidget(scroll_widget)
         contents_widget.setLayout(layout)
-        contents_widget.setStyleSheet(
-            'padding: 0px;'
-            'background: "#444";'
-        )
 
         scroll_widget.setWidgetResizable(True)
         scroll_widget.setWidget(contents_widget)
