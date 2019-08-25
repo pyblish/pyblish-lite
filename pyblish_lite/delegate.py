@@ -6,7 +6,8 @@ from . import model
 from .awesome import tags as awesome
 
 colors = {
-    "warning": QtGui.QColor("#ff4a4a"),
+    "failed": QtGui.QColor("#ff4a4a"),
+    "warning": QtGui.QColor("#ffa700"),
     "ok": QtGui.QColor("#77AE24"),
     "active": QtGui.QColor("#99CEEE"),
     "idle": QtCore.Qt.white,
@@ -15,7 +16,7 @@ colors = {
     "hover": QtGui.QColor(255, 255, 255, 10),
     "selected": QtGui.QColor(255, 255, 255, 20),
     "outline": QtGui.QColor("#333"),
-    "group_bg": QtGui.QColor("#333")
+    "group_bg": QtGui.QColor("#333"),
 }
 
 record_colors = {
@@ -63,7 +64,6 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         body_rect = QtCore.QRectF(option.rect)
 
-
         check_rect = QtCore.QRectF(body_rect)
 
         check_rect = QtCore.QRectF(body_rect)
@@ -85,6 +85,9 @@ class Item(QtWidgets.QStyledItemDelegate):
             check_color = colors["active"]
 
         elif index.data(model.HasFailed) is True:
+            check_color = colors["failed"]
+
+        elif index.data(model.HasWarning) is True:
             check_color = colors["warning"]
 
         elif index.data(model.HasSucceeded) is True:
@@ -139,9 +142,11 @@ class Item(QtWidgets.QStyledItemDelegate):
             painter.setPen(QtGui.QPen(color))
 
             icon_rect = QtCore.QRectF(option.rect.adjusted(
-                label_rect.width() - perspective_rect.width()/2, label_rect.height() / 3, 0, 0))
-            painter.drawText(icon_rect, icons["action"])
+                label_rect.width() - perspective_rect.width() / 2,
+                label_rect.height() / 3, 0, 0)
+            )
 
+            painter.drawText(icon_rect, icons["action"])
             painter.restore()
 
         # Draw checkbox
@@ -187,7 +192,7 @@ class Section(QtWidgets.QStyledItemDelegate):
         )
         radius = 7.0
         bg_path = QtGui.QPainterPath()
-        bg_path.addRoundedRect(bg_rect, radius, radius);
+        bg_path.addRoundedRect(bg_rect, radius, radius)
         painter.fillPath(bg_path, colors['group_bg'])
 
         metrics = painter.fontMetrics()
@@ -380,7 +385,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
                 painter.fillRect(toggle_rect, check_color)
 
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
-                painter.fillRect(toggle_rect, check_color)
+            painter.fillRect(toggle_rect, check_color)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
             painter.fillRect(body_rect, colors["hover"])
@@ -401,6 +406,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
 class TerminalItem(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
     HEIGHT = 20
+
     def paint(self, painter, option, index):
         """Paint text"""
 
@@ -525,7 +531,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
         # Rounded corners of background rectangle
         radius = 7.0
         bg_path = QtGui.QPainterPath()
-        bg_path.addRoundedRect(QtCore.QRectF(option.rect), radius, radius);
+        bg_path.addRoundedRect(QtCore.QRectF(option.rect), radius, radius)
         painter.fillPath(bg_path, bg_color)
 
         painter.translate(option.rect.x(), option.rect.y())
@@ -562,7 +568,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
 class LogsAndDetails(TerminalDetail):
     """Generic delegate for model items in proxy tree view"""
     HEIGHT = TerminalItem.HEIGHT
-    
+
     def paint(self, painter, option, index):
 
         index_model = index.model()

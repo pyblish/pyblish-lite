@@ -23,10 +23,11 @@ Roles:
     as the key of a dictionary, except they can only be integers.
 
 """
-from __future__ import unicode_literals
-import traceback
 
-import pyblish
+from __future__ import unicode_literals
+import logging
+
+import pyblish.logic
 
 from . import settings, util
 from .awesome import tags as awesome
@@ -63,6 +64,7 @@ IsProcessing = QtCore.Qt.UserRole + 5
 HasFailed = QtCore.Qt.UserRole + 6
 HasSucceeded = QtCore.Qt.UserRole + 7
 HasProcessed = QtCore.Qt.UserRole + 8
+HasWarning = QtCore.Qt.UserRole + 65
 Duration = QtCore.Qt.UserRole + 11
 
 # PLUGINS
@@ -79,6 +81,7 @@ HasCompatible = QtCore.Qt.UserRole + 64
 
 LogRecord = QtCore.Qt.UserRole + 40
 ErrorRecord = QtCore.Qt.UserRole + 41
+
 # LOG RECORDS
 
 LogThreadName = QtCore.Qt.UserRole + 50
@@ -89,8 +92,10 @@ LogLineNumber = QtCore.Qt.UserRole + 54
 LogMessage = QtCore.Qt.UserRole + 55
 LogMilliseconds = QtCore.Qt.UserRole + 56
 LogLevel = QtCore.Qt.UserRole + 61
-LogSize = QtCore.Qt.UserRole + 62
+LogSize = QtCore.Qt.UserRole + 66
+
 # EXCEPTIONS
+
 # Duplicates with LogFilename and LogLineNumber
 # ExcFname = QtCore.Qt.UserRole + 57
 # ExcLineNumber = QtCore.Qt.UserRole + 58
@@ -203,7 +208,8 @@ class Plugin(Item):
             ActionFailed: "_action_failed",
             LogRecord: "_log",
             ErrorRecord: "_error",
-            HasCompatible: "hasCompatible"
+            HasCompatible: "hasCompatible",
+            HasWarning: "_has_warning",
         })
 
     def append(self, item):
@@ -219,6 +225,7 @@ class Plugin(Item):
         item._has_processed = False
         item._has_succeeded = False
         item._has_failed = False
+        item._has_warning = False
         item._type = "plugin"
 
         item._action_idle = True
@@ -341,8 +348,15 @@ class Plugin(Item):
         item = result["plugin"]
         index = self.items.index(item)
         index = self.createIndex(index, 0)
+
+        has_warning = any([
+            record.levelno == logging.WARNING
+            for record in result["records"]
+        ])
+
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
+        self.setData(index, has_warning, HasWarning)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
 
@@ -376,7 +390,7 @@ class Plugin(Item):
                         has_compatible = True
                         break
             else:
-                plugins = pyblish.logic.plugins_by_families([plugin,], families)
+                plugins = pyblish.logic.plugins_by_families([plugin], families)
                 if plugins:
                     has_compatible = True
 
@@ -549,16 +563,11 @@ class Terminal(Abstract):
 
     def update_with_result(self, result):
         for record in result["records"]:
-            ## Filtering should be in view
-            # if record.levelno < settings.TerminalLoglevel:
-            #     continue
-            if isinstance(record, dict):
-                self.append(record)
-                continue
             self.append({
                 "label": text_type(record.msg),
                 "type": "record",
                 "levelno": record.levelno,
+
                 # Native
                 "threadName": record.threadName,
                 "name": record.name,
@@ -836,7 +845,7 @@ class TerminalProxy(QtCore.QAbstractProxyModel):
 
         for index in source_indexes:
             log_label = ProxyTerminalItem(index)
-            if index.data(LogMessage) or index.data(Type)=='error':
+            if index.data(LogMessage) or index.data(Type) == "error":
                 log_item = ProxyTerminalDetail(index)
                 log_label.addChild(log_item)
             self.root.addChild(log_label)

@@ -39,6 +39,8 @@ Todo:
     the first time to understand how to actually to it!
 
 """
+
+import logging
 from functools import partial
 
 from . import delegate, model, settings, util, view, tree
@@ -56,7 +58,7 @@ class Window(QtWidgets.QDialog):
                             QtCore.Qt.WindowMaximizeButtonHint |
                             QtCore.Qt.WindowMinimizeButtonHint |
                             QtCore.Qt.WindowCloseButtonHint |
-                            QtCore.Qt.Tool)
+                            QtCore.Qt.Window)
         self.setWindowIcon(icon)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
@@ -963,20 +965,25 @@ class Window(QtWidgets.QDialog):
                     plugins_filter = self.data["models"]["filter"]
                     plugins_filter.add_inclusion(role="families", value=f)
 
-        error = result.get('error')
+        error = result.get("error")
         if error:
             fname, line_no, func, exc = error.traceback
-            records = result.get('records') or []
 
-            records.append({
-                'label': str(error),
-                'type': 'error',
-                'filename': fname,
-                'lineno': line_no,
-                'func': func
-            })
+            # Display errors as log messages too
+            record = logging.LogRecord(
+                name=str(error),
+                level=logging.ERROR,
+                pathname=fname,
+                lineno=line_no,
+                msg=str(error),
+                args=[],
+                exc_info=None,
+                func=func
+            )
 
-            result['records'] = records
+            records = result.get("records") or []
+            records.append(record)
+            result["records"] = records
 
             # Toggle from artist to overview tab on error
             if self.data["tabs"]["artist"].isChecked():
