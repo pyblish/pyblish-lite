@@ -146,6 +146,7 @@ class Controller(QtCore.QObject):
         self.was_discovered.emit()
 
     def on_collected(self):
+        self.current_error = None
         self.was_reset.emit()
         self.was_finished.emit()
 
