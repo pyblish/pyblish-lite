@@ -1,10 +1,13 @@
 """The Controller in a Model/View/Controller-based application
+
 The graphical components of Pyblish Lite use this object to perform
 publishing. It communicates via the Qt Signals/Slots mechanism
 and has no direct connection to any graphics. This is important,
 because this is how unittests are able to run without requiring
 an active window manager; such as via Travis-CI.
+
 """
+
 import sys
 
 from .vendor.Qt import QtCore
@@ -88,11 +91,12 @@ class Controller(QtCore.QObject):
         self.context.data["__families__"] = ('__context__',)
 
     def reset(self):
-        """
-        Discover plug-ins and run collection
+        """Discover plug-ins and run collection
+
         - prepare_for_reset should be run before
             - was split because of `Context` in instance list
             - reset logic should be used only in window.py in `reset` method
+
         """
         # This is just backup
         if self.context:
@@ -182,12 +186,15 @@ class Controller(QtCore.QObject):
 
     def _process(self, plugin, instance=None):
         """Produce `result` from `plugin` and `instance`
+
         :func:`process` shares state with :func:`_iterator` such that
         an instance/plugin pair can be fetched and processed in isolation.
+
         Arguments:
             plugin (pyblish.api.Plugin): Produce result using plug-in
             instance (optional, pyblish.api.Instance): Process this instance,
                 if no instance is provided, context is processed.
+
         """
 
         self.processing["nextOrder"] = plugin.order
@@ -247,9 +254,12 @@ class Controller(QtCore.QObject):
 
     def iterate_and_process(self, plugins, on_finished=lambda: None):
         """ Iterating inserted plugins with current context.
+
         Collectors do not contain instances, they are None when collecting!
         This process don't stop on one
+
         """
+        
         def on_next():
             if self.current_pair == (None, None):
                 return util.defer(100, on_finished_)
@@ -269,15 +279,22 @@ class Controller(QtCore.QObject):
                 return util.defer(
                     500, lambda: on_unexpected_error(error=exc_msg)
                 )
+
+            # Now that processing has completed, and context potentially
+            # modified with new instances, produce the next pair.
+            #
+            # IMPORTANT: This *must* be done *after* processing of
+            # the current pair, otherwise data generated at that point
+            # will *not* be included.
             try:
                 self.current_pair = next(self.pair_generator)
 
-            except StopIteration as e:
+            except StopIteration:
                 # All pairs were processed successfully!
                 self.current_pair = (None, None)
                 return util.defer(500, on_finished_)
 
-            except Exception as e:
+            except Exception:
                 # This is a bug
                 exc_type, exc_msg, exc_tb = sys.exc_info()
                 self.current_pair = (None, None)
@@ -292,9 +309,10 @@ class Controller(QtCore.QObject):
             return util.defer(500, on_finished_)
 
         def on_finished_():
-            ''' if `self.is_running` is False then processing was stopped by
+            """if `self.is_running` is False then processing was stopped by
             Stop button so we do not want to execute on_finish method!
-            '''
+            """
+
             if self.is_running:
                 on_finished()
 
@@ -304,24 +322,29 @@ class Controller(QtCore.QObject):
         util.defer(10, on_next)
 
     def collect(self):
-        """ Iterate and process Collect plugins
+        """Iterate and process Collect plugins
+
         - load_plugins method is launched again when finished
+
         """
         self.iterate_and_process(
             self.plugins[self.PART_COLLECT], self.on_collected
         )
 
     def validate(self):
-        """ Iterate and process Validate plugins
+        """Iterate and process Validate plugins
+
         - self.validated is set to True when done so we know was processed
+
         """
+
         self.iterate_and_process(
             self.plugins[self.PART_VALIDATE], self.on_validated
         )
 
     def extract(self):
-        """ Iterate and process Extract plugins
-        """
+        """Iterate and process Extract plugins"""
+
         if not self.validated:
             self.validate()
             return
@@ -334,9 +357,12 @@ class Controller(QtCore.QObject):
         )
 
     def publish(self):
-        """ Iterate and process Conform(Integrate) plugins
+        """Iterate and process Conform(Integrate) plugins
+
         - won't start if any extractor fails
+
         """
+
         self.publishing = True
         if not self.extracted:
             self.extract()
@@ -351,15 +377,19 @@ class Controller(QtCore.QObject):
 
     def cleanup(self):
         """Forcefully delete objects from memory
+
         In an ideal world, this shouldn't be necessary. Garbage
         collection guarantees that anything without reference
         is automatically removed.
+
         However, because this application is designed to be run
         multiple times from the same interpreter process, extra
         case must be taken to ensure there are no memory leaks.
+
         Explicitly deleting objects shines a light on where objects
         may still be referenced in the form of an error. No errors
         means this was uneccesary, but that's ok.
+
         """
 
         for instance in self.context:
