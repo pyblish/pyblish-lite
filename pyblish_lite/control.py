@@ -5,6 +5,7 @@ and has no direct connection to any graphics. This is important,
 because this is how unittests are able to run without requiring
 an active window manager; such as via Travis-CI.
 """
+import os
 import sys
 
 from .vendor.Qt import QtCore
@@ -12,6 +13,8 @@ from .vendor.Qt import QtCore
 import pyblish.api
 import pyblish.util
 import pyblish.logic
+import pyblish.lib
+import pyblish.version
 
 from . import util
 from pypeapp import config
@@ -101,6 +104,14 @@ class Controller(QtCore.QObject):
         self.context.data["label"] = 'Context'
         self.context.data["name"] = 'Context'
         self.context.data["_type"] = 'context'
+
+        port = os.environ.get("PYBLISH_CLIENT_PORT", -1)
+
+        self.context.data["host"] = reversed(pyblish.api.registered_hosts())
+        self.context.data["port"] = int(port)
+        self.context.data["connectTime"] = pyblish.lib.time(),
+        self.context.data["pyblishVersion"] = pyblish.version,
+        self.context.data["pythonVersion"] = sys.version
 
         self.context.data["icon"] = 'book'
 
