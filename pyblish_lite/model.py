@@ -437,9 +437,11 @@ class Instance(Item):
         item._log = []
 
         # Merge `family` and `families` for backwards compatibility
-        item.data["__families__"] = (
-            [item.data["family"]] + item.data.get("families", [])
-        )
+        family = item.data["family"]
+        families = [f for f in item.data.get("families")] or []
+        if family in families:
+            families.remove(family)
+        item.data["__families__"] = [family] + families
 
         return super(Instance, self).append(item)
 
