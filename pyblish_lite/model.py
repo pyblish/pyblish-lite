@@ -230,6 +230,7 @@ class Plugin(Item):
         item._has_succeeded = False
         item._has_failed = False
         item._type = "plugin"
+        item._log = []
 
         item._action_idle = True
         item._action_processing = False
@@ -326,6 +327,7 @@ class Plugin(Item):
 
         if role == PathModule:
             return item.__module__
+
         key = self.schema.get(role)
         value = getattr(item, key, None) if key is not None else None
         if value is None:
@@ -409,7 +411,9 @@ class Instance(Item):
 
     def append(self, item):
 
-        if getattr(item, "_type", None) or item.data.get("_type") == "context":
+        if (
+            getattr(item, "_type", None) or item.data.get("_type")
+        ) == "context":
             self.ids.append(item.id)
             self.context_item = item
             return super(Instance, self).append(item)
@@ -430,6 +434,7 @@ class Instance(Item):
         item._has_succeeded = False
         item._has_failed = False
         item._is_idle = True
+        item._log = []
 
         # Merge `family` and `families` for backwards compatibility
         item.data["__families__"] = (
