@@ -63,9 +63,6 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         body_rect = QtCore.QRectF(option.rect)
 
-
-        check_rect = QtCore.QRectF(body_rect)
-
         check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
         check_rect.adjust(6, 6, -6, -6)
@@ -148,11 +145,14 @@ class Item(QtWidgets.QStyledItemDelegate):
         pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
 
+        optional_check_rect = QtCore.QRectF(check_rect)
+        optional_check_rect.adjust(2, 2, -1, -1)
+
         if index.data(model.IsOptional):
             painter.drawRect(check_rect)
 
             if index.data(model.IsChecked):
-                painter.fillRect(check_rect, check_color)
+                painter.fillRect(optional_check_rect, check_color)
 
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
             painter.fillRect(check_rect, check_color)
@@ -562,7 +562,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
 class LogsAndDetails(TerminalDetail):
     """Generic delegate for model items in proxy tree view"""
     HEIGHT = TerminalItem.HEIGHT
-    
+
     def paint(self, painter, option, index):
 
         index_model = index.model()
