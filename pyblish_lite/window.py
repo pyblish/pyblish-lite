@@ -1092,6 +1092,7 @@ class Window(QtWidgets.QDialog):
         error = self.controller.current_error
         if error is not None:
             self.info(self.tr("Stopped due to error(s), see Terminal."))
+            self.data["footer"].setStyleSheet("background-color: #AA5050")
         else:
             self.info(self.tr("Finished successfully!"))
 
