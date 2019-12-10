@@ -98,8 +98,8 @@ class Controller(QtCore.QObject):
         self.publishing = False
 
         self.context = pyblish.api.Context()
-        self.context.optional = False
-        self.context.publish = True
+        self.context.data["optional"] = False
+        self.context.data["publish"] = True
 
         self.context.data["label"] = 'Context'
         self.context.data["name"] = 'Context'
@@ -118,6 +118,7 @@ class Controller(QtCore.QObject):
         self.context._has_succeeded = False
         self.context._has_failed = False
         self.context._is_idle = True
+        self.context._log = []
 
         self.context.data["__families__"] = ('__context__',)
 
