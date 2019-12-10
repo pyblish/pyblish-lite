@@ -484,6 +484,7 @@ class Instance(Item):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        return True
 
     def update_with_result(self, result):
         item = result["instance"]
@@ -570,6 +571,7 @@ class Terminal(Abstract):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        return True
 
     def update_with_result(self, result):
         for record in result["records"]:
@@ -897,6 +899,7 @@ class TerminalProxy(QtCore.QAbstractProxyModel):
         else:
             self.dataChanged.emit(index, index, [role])
         self.layoutChanged.emit()
+        return True
 
     def is_header(self, index):
         """Return whether index is a header"""
