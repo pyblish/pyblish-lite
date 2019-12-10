@@ -469,7 +469,7 @@ class Instance(Item):
         return value
 
     def setData(self, index, value, role):
-        item = self.items[index.row()]
+        item = super(Instance, self).data(index, Object)
         key = self.schema.get(role)
 
         if key is None:
