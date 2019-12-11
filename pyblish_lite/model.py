@@ -180,26 +180,19 @@ class Item(Abstract):
 
 
 def error_from_result(result):
-    in_error = result.get('error')
-    in_error_info = result.get('error_info')
-    error = {}
-    if in_error and isinstance(in_error, dict):
-        error = in_error
-    elif in_error and isinstance(in_error_info, dict):
-        error = in_error_info
-    elif in_error:
-        trc_lines = list()
-        if in_error_info:
-            trc_lines = traceback.format_exception(*in_error_info)
-        fname, line_no, func, exc = in_error.traceback
-        error = {
-            'message': str(in_error),
-            'fname': fname,
-            'line_no': line_no,
-            'func': func,
-            'traceback': trc_lines
-        }
-    return error
+    error = result.get('error')
+
+    if not error:
+        return {}
+
+    fname, line_no, func, exc = error.traceback
+    return {
+        "message": str(error),
+        "fname": str(fname),
+        "line_no": str(line_no),
+        "func": str(func),
+        "traceback": error.formatted_traceback
+    }
 
 
 class Plugin(Item):
@@ -230,6 +223,7 @@ class Plugin(Item):
         item._has_succeeded = False
         item._has_failed = False
         item._type = "plugin"
+        item._log = []
 
         item._action_idle = True
         item._action_processing = False
@@ -326,6 +320,7 @@ class Plugin(Item):
 
         if role == PathModule:
             return item.__module__
+
         key = self.schema.get(role)
         value = getattr(item, key, None) if key is not None else None
         if value is None:
@@ -408,7 +403,10 @@ class Instance(Item):
         self.context_item = None
 
     def append(self, item):
-        if item.data.get('_type') == 'context':
+
+        if (
+            getattr(item, "_type", None) or item.data.get("_type")
+        ) == "context":
             self.ids.append(item.id)
             self.context_item = item
             return super(Instance, self).append(item)
@@ -425,14 +423,18 @@ class Instance(Item):
         self.ids.append(item.id)
 
         # GUI-only data
-        item.data["_type"] = "instance"
-        item.data["_has_succeeded"] = False
-        item.data["_has_failed"] = False
-        item.data["_is_idle"] = True
+        item._type = "instance"
+        item._has_succeeded = False
+        item._has_failed = False
+        item._is_idle = True
+        item._log = []
 
         # Merge `family` and `families` for backwards compatibility
-        item.data["__families__"] = ([item.data["family"]] +
-                                     item.data.get("families", []))
+        family = item.data["family"]
+        families = [f for f in item.data.get("families")] or []
+        if family in families:
+            families.remove(family)
+        item.data["__families__"] = [family] + families
 
         return super(Instance, self).append(item)
 
@@ -450,7 +452,9 @@ class Instance(Item):
             return awesome.get(item.data.get("icon"))
 
         key = self.schema.get(role)
-        value = item.data.get(key) if key is not None else None
+        value = None
+        if key:
+            value = getattr(item, key, None) or item.data.get(key)
 
         if value is None:
             value = super(Instance, self).data(index, role)
@@ -458,18 +462,25 @@ class Instance(Item):
         return value
 
     def setData(self, index, value, role):
-        item = self.items[index.row()]
+        item = super(Instance, self).data(index, Object)
         key = self.schema.get(role)
 
         if key is None:
             return
 
-        item.data[key] = value
+        _has_attr = False
+        if hasattr(item, key):
+            _has_attr = True
+            setattr(item, key, value)
+
+        if key in item.data or not _has_attr:
+            item.data[key] = value
 
         if __binding__ in ("PyQt4", "PySide"):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        return True
 
     def update_with_result(self, result):
         item = result["instance"]
@@ -556,6 +567,7 @@ class Terminal(Abstract):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        return True
 
     def update_with_result(self, result):
         for record in result["records"]:
@@ -883,6 +895,7 @@ class TerminalProxy(QtCore.QAbstractProxyModel):
         else:
             self.dataChanged.emit(index, index, [role])
         self.layoutChanged.emit()
+        return True
 
     def is_header(self, index):
         """Return whether index is a header"""
