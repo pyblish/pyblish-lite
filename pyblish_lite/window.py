@@ -463,6 +463,7 @@ class Window(QtWidgets.QDialog):
         self.data = {
             "header": header,
             "body": body,
+            "footer": footer,
             "views": {
                 "artist": artist_view,
                 "left": left_view,
@@ -904,6 +905,7 @@ class Window(QtWidgets.QDialog):
                 if not plugin_item.data(model.HasSucceeded):
                     all_succeeded = False
                     break
+
             if all_succeeded and not any_failed:
                 right_view.collapse(child_idx)
 
@@ -994,6 +996,9 @@ class Window(QtWidgets.QDialog):
 
         comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
         comment_box.hide()
+
+        if self.controller.current_error is None:
+            self.data["footer"].setStyleSheet("background-color: #458056")
 
     def on_was_processed(self, result):
         models = self.data["models"]
@@ -1087,6 +1092,7 @@ class Window(QtWidgets.QDialog):
         error = self.controller.current_error
         if error is not None:
             self.info(self.tr("Stopped due to error(s), see Terminal."))
+            self.data["footer"].setStyleSheet("background-color: #AA5050")
         else:
             self.info(self.tr("Finished successfully!"))
 
@@ -1102,6 +1108,7 @@ class Window(QtWidgets.QDialog):
         self.info(self.tr("About to reset.."))
 
         self.data["aditional_btns"]["presets_button"].setEnabled(False)
+        self.data["footer"].setStyleSheet("")
 
         models = self.data["models"]
 
