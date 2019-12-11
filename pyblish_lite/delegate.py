@@ -63,9 +63,6 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         body_rect = QtCore.QRectF(option.rect)
 
-
-        check_rect = QtCore.QRectF(body_rect)
-
         check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
         check_rect.adjust(6, 6, -6, -6)
@@ -138,8 +135,12 @@ class Item(QtWidgets.QStyledItemDelegate):
             painter.setFont(fonts["smallAwesome"])
             painter.setPen(QtGui.QPen(color))
 
-            icon_rect = QtCore.QRectF(option.rect.adjusted(
-                label_rect.width() - perspective_rect.width()/2, label_rect.height() / 3, 0, 0))
+            icon_rect = QtCore.QRectF(
+                option.rect.adjusted(
+                    label_rect.width() - perspective_rect.width()/2,
+                    label_rect.height() / 3, 0, 0
+                )
+            )
             painter.drawText(icon_rect, icons["action"])
 
             painter.restore()
@@ -148,11 +149,14 @@ class Item(QtWidgets.QStyledItemDelegate):
         pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
 
+        optional_check_rect = QtCore.QRectF(check_rect)
+        optional_check_rect.adjust(2, 2, -1, -1)
+
         if index.data(model.IsOptional):
             painter.drawRect(check_rect)
 
             if index.data(model.IsChecked):
-                painter.fillRect(check_rect, check_color)
+                painter.fillRect(optional_check_rect, check_color)
 
         elif not index.data(model.IsIdle) and index.data(model.IsChecked):
             painter.fillRect(check_rect, check_color)
@@ -187,7 +191,7 @@ class Section(QtWidgets.QStyledItemDelegate):
         )
         radius = 7.0
         bg_path = QtGui.QPainterPath()
-        bg_path.addRoundedRect(bg_rect, radius, radius);
+        bg_path.addRoundedRect(bg_rect, radius, radius)
         painter.fillPath(bg_path, colors['group_bg'])
 
         metrics = painter.fontMetrics()
@@ -525,7 +529,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
         # Rounded corners of background rectangle
         radius = 7.0
         bg_path = QtGui.QPainterPath()
-        bg_path.addRoundedRect(QtCore.QRectF(option.rect), radius, radius);
+        bg_path.addRoundedRect(QtCore.QRectF(option.rect), radius, radius)
         painter.fillPath(bg_path, bg_color)
 
         painter.translate(option.rect.x(), option.rect.y())
@@ -562,7 +566,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
 class LogsAndDetails(TerminalDetail):
     """Generic delegate for model items in proxy tree view"""
     HEIGHT = TerminalItem.HEIGHT
-    
+
     def paint(self, painter, option, index):
 
         index_model = index.model()
