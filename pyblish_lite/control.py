@@ -103,6 +103,7 @@ class Controller(QtCore.QObject):
 
         self.context.data["label"] = 'Context'
         self.context.data["name"] = 'Context'
+        self.context.data["_type"] = 'context'
 
         port = os.environ.get("PYBLISH_CLIENT_PORT", -1)
 
@@ -114,11 +115,9 @@ class Controller(QtCore.QObject):
 
         self.context.data["icon"] = 'book'
 
-        self.context._type = 'context'
-        self.context._has_succeeded = False
-        self.context._has_failed = False
-        self.context._is_idle = True
-        self.context._log = []
+        self.context.data["_has_succeeded"] = False
+        self.context.data["_has_failed"] = False
+        self.context.data["_is_idle"] = True
 
         self.context.data["__families__"] = ('__context__',)
 

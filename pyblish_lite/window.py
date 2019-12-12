@@ -1063,18 +1063,18 @@ class Window(QtWidgets.QDialog):
 
         models = self.data["models"]
 
-        error = result.get('error')
+        error = result.get('error_info')
         if error:
             records = result.get('records') or []
-            fname, line_no, func, exc = error.traceback
+            error_traceback = error['traceback']
 
             records.append({
-                'label': str(error),
+                'label': error['msg'],
                 'type': 'error',
-                'filename': str(fname),
-                'lineno': str(line_no),
-                'func': str(func),
-                'traceback': error.formatted_traceback,
+                'filename': error['filename'],
+                'lineno': error['lineno'],
+                'func': error['func'],
+                'traceback': error['traceback'],
             })
 
             result['records'] = records
