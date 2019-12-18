@@ -30,8 +30,14 @@ import pyblish
 
 from . import settings, util
 from .awesome import tags as awesome
-from .vendor.Qt import QtCore, __binding__
+from .vendor.Qt import QtCore, QtGui, __binding__
 from .vendor.six import text_type
+
+try:
+    from pypeapp import config
+    get_presets = config.get_presets
+except Exception:
+    get_presets = lambda: {}
 
 # GENERAL
 
@@ -96,6 +102,63 @@ LogSize = QtCore.Qt.UserRole + 62
 # ExcLineNumber = QtCore.Qt.UserRole + 58
 ExcFunc = QtCore.Qt.UserRole + 59
 ExcTraceback = QtCore.Qt.UserRole + 60
+
+IntentItemValue = QtCore.Qt.UserRole + 65
+
+
+class IntentModel(QtGui.QStandardItemModel):
+    """Model for QComboBox with intents.
+
+    It is expected that one inserted item is dictionary.
+    Key represents #Label and Value represent #Value.
+
+    Example:
+    {
+        "Testing": "test",
+        "Publishing": "publish"
+    }
+
+    First and default value is {"< Not Set >": None}
+    """
+
+    default_item = {"< Not Set >": None}
+
+    def __init__(self, parent=None):
+        super(IntentModel, self).__init__(parent)
+        self._item_count = 0
+
+    @property
+    def has_items(self):
+        return self._item_count > 0
+
+    def reset(self):
+        self.clear()
+        self._item_count = 0
+
+        intents_preset = (
+            get_presets()
+            .get("tools", {})
+            .get("pyblish", {})
+            .get("ui", {})
+            .get("intents", {})
+        )
+        items = intents_preset.get("items", {})
+        if not items:
+            return
+
+        default = intents_preset.get("default", True)
+        if default:
+            self.add_items(self.default_item)
+        self.add_items(items)
+
+    def add_items(self, items):
+        for label, value in items.items():
+            new_item = QtGui.QStandardItem()
+            new_item.setData(label, QtCore.Qt.DisplayRole)
+            new_item.setData(value, IntentItemValue)
+
+            self.setItem(self._item_count, new_item)
+            self._item_count += 1
 
 
 class Abstract(QtCore.QAbstractListModel):
