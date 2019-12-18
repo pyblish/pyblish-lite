@@ -793,27 +793,43 @@ class Window(QtWidgets.QDialog):
 
         page = self.data["pages"][target]
 
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
+        intent_box = self.data["comment_intent"]["intent"]
 
         if target == "terminal":
             comment_box.hide()
+            intent_box.hide()
         else:
             comment_box.setVisible(comment_box.isEnabled())
+            intent_box.model().has_items
+            intent_box.setVisible(
+                intent_box.model().has_items and intent_box.isEnabled()
+            )
 
         page.show()
 
         self.data["tabs"]["current"] = target
 
     def on_validate_clicked(self):
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
         comment_box.setEnabled(False)
         comment_box.hide()
+
+        intent_box = self.data["comment_intent"]["intent"]
+        intent_box.setEnabled(False)
+        intent_box.hide()
+
         self.validate()
 
     def on_play_clicked(self):
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
         comment_box.setEnabled(False)
         comment_box.hide()
+
+        intent_box = self.data["comment_intent"]["intent"]
+        intent_box.setEnabled(False)
+        intent_box.hide()
+
         self.publish()
 
     def on_reset_clicked(self):
@@ -832,7 +848,7 @@ class Window(QtWidgets.QDialog):
 
     def on_comment_entered(self):
         """The user has typed a comment"""
-        text_edit = self.findChild(QtWidgets.QWidget, "CommentBox")
+        text_edit = self.data["comment_intent"]["comment"]
         comment = text_edit.text()
 
         # Store within context
@@ -841,6 +857,14 @@ class Window(QtWidgets.QDialog):
 
         placeholder = self.findChild(QtWidgets.QLabel, "CommentPlaceholder")
         placeholder.setVisible(not comment)
+
+    def on_intent_changed(self):
+        intent_box = self.data["comment_intent"]["intent"]
+        idx = intent_box.model().index(intent_box.currentIndex(), 0)
+        intent = intent_box.model().data(idx, model.IntentItemValue)
+
+        context = self.controller.context
+        context.data["intent"] = intent
 
     def on_about_to_process(self, plugin, instance):
         """Reflect currently running pair in GUI"""
@@ -974,7 +998,7 @@ class Window(QtWidgets.QDialog):
         # for artists to fill in.
         comment = self.controller.context.data.get("comment")
 
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
         comment_box.setText(comment or None)
         comment_box.setEnabled(comment is not None)
 
@@ -1148,8 +1172,14 @@ class Window(QtWidgets.QDialog):
         for b in self.data["buttons"].values():
             b.hide()
 
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
         comment_box.hide()
+
+        intent_box = self.data["comment_intent"]["intent"]
+        intent_model = intent_box.model()
+        if intent_model.has_items:
+            intent_box.setCurrentIndex(0)
+        intent_box.hide()
 
         # Prepare Context object in controller (create new one)
         self.controller.prepare_for_reset()
