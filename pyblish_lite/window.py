@@ -243,10 +243,10 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(terminal_page)
 
         """Comment Box
-         ____________________________
-        |> My comment                |
-        |                            |
-        |____________________________|
+         ____________________________ ______________
+        |> My comment                | intent [ v ] |
+        |                            |              |
+        |____________________________|______________|
 
         """
 
@@ -256,6 +256,21 @@ class Window(QtWidgets.QDialog):
         comment_placeholder.move(2, 2)
         comment_box.setEnabled(False)
         comment_box.hide()
+
+        intent_box = QtWidgets.QComboBox()
+
+        intent_model = model.IntentModel()
+        intent_box.setModel(intent_model)
+        intent_box.hide()
+        intent_box.currentIndexChanged.connect(self.on_intent_changed)
+        intent_view = intent_box.view()
+        # intent_view.setSpacing(2)
+
+        comment_intent_layout = QtWidgets.QHBoxLayout()
+        comment_intent_layout.setContentsMargins(5, 5, 5, 5)
+        comment_intent_layout.setSpacing(5)
+        comment_intent_layout.addWidget(comment_box)
+        comment_intent_layout.addWidget(intent_box)
 
         """Details View
          ____________________________
@@ -316,7 +331,7 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(body, 3)
         layout.addWidget(self.perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
-        layout.addWidget(comment_box, 0)
+        layout.addLayout(comment_intent_layout, 0)
         layout.addWidget(footer, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -442,6 +457,7 @@ class Window(QtWidgets.QDialog):
             "CommentBox": comment_box,
             "CommentPlaceholder": comment_placeholder,
             "ClosingPlaceholder": closing_placeholder,
+            "IntentBox": intent_box
         }
 
         for name, w in names.items():
@@ -474,7 +490,7 @@ class Window(QtWidgets.QDialog):
                 "terminal": terminal_view,
             },
             "modals": {
-                "details": details,
+                "details": details
             },
             "proxies": {
                 "plugins": right_proxy,
@@ -486,6 +502,7 @@ class Window(QtWidgets.QDialog):
                 "plugins": plugin_model,
                 "filter": filter_model,
                 "terminal": terminal_model,
+                "intent_model": intent_model
             },
             "terminal_toggles": {
                 "record": show_records,
@@ -505,6 +522,10 @@ class Window(QtWidgets.QDialog):
                 "artist": artist_page,
                 "overview": overview_page,
                 "terminal": terminal_page,
+            },
+            "comment_intent": {
+                "comment": comment_box,
+                "intent": intent_box
             },
             "buttons": {
                 "play": play,
