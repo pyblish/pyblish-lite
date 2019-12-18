@@ -229,8 +229,6 @@ QToolTip {
 #CommentBox, #CommentPlaceholder {
 	font-family: Open Sans;
 	font-size: 8pt;
-	margin: 5px;
-	margin-bottom: 0px;
 	padding: 5px;
 }
 
@@ -241,6 +239,23 @@ QToolTip {
 
 #CommentPlaceholder {
 	color: #888
+}
+
+#IntentBox {
+    background-color: #444;
+	font-size: 8pt;
+	padding: 5px;
+    min-width: 75px;
+	color: #EEE;
+}
+
+#IntentBox::drop-down:button {
+	border: 0px;
+	background: transparent;
+}
+
+#IntentBox::down-arrow {
+	image: url("/img/down_arrow.png");
 }
 
 #Details {
