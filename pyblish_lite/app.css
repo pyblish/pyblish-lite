@@ -99,16 +99,16 @@ QComboBox {
 	padding: 0px;
 }
 
-QComboBox::drop-down {
+QComboBox[combolist="true"]::drop-down {
 	background: transparent;
 }
 
-QComboBox::down-arrow {
+QComboBox[combolist="true"]::down-arrow {
 	max-width: 0px;
 	width: 1px;
 }
 
-QComboBox QAbstractItemView {
+QComboBox[combolist="true"] QAbstractItemView {
 	background: #555;
 }
 

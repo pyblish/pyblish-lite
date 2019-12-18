@@ -208,6 +208,9 @@ class Window(QtWidgets.QDialog):
         show_error = QtWidgets.QCheckBox()
         show_critical = QtWidgets.QCheckBox()
 
+        plugin_combo.setProperty("combolist", True)
+        instance_combo.setProperty("combolist", True)
+
         layout = QtWidgets.QHBoxLayout(terminal_footer)
         for w in (search_box,
                   instance_combo,
