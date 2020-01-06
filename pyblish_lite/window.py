@@ -208,6 +208,9 @@ class Window(QtWidgets.QDialog):
         show_error = QtWidgets.QCheckBox()
         show_critical = QtWidgets.QCheckBox()
 
+        plugin_combo.setProperty("combolist", True)
+        instance_combo.setProperty("combolist", True)
+
         layout = QtWidgets.QHBoxLayout(terminal_footer)
         for w in (search_box,
                   instance_combo,
@@ -240,10 +243,10 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(terminal_page)
 
         """Comment Box
-         ____________________________
-        |> My comment                |
-        |                            |
-        |____________________________|
+         ____________________________ ______________
+        |> My comment                | intent [ v ] |
+        |                            |              |
+        |____________________________|______________|
 
         """
 
@@ -253,6 +256,21 @@ class Window(QtWidgets.QDialog):
         comment_placeholder.move(2, 2)
         comment_box.setEnabled(False)
         comment_box.hide()
+
+        intent_box = QtWidgets.QComboBox()
+
+        intent_model = model.IntentModel()
+        intent_box.setModel(intent_model)
+        intent_box.hide()
+        intent_box.currentIndexChanged.connect(self.on_intent_changed)
+        intent_view = intent_box.view()
+        # intent_view.setSpacing(2)
+
+        comment_intent_layout = QtWidgets.QHBoxLayout()
+        comment_intent_layout.setContentsMargins(5, 5, 5, 5)
+        comment_intent_layout.setSpacing(5)
+        comment_intent_layout.addWidget(comment_box)
+        comment_intent_layout.addWidget(intent_box)
 
         """Details View
          ____________________________
@@ -313,7 +331,7 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(body, 3)
         layout.addWidget(self.perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
-        layout.addWidget(comment_box, 0)
+        layout.addLayout(comment_intent_layout, 0)
         layout.addWidget(footer, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -439,6 +457,7 @@ class Window(QtWidgets.QDialog):
             "CommentBox": comment_box,
             "CommentPlaceholder": comment_placeholder,
             "ClosingPlaceholder": closing_placeholder,
+            "IntentBox": intent_box
         }
 
         for name, w in names.items():
@@ -471,7 +490,7 @@ class Window(QtWidgets.QDialog):
                 "terminal": terminal_view,
             },
             "modals": {
-                "details": details,
+                "details": details
             },
             "proxies": {
                 "plugins": right_proxy,
@@ -483,6 +502,7 @@ class Window(QtWidgets.QDialog):
                 "plugins": plugin_model,
                 "filter": filter_model,
                 "terminal": terminal_model,
+                "intent_model": intent_model
             },
             "terminal_toggles": {
                 "record": show_records,
@@ -502,6 +522,10 @@ class Window(QtWidgets.QDialog):
                 "artist": artist_page,
                 "overview": overview_page,
                 "terminal": terminal_page,
+            },
+            "comment_intent": {
+                "comment": comment_box,
+                "intent": intent_box
             },
             "buttons": {
                 "play": play,
@@ -769,27 +793,43 @@ class Window(QtWidgets.QDialog):
 
         page = self.data["pages"][target]
 
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
+        intent_box = self.data["comment_intent"]["intent"]
 
         if target == "terminal":
             comment_box.hide()
+            intent_box.hide()
         else:
             comment_box.setVisible(comment_box.isEnabled())
+            intent_box.model().has_items
+            intent_box.setVisible(
+                intent_box.model().has_items and intent_box.isEnabled()
+            )
 
         page.show()
 
         self.data["tabs"]["current"] = target
 
     def on_validate_clicked(self):
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
         comment_box.setEnabled(False)
         comment_box.hide()
+
+        intent_box = self.data["comment_intent"]["intent"]
+        intent_box.setEnabled(False)
+        intent_box.hide()
+
         self.validate()
 
     def on_play_clicked(self):
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
         comment_box.setEnabled(False)
         comment_box.hide()
+
+        intent_box = self.data["comment_intent"]["intent"]
+        intent_box.setEnabled(False)
+        intent_box.hide()
+
         self.publish()
 
     def on_reset_clicked(self):
@@ -808,7 +848,7 @@ class Window(QtWidgets.QDialog):
 
     def on_comment_entered(self):
         """The user has typed a comment"""
-        text_edit = self.findChild(QtWidgets.QWidget, "CommentBox")
+        text_edit = self.data["comment_intent"]["comment"]
         comment = text_edit.text()
 
         # Store within context
@@ -817,6 +857,14 @@ class Window(QtWidgets.QDialog):
 
         placeholder = self.findChild(QtWidgets.QLabel, "CommentPlaceholder")
         placeholder.setVisible(not comment)
+
+    def on_intent_changed(self):
+        intent_box = self.data["comment_intent"]["intent"]
+        idx = intent_box.model().index(intent_box.currentIndex(), 0)
+        intent = intent_box.model().data(idx, model.IntentItemValue)
+
+        context = self.controller.context
+        context.data["intent"] = intent
 
     def on_about_to_process(self, plugin, instance):
         """Reflect currently running pair in GUI"""
@@ -950,7 +998,7 @@ class Window(QtWidgets.QDialog):
         # for artists to fill in.
         comment = self.controller.context.data.get("comment")
 
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
         comment_box.setText(comment or None)
         comment_box.setEnabled(comment is not None)
 
@@ -1124,8 +1172,14 @@ class Window(QtWidgets.QDialog):
         for b in self.data["buttons"].values():
             b.hide()
 
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
+        comment_box = self.data["comment_intent"]["comment"]
         comment_box.hide()
+
+        intent_box = self.data["comment_intent"]["intent"]
+        intent_model = intent_box.model()
+        if intent_model.has_items:
+            intent_box.setCurrentIndex(0)
+        intent_box.hide()
 
         # Prepare Context object in controller (create new one)
         self.controller.prepare_for_reset()
