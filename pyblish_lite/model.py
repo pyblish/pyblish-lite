@@ -180,26 +180,19 @@ class Item(Abstract):
 
 
 def error_from_result(result):
-    in_error = result.get('error')
-    in_error_info = result.get('error_info')
-    error = {}
-    if in_error and isinstance(in_error, dict):
-        error = in_error
-    elif in_error and isinstance(in_error_info, dict):
-        error = in_error_info
-    elif in_error:
-        trc_lines = list()
-        if in_error_info:
-            trc_lines = traceback.format_exception(*in_error_info)
-        fname, line_no, func, exc = in_error.traceback
-        error = {
-            'message': str(in_error),
-            'fname': fname,
-            'line_no': line_no,
-            'func': func,
-            'traceback': trc_lines
-        }
-    return error
+    error = result.get('error')
+
+    if not error:
+        return {}
+
+    fname, line_no, func, exc = error.traceback
+    return {
+        "message": str(error),
+        "fname": str(fname),
+        "line_no": str(line_no),
+        "func": str(func),
+        "traceback": error.formatted_traceback
+    }
 
 
 class Plugin(Item):
@@ -431,8 +424,11 @@ class Instance(Item):
         item.data["_is_idle"] = True
 
         # Merge `family` and `families` for backwards compatibility
-        item.data["__families__"] = ([item.data["family"]] +
-                                     item.data.get("families", []))
+        family = item.data["family"]
+        families = [f for f in item.data.get("families")] or []
+        if family in families:
+            families.remove(family)
+        item.data["__families__"] = [family] + families
 
         return super(Instance, self).append(item)
 
@@ -458,7 +454,7 @@ class Instance(Item):
         return value
 
     def setData(self, index, value, role):
-        item = self.items[index.row()]
+        item = super(Instance, self).data(index, Object)
         key = self.schema.get(role)
 
         if key is None:
@@ -470,6 +466,7 @@ class Instance(Item):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        return True
 
     def update_with_result(self, result):
         item = result["instance"]
@@ -556,6 +553,7 @@ class Terminal(Abstract):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+        return True
 
     def update_with_result(self, result):
         for record in result["records"]:
@@ -883,6 +881,7 @@ class TerminalProxy(QtCore.QAbstractProxyModel):
         else:
             self.dataChanged.emit(index, index, [role])
         self.layoutChanged.emit()
+        return True
 
     def is_header(self, index):
         """Return whether index is a header"""
