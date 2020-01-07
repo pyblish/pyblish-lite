@@ -234,7 +234,7 @@ class Window(QtWidgets.QDialog):
         # Add some room between window borders and contents
         body = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(body)
-        layout.setContentsMargins(5, 5, 5, 0)
+        layout.setContentsMargins(5, 5, 5, 1)
         layout.addWidget(artist_page)
         layout.addWidget(overview_page)
         layout.addWidget(terminal_page)

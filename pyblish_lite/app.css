@@ -2,10 +2,8 @@
 
 * {
 	outline: none;
-	color: #DDD;
-    font-family: "Open Sans";
-	background-position: center center;
-	background-repeat: no-repeat;
+	color: #ddd;
+  font-family: "Open Sans";
 }
 
 /* General CSS */
@@ -58,7 +56,7 @@ QPushButton {
 	font-size: 11pt;
 	color: white;
 	padding: 0px;
-    outline: none;
+	outline: none;
 }
 
 QPushButton:pressed {
@@ -156,6 +154,22 @@ QToolTip {
 	padding: 5px;
 }
 
+QLabel {
+	border-radius: 0px;
+}
+
+QToolButton {
+	background-color: transparent;
+	margin: 0px;
+	padding: 3px;
+	border-radius: 0px;
+	min-width: 20px;
+}
+
+QToolButton:hover {
+	background-color: #666;
+}
+
 /* Specific CSS */
 
 #Terminal QComboBox::drop-down {
@@ -163,11 +177,14 @@ QToolTip {
 }
 
 #Header {
-	background: "#555";
-	border: 1px solid "#444";
+	background: #555;
+	border: 1px solid #444;
+	padding: 0px;
+	margin: 0px;
 }
 
 #Header QRadioButton {
+	border: 3px solid "transparent";
 	border-right: 1px solid #333;
 	left: 2px;
 }
@@ -175,22 +192,24 @@ QToolTip {
 #Header QRadioButton::indicator {
 	width: 65px;
 	height: 40px;
-	border: 0px solid "transparent";
 	background-repeat: no-repeat;
 	background-position: center center;
 	image: none;
 }
 
+#Header QRadioButton:hover {
+	background-color: rgba(255, 255, 255, 10);
+}
+
 #Header QRadioButton:checked {
-	padding: 0px;
 	background-color: rgba(255, 255, 255, 20);
 	border-bottom: 3px solid "lightblue";
 }
 
 #Body {
-	padding: 10px;
-	border: 1px solid "#333";
-	background: "#444";
+	padding: 0px;
+	border: 1px solid #333;
+	background: #444;
 }
 
 #Body QWidget {
