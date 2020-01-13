@@ -108,7 +108,6 @@ class Controller(QtCore.QObject):
         self.context.optional = False
 
         self.context.data["publish"] = True
-        self.context.data["name"] = "Context"
 
         port = os.environ.get("PYBLISH_CLIENT_PORT", -1)
 
