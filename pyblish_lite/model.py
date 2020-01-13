@@ -201,13 +201,10 @@ class Item(Abstract):
         self.checkstate = {}
 
         # Common schema
-        self.schema = {
-            Label: "label",
+        self.attr_schema = {
             Families: "families",
             Id: "id",
             Actions: "actions",
-            IsOptional: "optional",
-            Icon: "icon",
             Order: "order",
 
             # GUI-only data
@@ -219,6 +216,7 @@ class Item(Abstract):
             HasSucceeded: "_has_succeeded",
             HasFailed: "_has_failed",
         }
+        self.data_schema = {}
 
     def store_checkstate(self):
         self.checkstate.clear()
@@ -262,7 +260,11 @@ class Plugin(Item):
     def __init__(self):
         super(Plugin, self).__init__()
 
-        self.schema.update({
+        self.attr_schema.update({
+            Label: "label",
+            IsOptional: "optional",
+            Icon: "icon",
+
             IsChecked: "active",
             Docstring: "__doc__",
             ActionIdle: "_action_idle",
@@ -307,10 +309,10 @@ class Plugin(Item):
         if role == Data:
             return {}
 
-        if role == Icon:
+        elif role == Icon:
             return awesome.get(getattr(item, "icon", ""))
 
-        if role == ActionIconVisible:
+        elif role == ActionIconVisible:
 
             # Can only run actions on active plug-ins.
             if not item.active:
@@ -320,18 +322,16 @@ class Plugin(Item):
 
             # Context specific actions
             for action in actions:
-                if action.on == "failed" and item._has_failed:
+                if (
+                    (item._has_failed and action.on == "failed") or
+                    (item._has_succeeded and action.on == "succeeded") or
+                    (item._has_processed and action.on == "processed") or
+                    (not item._has_processed and action.on == "notProcessed")
+                ):
                     return True
-                if action.on == "succeeded" and item._has_succeeded:
-                    return True
-                if action.on == "processed" and item._has_processed:
-                    return True
-                if action.on == "notProcessed" and not item._has_processed:
-                    return True
-
             return False
 
-        if role == Actions:
+        elif role == Actions:
 
             # Can only run actions on active plug-ins.
             if not item.active:
@@ -339,62 +339,56 @@ class Plugin(Item):
 
             actions = list(item.actions)
 
+            valid_actions = []
             # Context specific actions
             for action in actions[:]:
-                if action.on == "failed" and not item._has_failed:
-                    actions.remove(action)
-                if action.on == "succeeded" and not item._has_succeeded:
-                    actions.remove(action)
-                if action.on == "processed" and not item._has_processed:
-                    actions.remove(action)
-                if action.on == "notProcessed" and item._has_processed:
-                    actions.remove(action)
+                if (
+                    (item._has_failed and action.on == "failed") or
+                    (item._has_succeeded and action.on == "succeeded") or
+                    (item._has_processed and action.on == "processed") or
+                    (not item._has_processed and action.on == "notProcessed")
+                ):
+                    valid_actions.append(action)
+
+            actions_len = len(valid_actions)
+            if actions_len == 0:
+                return valid_actions
 
             # Discard empty groups
-            i = 0
-            try:
-                action = actions[i]
-            except IndexError:
-                pass
-            else:
-                while action:
-                    try:
-                        action = actions[i]
-                    except IndexError:
-                        break
+            indexex_to_remove = []
+            for idx, action in enumerate(valid_actions):
+                if action.__type__ != "category":
+                    continue
 
-                    isempty = False
+                next_id = idx + 1
+                if next_id >= actions_len:
+                    indexex_to_remove.append(idx)
+                    continue
 
-                    if action.__type__ == "category":
-                        try:
-                            next_ = actions[i + 1]
-                            if next_.__type__ != "action":
-                                isempty = True
-                        except IndexError:
-                            isempty = True
+                next = valid_actions[next_id]
+                if next.__type__ != "action":
+                    indexex_to_remove.append(idx)
 
-                        if isempty:
-                            actions.pop(i)
+            for idx in reversed(indexex_to_remove):
+                valid_actions.pop(idx)
 
-                    i += 1
+            return valid_actions
 
-            return actions
-
-        if role == PathModule:
+        elif role == PathModule:
             return item.__module__
-        key = self.schema.get(role)
-        value = getattr(item, key, None) if key is not None else None
-        if value is None:
-            value = super(Plugin, self).data(index, role)
-        return value
+
+        elif role in self.attr_schema:
+            key = self.attr_schema[role]
+            return getattr(item, key, None)
+
+        return super(Plugin, self).data(index, role)
 
     def setData(self, index, value, role):
+        if role not in self.attr_schema:
+            return super(Plugin, self).setData(index, value, role)
+
+        key = self.attr_schema[role]
         item = self.items[index.row()]
-        key = self.schema.get(role)
-
-        if key is None:
-            return
-
         setattr(item, key, value)
 
         if __binding__ in ("PyQt4", "PySide"):
@@ -442,7 +436,9 @@ class Plugin(Item):
                         has_compatible = True
                         break
             else:
-                plugins = pyblish.logic.plugins_by_families([plugin,], families)
+                plugins = pyblish.logic.plugins_by_families(
+                    [plugin], families
+                )
                 if plugins:
                     has_compatible = True
 
@@ -454,37 +450,44 @@ class Instance(Item):
         super(Instance, self).__init__()
 
         self.ids = []
-        self.schema.update({
+        self.data_schema.update({
             IsChecked: "publish",
+            Label: "label",
+            IsOptional: "optional",
+            Icon: "icon"
+        })
+        self.attr_schema.update({
             LogRecord: "_log",
             ErrorRecord: "_error",
             # Merge copy of both family and families data members
-            Families: "__families__",
+            Families: "__families__"
         })
         self.context_item = None
 
     def append(self, item):
-        if item.data.get('_type') == 'context':
+        if getattr(item, '_type', None) == 'context':
             self.ids.append(item.id)
             self.context_item = item
             return super(Instance, self).append(item)
 
-        item.data["optional"] = item.data.get("optional", True)
+        item.optional = getattr(item, "optional", False)
         item.data["publish"] = item.data.get("publish", True)
 
-        item.data["label"] = item.data.get("label", item.data["name"])
+        label = getattr(item, "label", None) or item.data.get("label")
         # Use instance name if settings say so.
-        if not settings.UseLabel:
-            item.data["label"] = item.data["name"]
+        if not settings.UseLabel or not label:
+            label = item.data["name"]
+
+        item.data["label"] = label
 
         # Store instances id in easy access data member
         self.ids.append(item.id)
 
         # GUI-only data
-        item.data["_type"] = "instance"
-        item.data["_has_succeeded"] = False
-        item.data["_has_failed"] = False
-        item.data["_is_idle"] = True
+        item._type = "instance"
+        item._has_succeeded = False
+        item._has_failed = False
+        item._is_idle = True
 
         # Merge `family` and `families` for backwards compatibility
         family = item.data["family"]
@@ -498,38 +501,48 @@ class Instance(Item):
     def data(self, index, role):
         # This is because of bug without known cause
         # - on "reset" are called data for already removed indexes
-        if index.row() >= len(self.items):
-            return
-        item = self.items[index.row()]
+        item = super(Instance, self).data(index, Object)
 
         if role == Data:
             return item.data
 
-        if role == Icon:
+        elif role == Icon:
             return awesome.get(item.data.get("icon"))
 
-        key = self.schema.get(role)
-        value = item.data.get(key) if key is not None else None
+        elif role in self.attr_schema:
+            key = self.attr_schema[role]
+            return getattr(item, key, None)
 
-        if value is None:
-            value = super(Instance, self).data(index, role)
+        elif role in self.data_schema:
+            key = self.attr_schema[role]
+            return item.data.get(key)
 
-        return value
+        return super(Instance, self).data(index, role)
 
     def setData(self, index, value, role):
         item = super(Instance, self).data(index, Object)
-        key = self.schema.get(role)
 
-        if key is None:
-            return
+        if role in self.attr_schema:
+            key = self.attr_schema[role]
+            setattr(item, key, value)
 
-        item.data[key] = value
+            if __binding__ in ("PyQt4", "PySide"):
+                self.dataChanged.emit(index, index)
+            else:
+                self.dataChanged.emit(index, index, [role])
+            return True
 
-        if __binding__ in ("PyQt4", "PySide"):
-            self.dataChanged.emit(index, index)
-        else:
-            self.dataChanged.emit(index, index, [role])
-        return True
+        elif role in self.data_schema:
+            key = self.attr_schema[role]
+            item.data[key] = value
+
+            if __binding__ in ("PyQt4", "PySide"):
+                self.dataChanged.emit(index, index)
+            else:
+                self.dataChanged.emit(index, index, [role])
+            return True
+
+        return super(Instance, self).setData(index, value, role)
 
     def update_with_result(self, result):
         item = result["instance"]
@@ -586,16 +599,14 @@ class Terminal(Abstract):
         }
 
     def data(self, index, role):
-        item = self.items[index.row()]
+        if role not in self.schema:
+            return super(Terminal, self).data(index, role)
 
+        item = self.items[index.row()]
         if role == Data:
             return item
 
-        key = self.schema.get(role)
-
-        if not key:
-            return
-
+        key = self.schema[role]
         value = item.get(key)
 
         if value is None:
@@ -605,11 +616,10 @@ class Terminal(Abstract):
 
     def setData(self, index, value, role):
         item = self.items[index.row()]
-        key = self.schema.get(role)
+        if role not in self.schema:
+            return super(Terminal, self).setData(index, value, role)
 
-        if key is None:
-            return
-
+        key = self.schema[role]
         item[key] = value
 
         if __binding__ in ("PyQt4", "PySide"):
@@ -626,6 +636,7 @@ class Terminal(Abstract):
             if isinstance(record, dict):
                 self.append(record)
                 continue
+
             self.append({
                 "label": text_type(record.msg),
                 "type": "record",
