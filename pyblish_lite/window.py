@@ -83,6 +83,8 @@ class Window(QtWidgets.QDialog):
 
         header = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(header)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         tab_widget = QtWidgets.QWidget()
         artist_tab = QtWidgets.QRadioButton()
@@ -99,17 +101,15 @@ class Window(QtWidgets.QDialog):
         aditional_btns_layout.addWidget(presets_button)
 
         layout_tab = QtWidgets.QHBoxLayout(tab_widget)
+        layout_tab.setContentsMargins(0, 0, 0, 0)
+        layout_tab.setSpacing(0)
         layout_tab.addWidget(artist_tab, 0)
         layout_tab.addWidget(overview_tab, 0)
         layout_tab.addWidget(terminal_tab, 0)
         layout_tab.addWidget(spacer, 1)  # Compress items to the left
         layout_tab.addWidget(aditional_btns, 1)
-        layout_tab.setContentsMargins(0, 0, 0, 0)
-        layout_tab.setSpacing(0)
 
         layout.addWidget(tab_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
 
         """Artist Page
          __________________
@@ -237,7 +237,7 @@ class Window(QtWidgets.QDialog):
         # Add some room between window borders and contents
         body = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(body)
-        layout.setContentsMargins(5, 5, 5, 0)
+        layout.setContentsMargins(5, 5, 5, 1)
         layout.addWidget(artist_page)
         layout.addWidget(overview_page)
         layout.addWidget(terminal_page)

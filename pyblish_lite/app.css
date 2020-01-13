@@ -2,13 +2,18 @@
 
 * {
 	outline: none;
-	color: #DDD;
-
-	background-position: center center;
-	background-repeat: no-repeat;
+	color: #ddd;
+  font-family: "Open Sans";
 }
 
 /* General CSS */
+
+QWidget {
+	background: #555;
+	background-position: center center;
+	background-repeat: no-repeat;
+	font-size: 12px;
+}
 
 QMenu {
     background-color: #555; /* sets background of the menu */
@@ -50,6 +55,8 @@ QPushButton {
 	font-family: "FontAwesome";
 	font-size: 11pt;
 	color: white;
+	padding: 0px;
+	outline: none;
 }
 
 QPushButton:pressed {
@@ -66,10 +73,10 @@ QPushButton:disabled {
 }
 
 QTextEdit, QLineEdit {
-	background: "#555";
-	border: 1px solid "#333";
+	background: #555;
+	border: 1px solid #333;
 	font-size: 9pt;
-	color: "#fff";
+	color: #fff;
 }
 
 QCheckBox {
@@ -147,6 +154,22 @@ QToolTip {
 	padding: 5px;
 }
 
+QLabel {
+	border-radius: 0px;
+}
+
+QToolButton {
+	background-color: transparent;
+	margin: 0px;
+	padding: 3px;
+	border-radius: 0px;
+	min-width: 20px;
+}
+
+QToolButton:hover {
+	background-color: #666;
+}
+
 /* Specific CSS */
 
 #Terminal QComboBox::drop-down {
@@ -154,11 +177,14 @@ QToolTip {
 }
 
 #Header {
-	background: "#555";
-	border: 1px solid "#444";
+	background: #555;
+	border: 1px solid #444;
+	padding: 0px;
+	margin: 0px;
 }
 
 #Header QRadioButton {
+	border: 3px solid "transparent";
 	border-right: 1px solid #333;
 	left: 2px;
 }
@@ -166,10 +192,13 @@ QToolTip {
 #Header QRadioButton::indicator {
 	width: 65px;
 	height: 40px;
-	border: 0px solid "transparent";
-	border-bottom: 3px solid "transparent";
 	background-repeat: no-repeat;
 	background-position: center center;
+	image: none;
+}
+
+#Header QRadioButton:hover {
+	background-color: rgba(255, 255, 255, 10);
 }
 
 #Header QRadioButton:checked {
@@ -178,9 +207,13 @@ QToolTip {
 }
 
 #Body {
-	padding: 10px;
-	border: 1px solid "#333";
-	background: "#444";
+	padding: 0px;
+	border: 1px solid #333;
+	background: #444;
+}
+
+#Body QWidget {
+	background: #444;
 }
 
 #Header #ArtistTab {
@@ -219,6 +252,7 @@ QToolTip {
 }
 
 #Footer {
+	background: #555;
 	min-height: 43px;
 }
 
@@ -230,10 +264,10 @@ QToolTip {
 	font-family: Open Sans;
 	font-size: 8pt;
 	padding: 5px;
+	background: #444;
 }
 
 #CommentBox {
-	background: #444;
 	selection-background-color: #222;
 }
 
