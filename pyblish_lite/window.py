@@ -801,7 +801,6 @@ class Window(QtWidgets.QDialog):
             intent_box.hide()
         else:
             comment_box.setVisible(comment_box.isEnabled())
-            intent_box.model().has_items
             intent_box.setVisible(
                 intent_box.model().has_items and intent_box.isEnabled()
             )
@@ -1001,6 +1000,9 @@ class Window(QtWidgets.QDialog):
         comment_box = self.data["comment_intent"]["comment"]
         comment_box.setText(comment or None)
         comment_box.setEnabled(comment is not None)
+
+        intent_box = self.data["comment_intent"]["intent"]
+        intent_box.setEnabled(True)
 
         # Refresh tab
         self.on_tab_changed(self.data["tabs"]["current"])
