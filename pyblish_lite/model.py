@@ -202,6 +202,7 @@ class Item(Abstract):
 
         # Common schema
         self.attr_schema = {
+            IsOptional: "optional",
             Families: "families",
             Id: "id",
             Actions: "actions",
@@ -262,7 +263,6 @@ class Plugin(Item):
 
         self.attr_schema.update({
             Label: "label",
-            IsOptional: "optional",
             Icon: "icon",
 
             IsChecked: "active",
@@ -453,14 +453,11 @@ class Instance(Item):
         self.data_schema.update({
             IsChecked: "publish",
             Label: "label",
-            IsOptional: "optional",
-            Icon: "icon"
+            Icon: "icon",
         })
         self.attr_schema.update({
             LogRecord: "_log",
-            ErrorRecord: "_error",
-            # Merge copy of both family and families data members
-            Families: "__families__"
+            ErrorRecord: "_error"
         })
         self.context_item = None
 
@@ -470,7 +467,7 @@ class Instance(Item):
             self.context_item = item
             return super(Instance, self).append(item)
 
-        item.optional = getattr(item, "optional", False)
+        item.optional = getattr(item, "optional", True)
         item.data["publish"] = item.data.get("publish", True)
 
         label = getattr(item, "label", None) or item.data.get("label")
@@ -494,16 +491,17 @@ class Instance(Item):
         families = [f for f in item.data.get("families")] or []
         if family in families:
             families.remove(family)
-        item.data["__families__"] = [family] + families
-
+        item.families = [family] + families
         return super(Instance, self).append(item)
 
     def data(self, index, role):
         # This is because of bug without known cause
         # - on "reset" are called data for already removed indexes
         item = super(Instance, self).data(index, Object)
+        if role == Object:
+            return item
 
-        if role == Data:
+        elif role == Data:
             return item.data
 
         elif role == Icon:
@@ -514,7 +512,7 @@ class Instance(Item):
             return getattr(item, key, None)
 
         elif role in self.data_schema:
-            key = self.attr_schema[role]
+            key = self.data_schema[role]
             return item.data.get(key)
 
         return super(Instance, self).data(index, role)
@@ -533,7 +531,7 @@ class Instance(Item):
             return True
 
         elif role in self.data_schema:
-            key = self.attr_schema[role]
+            key = self.data_schema[role]
             item.data[key] = value
 
             if __binding__ in ("PyQt4", "PySide"):

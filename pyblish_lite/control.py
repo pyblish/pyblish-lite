@@ -108,6 +108,8 @@ class Controller(QtCore.QObject):
         self.context.optional = False
 
         self.context.data["publish"] = True
+        self.context.data["label"] = "Context"
+        self.context.data["name"] = "context"
 
         port = os.environ.get("PYBLISH_CLIENT_PORT", -1)
 
@@ -119,7 +121,7 @@ class Controller(QtCore.QObject):
 
         self.context.data["icon"] = 'book'
 
-        self.context.data["__families__"] = ('__context__',)
+        self.context.families = ('__context__',)
 
     def reset(self):
         """
