@@ -97,10 +97,12 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         assert label_rect.width() > 0
 
-        label = index.data(model.Label)
-        label = metrics.elidedText(label,
-                                   QtCore.Qt.ElideRight,
-                                   label_rect.width() - 20)
+        label = index.data(QtCore.Qt.DisplayRole)
+        label = metrics.elidedText(
+            label,
+            QtCore.Qt.ElideRight,
+            label_rect.width() - 20
+        )
 
         font_color = colors["idle"]
         if not index.data(model.IsChecked):
@@ -212,7 +214,7 @@ class Section(QtWidgets.QStyledItemDelegate):
         group = index.data(model.GroupObject)
         if group.expanded:
             expander_icon = icons['minus-sign']
-        label = index.data(model.Label)
+        label = index.data(QtCore.Qt.DisplayRole)
         label = metrics.elidedText(
             label, QtCore.Qt.ElideRight, label_rect.width()
         )
@@ -290,8 +292,10 @@ class Artist(QtWidgets.QStyledItemDelegate):
         duration_rect.translate(content_rect.width() - 50, 0)
 
         label_rect = QtCore.QRectF(content_rect)
-        label_rect.translate(icon_rect.width() +
-                             spacing, 0)
+        label_rect.translate(
+            icon_rect.width() + spacing,
+            0
+        )
         label_rect.setHeight(metrics.lineSpacing() + spacing)
 
         families_rect = QtCore.QRectF(label_rect)
@@ -320,22 +324,22 @@ class Artist(QtWidgets.QStyledItemDelegate):
         elif index.data(model.HasProcessed) is True:
             check_color = colors["ok"]
 
-        icon = index.data(model.Icon) or icons["file"]
+        icon = index.data(QtCore.Qt.DecorationRole) or icons["file"]
         perspective_icon = icons["angle-right"]
-        label = index.data(model.Label)
+        label = index.data(QtCore.Qt.DisplayRole)
 
         families = ", ".join(index.data(model.Families))
         if families == '__context__':
             families = 'Context'
 
         # Elide
-        label = metrics.elidedText(label,
-                                   QtCore.Qt.ElideRight,
-                                   label_rect.width())
+        label = metrics.elidedText(
+            label, QtCore.Qt.ElideRight, label_rect.width()
+        )
 
-        families = metrics.elidedText(families,
-                                      QtCore.Qt.ElideRight,
-                                      label_rect.width())
+        families = metrics.elidedText(
+            families, QtCore.Qt.ElideRight, label_rect.width()
+        )
 
         font_color = colors["idle"]
         if not index.data(model.IsChecked):
@@ -428,7 +432,7 @@ class TerminalItem(QtWidgets.QStyledItemDelegate):
 
         assert label_rect.width() > 0
 
-        label = index.data(model.Label)
+        label = index.data(QtCore.Qt.DisplayRole)
         label = metrics.elidedText(
             label, QtCore.Qt.ElideRight, label_rect.width() - 20
         )
@@ -468,7 +472,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
 
     show_roles = {
-        model.QtCore.Qt.DisplayRole: 'Message',
+        QtCore.Qt.DisplayRole: 'Message',
         model.LogName: 'Plugin',
         model.LogPath: 'Path',
         model.LogLineNumber: 'Line',

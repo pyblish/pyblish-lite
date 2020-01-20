@@ -728,8 +728,10 @@ class Window(QtWidgets.QDialog):
 
         elif index.data(model.Type) == "plugin":
             details.show({
-                "icon": index.data(model.Icon) or awesome["filter"],
-                "heading": index.data(model.Label),
+                "icon": (
+                    index.data(QtCore.Qt.DecorationRole) or awesome["filter"]
+                ),
+                "heading": index.data(QtCore.Qt.DisplayRole),
                 "subheading": ", ".join(index.data(model.Families)),
                 "text": index.data(model.Docstring) or "",
                 "timestamp": str(index.data(model.Duration) or 0) + " ms",

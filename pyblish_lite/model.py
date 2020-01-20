@@ -54,9 +54,10 @@ Id = QtCore.Qt.UserRole + 1
 Type = QtCore.Qt.UserRole + 10
 
 # The display name of an item
-Label = QtCore.Qt.DisplayRole + 0
-Families = QtCore.Qt.DisplayRole + 1
-Icon = QtCore.Qt.DisplayRole + 13
+Label = QtCore.Qt.UserRole + 81
+Name = QtCore.Qt.UserRole + 80
+Families = QtCore.Qt.UserRole + 83
+Icon = QtCore.Qt.UserRole + 82
 Order = QtCore.Qt.UserRole + 62
 GroupObject = QtCore.Qt.UserRole + 63
 
@@ -173,9 +174,11 @@ class Abstract(QtCore.QAbstractListModel):
 
     def append(self, item):
         """Append item to end of model"""
-        self.beginInsertRows(QtCore.QModelIndex(),
-                             self.rowCount(),
-                             self.rowCount())
+        self.beginInsertRows(
+            QtCore.QModelIndex(),
+            self.rowCount(),
+            self.rowCount()
+        )
 
         self.items.append(item)
 
@@ -263,6 +266,7 @@ class Plugin(Item):
 
         self.attr_schema.update({
             Label: "label",
+            Name: "__name__",
             Icon: "icon",
 
             IsChecked: "active",
@@ -303,6 +307,14 @@ class Plugin(Item):
         # - on "reset" are called data for already removed indexes
         if index.row() >= len(self.items):
             return
+
+        if role == QtCore.Qt.DisplayRole:
+            role = Label
+            if not settings.UseLabel:
+                role = Name
+
+        elif role == QtCore.Qt.DecorationRole:
+            role = Icon
 
         item = self.items[index.row()]
 
@@ -453,6 +465,7 @@ class Instance(Item):
         self.data_schema.update({
             IsChecked: "publish",
             Label: "label",
+            Name: "name",
             Icon: "icon",
         })
         self.attr_schema.update({
@@ -470,12 +483,11 @@ class Instance(Item):
         item.optional = getattr(item, "optional", True)
         item.data["publish"] = item.data.get("publish", True)
 
-        label = getattr(item, "label", None) or item.data.get("label")
-        # Use instance name if settings say so.
-        if not settings.UseLabel or not label:
-            label = item.data["name"]
-
-        item.data["label"] = label
+        item.data["label"] = (
+            getattr(item, "label", None) or
+            item.data.get("label") or
+            item.data["name"]
+        )
 
         # Store instances id in easy access data member
         self.ids.append(item.id)
@@ -497,6 +509,14 @@ class Instance(Item):
     def data(self, index, role):
         # This is because of bug without known cause
         # - on "reset" are called data for already removed indexes
+        if role == QtCore.Qt.DisplayRole:
+            role = Label
+            if not settings.UseLabel:
+                role = Name
+
+        elif role == QtCore.Qt.DecorationRole:
+            role = Icon
+
         item = super(Instance, self).data(index, Object)
         if role == Object:
             return item
@@ -597,6 +617,9 @@ class Terminal(Abstract):
         }
 
     def data(self, index, role):
+        if role == QtCore.Qt.DisplayRole:
+            role = Label
+
         if role not in self.schema:
             return super(Terminal, self).data(index, role)
 
@@ -867,7 +890,7 @@ class ProxyTerminalItem(TreeItem):
 
     def data(self, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
-            return self.model_index.data(Label)
+            role = Label
 
         elif role == GroupObject:
             return self
@@ -916,7 +939,7 @@ class TerminalProxy(QtCore.QAbstractProxyModel):
 
         for index in source_indexes:
             log_label = ProxyTerminalItem(index)
-            if index.data(LogMessage) or index.data(Type)=='error':
+            if index.data(LogMessage) or index.data(Type) == 'error':
                 log_item = ProxyTerminalDetail(index)
                 log_label.addChild(log_item)
             self.root.addChild(log_label)
