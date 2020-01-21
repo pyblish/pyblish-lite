@@ -700,7 +700,7 @@ class Window(QtWidgets.QDialog):
 
             details.show({
                 "icon": awesome["circle"],
-                "heading": index.data(model.Label).split("\n")[0],
+                "heading": index.data(QtCore.Qt.DisplayRole).split("\n")[0],
                 "subheading": "LogRecord (%s)" % index.data(model.LogLevel),
                 "text": text,
                 "timestamp": "",
@@ -720,7 +720,7 @@ class Window(QtWidgets.QDialog):
 
             details.show({
                 "icon": awesome["exclamation-triangle"],
-                "heading": index.data(model.Label).split("\n")[0],
+                "heading": index.data(QtCore.Qt.DisplayRole).split("\n")[0],
                 "subheading": "Exception",
                 "text": text,
                 "timestamp": "",
@@ -739,8 +739,10 @@ class Window(QtWidgets.QDialog):
 
         elif index.data(model.Type) == "instance":
             details.show({
-                "icon": index.data(model.Icon) or awesome["file"],
-                "heading": index.data(model.Label),
+                "icon": (
+                    index.data(QtCore.Qt.DecorationRole) or awesome["file"]
+                ),
+                "heading": index.data(QtCore.Qt.DisplayRole),
                 "subheading": ", ".join(index.data(model.Families)),
                 "text": "",
                 "timestamp": str(index.data(model.Duration) or 0) + " ms",
@@ -889,7 +891,9 @@ class Window(QtWidgets.QDialog):
         plugin_proxies = self.data["proxies"]["plugins"]
         plugin_proxies.layoutChanged.emit()
 
-        self.info("%s %s" % (self.tr("Processing"), index.data(model.Label)))
+        self.info("{} {}".format(
+            self.tr("Processing"), index.data(QtCore.Qt.DisplayRole)
+        ))
 
     def on_plugin_action_menu_requested(self, pos):
         """The user right-clicked on a plug-in
