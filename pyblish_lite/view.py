@@ -297,17 +297,14 @@ class PerspectiveWidget(QtWidgets.QWidget):
         header_widget = QtWidgets.QWidget()
         toggle_button = QtWidgets.QToolButton(header_widget)
         toggle_button.setMinimumHeight(50)
-
-        font = toggle_button.font()
-        font.setFamily('FontAwesome')
-        font.setPointSize(26)
-        toggle_button.setFont(font)
         toggle_button.setText(delegate.icons["angle-left"])
         toggle_button.setStyleSheet(
             "border-bottom: 3px solid lightblue;"
             "border-top: 0px;"
             "border-right: 1px solid #232323;"
             "border-left: 0px;"
+            "font-size: 26pt;"
+            "font-family: \"FontAwesome\";"
         )
         toggle_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
 
@@ -315,14 +312,11 @@ class PerspectiveWidget(QtWidgets.QWidget):
         indicator.setMinimumWidth(30)
 
         name = QtWidgets.QLabel('*Name of inspected', parent=header_widget)
-        font = QtGui.QFont()
-        font.setPointSize(16)
-        font.setBold(True)
-        font.setWeight(50)
-        font.setKerning(True)
-        name.setFont(font)
-
-        indicator.setFont(font)
+        name.setStyleSheet(
+            "font-size: 16pt;"
+            "font-style: bold;"
+            "font-weight: 50;"
+        )
 
         header_layout = QtWidgets.QHBoxLayout(header_widget)
         header_layout.setAlignment(QtCore.Qt.AlignLeft)
@@ -451,6 +445,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
         elif index.data(model.HasProcessed) is True:
             check_color = self.indicator_colors["ok"]
         self.indicator.setStyleSheet(
+            'font-size: 16pt;'
+            'font-style: bold;'
+            'font-weight: 50;'
             'padding: 5px;'
             'background: {};color: {}'.format(
                 check_color['bg'], check_color['font']
