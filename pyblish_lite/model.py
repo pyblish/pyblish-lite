@@ -511,6 +511,9 @@ class Instance(Item):
     def data(self, index, role):
         # This is because of bug without known cause
         # - on "reset" are called data for already removed indexes
+        if index.row() >= len(self.items):
+            return
+
         if role == QtCore.Qt.DisplayRole:
             role = Label
             if not settings.UseLabel:
