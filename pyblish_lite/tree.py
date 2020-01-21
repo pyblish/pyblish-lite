@@ -176,9 +176,9 @@ class Proxy(QtCore.QAbstractProxyModel):
         for section_item in self.root.children():
             for item in section_item.children():
                 if item.source_index == index:
-                    return self.createIndex(item.row(),
-                                            index.column(),
-                                            item)
+                    return self.createIndex(
+                        item.row(), index.column(), item
+                    )
 
         return QtCore.QModelIndex()
 
