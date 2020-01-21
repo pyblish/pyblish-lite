@@ -102,6 +102,7 @@ class Controller(QtCore.QObject):
         self.context._has_failed = False
         self.context._has_succeeded = False
         self.context._has_processed = False
+        self.context._has_warning = False
         self.context._is_processing = False
         self.context._is_idle = False
         self.context._type = "context"

@@ -7,6 +7,7 @@ from .awesome import tags as awesome
 
 colors = {
     "error": QtGui.QColor("#ff4a4a"),
+    "warning": QtGui.QColor("#ff9900"),
     "ok": QtGui.QColor("#77AE24"),
     "active": QtGui.QColor("#99CEEE"),
     "idle": QtCore.Qt.white,
@@ -89,6 +90,13 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         elif index.data(model.HasProcessed) is True:
             check_color = colors["ok"]
+
+        if index.data(model.HasWarning) is True:
+            if (
+                index.data(model.HasFailed) is False and
+                index.data(model.HasSucceeded) is True
+            ):
+                check_color = colors["warning"]
 
         metrics = painter.fontMetrics()
 
@@ -323,6 +331,13 @@ class Artist(QtWidgets.QStyledItemDelegate):
 
         elif index.data(model.HasProcessed) is True:
             check_color = colors["ok"]
+
+        if index.data(model.HasWarning) is True:
+            if (
+                index.data(model.HasFailed) is False and
+                index.data(model.HasSucceeded) is True
+            ):
+                check_color = colors["warning"]
 
         icon = index.data(QtCore.Qt.DecorationRole) or icons["file"]
         perspective_icon = icons["angle-right"]

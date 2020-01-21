@@ -285,6 +285,10 @@ class PerspectiveWidget(QtWidgets.QWidget):
         "ok": {
             "bg": "#69a567",
             "font": "#ffffff"
+        },
+        "warning": {
+            "bg": "#ff9900",
+            "font": "#ffffff"
         }
     }
 
@@ -450,6 +454,14 @@ class PerspectiveWidget(QtWidgets.QWidget):
             check_color = self.indicator_colors["ok"]
         elif index.data(model.HasProcessed) is True:
             check_color = self.indicator_colors["ok"]
+
+        if index.data(model.HasWarning) is True:
+            if (
+                index.data(model.HasFailed) is False and
+                index.data(model.HasSucceeded) is True
+            ):
+                check_color = self.indicator_colors["warning"]
+
         self.indicator.setStyleSheet(
             'padding: 5px;'
             'background: {};color: {}'.format(

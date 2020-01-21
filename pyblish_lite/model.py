@@ -219,6 +219,7 @@ class Item(Abstract):
             HasProcessed: "_has_processed",
             HasSucceeded: "_has_succeeded",
             HasFailed: "_has_failed",
+            HasWarning: "_has_warning"
         }
         self.data_schema = {}
 
@@ -271,6 +272,7 @@ class Plugin(Item):
         item._has_processed = False
         item._has_succeeded = False
         item._has_failed = False
+        item._has_warning = False
         item._type = "plugin"
 
         item._action_idle = True
@@ -399,6 +401,15 @@ class Plugin(Item):
         self.setData(index, result["success"], HasSucceeded)
 
         new_records = result.get('records', [])
+        if not item._has_warning:
+            for record in new_records:
+                if str(record.levelname).lower() not in [
+                    "warning", "critical", "error"
+                ]:
+                    continue
+                self.setData(index, True, HasWarning)
+                break
+
         records = index.data(LogRecord) or []
         records.extend(new_records)
 
@@ -476,6 +487,7 @@ class Instance(Item):
         item._type = "instance"
         item._has_succeeded = False
         item._has_failed = False
+        item._has_warning = False
         item._is_idle = True
 
         # Merge `family` and `families` for backwards compatibility
@@ -560,6 +572,13 @@ class Instance(Item):
         self.setData(index, result["success"], HasSucceeded)
 
         new_records = result.get('records', [])
+        if not item._has_warning:
+            for record in new_records:
+                if str(record.levelname).lower() != "warning":
+                    continue
+                self.setData(index, True, HasWarning)
+                break
+
         records = index.data(LogRecord) or []
         records.extend(new_records)
 
