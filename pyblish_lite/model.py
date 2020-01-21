@@ -37,7 +37,7 @@ try:
     from pypeapp import config
     get_presets = config.get_presets
 except Exception:
-    get_presets = lambda: {}
+    get_presets = dict
 
 # GENERAL
 
