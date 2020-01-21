@@ -399,13 +399,6 @@ class Plugin(Item):
         self.setData(index, result["success"], HasSucceeded)
 
         new_records = result.get('records', [])
-        if not item._has_warning:
-            for record in new_records:
-                if str(record.levelname).lower() != "warning":
-                    continue
-                self.setData(index, True, HasWarning)
-                break
-
         records = index.data(LogRecord) or []
         records.extend(new_records)
 
