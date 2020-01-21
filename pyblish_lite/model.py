@@ -44,67 +44,69 @@ except Exception:
 # The original object; Instance or Plugin
 Object = QtCore.Qt.UserRole + 0
 
+# The internal .id of any item
+Id = QtCore.Qt.UserRole + 1
+Type = QtCore.Qt.UserRole + 2
+
 # Additional data (metadata) about an item
 # In the case of instances, this is their data as-is.
 # For anyhting else, this is statistics, such as running-time.
-Data = QtCore.Qt.UserRole + 16
-
-# The internal .id of any item
-Id = QtCore.Qt.UserRole + 1
-Type = QtCore.Qt.UserRole + 10
+Data = QtCore.Qt.UserRole + 3
 
 # The display name of an item
-Label = QtCore.Qt.UserRole + 81
-Name = QtCore.Qt.UserRole + 80
-Families = QtCore.Qt.UserRole + 83
-Icon = QtCore.Qt.UserRole + 82
-Order = QtCore.Qt.UserRole + 62
-GroupObject = QtCore.Qt.UserRole + 63
+Label = QtCore.Qt.UserRole + 4
+Name = QtCore.Qt.UserRole + 5
+Families = QtCore.Qt.UserRole + 6
+Icon = QtCore.Qt.UserRole + 7
+
+Duration = QtCore.Qt.UserRole + 8
+Order = QtCore.Qt.UserRole + 9
+GroupObject = QtCore.Qt.UserRole + 10
+
+IntentItemValue = QtCore.Qt.UserRole + 11
 
 # The item has not been used
-IsIdle = QtCore.Qt.UserRole + 2
+IsIdle = QtCore.Qt.UserRole + 15
+IsProcessing = QtCore.Qt.UserRole + 16
+HasProcessed = QtCore.Qt.UserRole + 17
+HasSucceeded = QtCore.Qt.UserRole + 18
+HasFailed = QtCore.Qt.UserRole + 19
+IsOptional = QtCore.Qt.UserRole + 20
+IsChecked = QtCore.Qt.UserRole + 21
 
-IsChecked = QtCore.Qt.UserRole + 3
-IsOptional = QtCore.Qt.UserRole + 4
-IsProcessing = QtCore.Qt.UserRole + 5
-HasFailed = QtCore.Qt.UserRole + 6
-HasSucceeded = QtCore.Qt.UserRole + 7
-HasProcessed = QtCore.Qt.UserRole + 8
-Duration = QtCore.Qt.UserRole + 11
+HasWarning = QtCore.Qt.UserRole + 22
 
 # PLUGINS
+HasCompatible = QtCore.Qt.UserRole + 30
+Docstring = QtCore.Qt.UserRole + 31
+PathModule = QtCore.Qt.UserRole + 32
 
 # Available and context-sensitive actions
-Actions = QtCore.Qt.UserRole + 9
-ActionIconVisible = QtCore.Qt.UserRole + 13
-ActionIdle = QtCore.Qt.UserRole + 15
-ActionFailed = QtCore.Qt.UserRole + 14
-Docstring = QtCore.Qt.UserRole + 12
-PathModule = QtCore.Qt.UserRole + 17
+Actions = QtCore.Qt.UserRole + 33
+ActionIconVisible = QtCore.Qt.UserRole + 34
+ActionIdle = QtCore.Qt.UserRole + 35
+ActionFailed = QtCore.Qt.UserRole + 36
 
-HasCompatible = QtCore.Qt.UserRole + 64
 
 LogRecord = QtCore.Qt.UserRole + 40
 ErrorRecord = QtCore.Qt.UserRole + 41
-# LOG RECORDS
 
-LogThreadName = QtCore.Qt.UserRole + 50
-LogName = QtCore.Qt.UserRole + 51
-LogFilename = QtCore.Qt.UserRole + 52
-LogPath = QtCore.Qt.UserRole + 53
-LogLineNumber = QtCore.Qt.UserRole + 54
-LogMessage = QtCore.Qt.UserRole + 55
-LogMilliseconds = QtCore.Qt.UserRole + 56
-LogLevel = QtCore.Qt.UserRole + 61
-LogSize = QtCore.Qt.UserRole + 62
+# LOG RECORDS
+LogThreadName = QtCore.Qt.UserRole + 42
+LogName = QtCore.Qt.UserRole + 43
+LogFilename = QtCore.Qt.UserRole + 44
+LogPath = QtCore.Qt.UserRole + 45
+LogLineNumber = QtCore.Qt.UserRole + 46
+LogMessage = QtCore.Qt.UserRole + 47
+LogMilliseconds = QtCore.Qt.UserRole + 48
+LogLevel = QtCore.Qt.UserRole + 49
+LogSize = QtCore.Qt.UserRole + 50
 # EXCEPTIONS
 # Duplicates with LogFilename and LogLineNumber
 # ExcFname = QtCore.Qt.UserRole + 57
 # ExcLineNumber = QtCore.Qt.UserRole + 58
-ExcFunc = QtCore.Qt.UserRole + 59
-ExcTraceback = QtCore.Qt.UserRole + 60
-
-IntentItemValue = QtCore.Qt.UserRole + 65
+ExcFunc = QtCore.Qt.UserRole + 51
+ExcTraceback = QtCore.Qt.UserRole + 52
 
 
 class IntentModel(QtGui.QStandardItemModel):
