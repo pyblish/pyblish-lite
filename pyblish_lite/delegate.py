@@ -6,7 +6,7 @@ from . import model
 from .awesome import tags as awesome
 
 colors = {
-    "warning": QtGui.QColor("#ff4a4a"),
+    "error": QtGui.QColor("#ff4a4a"),
     "ok": QtGui.QColor("#77AE24"),
     "active": QtGui.QColor("#99CEEE"),
     "idle": QtCore.Qt.white,
@@ -82,7 +82,7 @@ class Item(QtWidgets.QStyledItemDelegate):
             check_color = colors["active"]
 
         elif index.data(model.HasFailed) is True:
-            check_color = colors["warning"]
+            check_color = colors["error"]
 
         elif index.data(model.HasSucceeded) is True:
             check_color = colors["ok"]
@@ -130,7 +130,7 @@ class Item(QtWidgets.QStyledItemDelegate):
             elif index.data(model.IsProcessing):
                 color = colors["active"]
             elif index.data(model.ActionFailed):
-                color = colors["warning"]
+                color = colors["error"]
             else:
                 color = colors["ok"]
 
@@ -316,7 +316,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
             check_color = colors["active"]
 
         elif index.data(model.HasFailed) is True:
-            check_color = colors["warning"]
+            check_color = colors["error"]
 
         elif index.data(model.HasSucceeded) is True:
             check_color = colors["ok"]
@@ -423,7 +423,7 @@ class TerminalItem(QtWidgets.QStyledItemDelegate):
             icon_color = record_colors[index.data(model.LogLevel)]
 
         elif index.data(model.Type) == "error":
-            icon_color = colors["warning"]
+            icon_color = colors["error"]
 
         metrics = painter.fontMetrics()
 
