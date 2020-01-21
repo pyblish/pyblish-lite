@@ -88,10 +88,8 @@ ActionIdle = QtCore.Qt.UserRole + 35
 ActionFailed = QtCore.Qt.UserRole + 36
 
 
-LogRecord = QtCore.Qt.UserRole + 40
-ErrorRecord = QtCore.Qt.UserRole + 41
-
 # LOG RECORDS
+LogRecord = QtCore.Qt.UserRole + 40
 LogThreadName = QtCore.Qt.UserRole + 42
 LogName = QtCore.Qt.UserRole + 43
 LogFilename = QtCore.Qt.UserRole + 44
@@ -246,22 +244,6 @@ class Item(Abstract):
                     break
 
 
-def error_from_result(result):
-    error = result.get('error')
-
-    if not error:
-        return {}
-
-    fname, line_no, func, exc = error.traceback
-    return {
-        "message": str(error),
-        "fname": str(fname),
-        "line_no": str(line_no),
-        "func": str(func),
-        "traceback": error.formatted_traceback
-    }
-
-
 class Plugin(Item):
     def __init__(self):
         super(Plugin, self).__init__()
@@ -276,16 +258,12 @@ class Plugin(Item):
             ActionIdle: "_action_idle",
             ActionFailed: "_action_failed",
             LogRecord: "_log",
-            ErrorRecord: "_error",
             HasCompatible: "hasCompatible"
         })
 
     def append(self, item):
 
         item.label = item.label or item.__name__
-        # Use class names if settings say so.
-        if not settings.UseLabel:
-            item.label = item.__name__
 
         # GUI-only data
         item._is_idle = True
@@ -420,8 +398,16 @@ class Plugin(Item):
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
 
+        new_records = result.get('records', [])
+        if not item._has_warning:
+            for record in new_records:
+                if str(record.levelname).lower() != "warning":
+                    continue
+                self.setData(index, True, HasWarning)
+                break
+
         records = index.data(LogRecord) or []
-        records.extend(result.get('records', []))
+        records.extend(new_records)
 
         self.setData(index, records, LogRecord)
 
@@ -471,8 +457,7 @@ class Instance(Item):
             Icon: "icon",
         })
         self.attr_schema.update({
-            LogRecord: "_log",
-            ErrorRecord: "_error"
+            LogRecord: "_log"
         })
         self.context_item = None
 
@@ -571,21 +556,28 @@ class Instance(Item):
         item = result["instance"]
 
         if item is None:
-            # for item in self.
-            index = self.items.index(self.context_item)
-            index = self.createIndex(index, 0)
-        else:
-            index = self.items.index(item)
-            index = self.createIndex(index, 0)
+            item = self.context_item
+
+        index = self.items.index(item)
+        index = self.createIndex(index, 0)
 
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
         self.setData(index, True, HasProcessed)
         self.setData(index, result["success"], HasSucceeded)
+
+        new_records = result.get('records', [])
+        if not item._has_warning:
+            for record in new_records:
+                if str(record.levelname).lower() != "warning":
+                    continue
+                self.setData(index, True, HasWarning)
+                break
+
         records = index.data(LogRecord) or []
-        records.extend(result.get('records', []))
+        records.extend(new_records)
+
         self.setData(index, records, LogRecord)
-        self.setData(index, error_from_result(result), ErrorRecord)
 
         # Once failed, never go back.
         if not self.data(index, HasFailed):
