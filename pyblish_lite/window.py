@@ -1225,9 +1225,11 @@ class Window(QtWidgets.QDialog):
         index = model_.items.index(plugin)
         index = model_.createIndex(index, 0)
 
-        for key, value in {model.ActionIdle: False,
-                           model.ActionFailed: False,
-                           model.IsProcessing: True}.items():
+        for key, value in {
+            model.ActionIdle: False,
+            model.ActionFailed: False,
+            model.IsProcessing: True
+        }.items():
             model_.setData(index, value, key)
 
         # Give Qt time to draw
@@ -1252,9 +1254,9 @@ class Window(QtWidgets.QDialog):
 
             # Explicitly clear potentially referenced data
             self.info(self.tr("Cleaning up models.."))
-            for v in self.data["views"].values():
-                v.model().deleteLater()
-                v.setModel(None)
+            for view in self.data["views"].values():
+                view.model().deleteLater()
+                view.setModel(None)
 
             self.info(self.tr("Cleaning up terminal.."))
             for item in self.data["models"]["terminal"].items:
