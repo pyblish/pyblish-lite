@@ -250,10 +250,7 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        comment_box = QtWidgets.QLineEdit()
-        comment_placeholder = QtWidgets.QLabel(
-            self.tr("Comment.."), comment_box)
-        comment_placeholder.move(2, 2)
+        comment_box = view.CommentBox("Comment...", self)
         comment_box.setEnabled(False)
         comment_box.hide()
 
@@ -455,7 +452,7 @@ class Window(QtWidgets.QDialog):
 
             # Misc
             "CommentBox": comment_box,
-            "CommentPlaceholder": comment_placeholder,
+            "CommentPlaceholder": comment_box.placeholder,
             "ClosingPlaceholder": closing_placeholder,
             "IntentBox": intent_box
         }
@@ -853,9 +850,6 @@ class Window(QtWidgets.QDialog):
         # Store within context
         context = self.controller.context
         context.data["comment"] = comment
-
-        placeholder = self.findChild(QtWidgets.QLabel, "CommentPlaceholder")
-        placeholder.setVisible(not comment)
 
     def on_intent_changed(self):
         intent_box = self.data["comment_intent"]["intent"]
