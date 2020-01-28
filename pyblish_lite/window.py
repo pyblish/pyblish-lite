@@ -961,11 +961,17 @@ class Window(QtWidgets.QDialog):
 
         self.info(self.tr("Finishing up reset.."))
 
-        context_item = models["instances"].context_item
+        items = [models["instances"].context_item]
+        items.extend([instance for instance in self.controller.context])
+
         models["instances"].reset()
-        models["instances"].append(context_item)
-        for instance in self.controller.context:
-            models["instances"].append(instance)
+        for item in items:
+            # Set processed, succeeded and idle back to default stage after
+            # collecting
+            item._is_idle = True
+            item._has_succeeded = False
+            item._has_processed = False
+            models["instances"].append(item)
 
         failed = False
         for index in self.data["models"]["plugins"]:
@@ -1020,6 +1026,12 @@ class Window(QtWidgets.QDialog):
                 failed = True
 
         for index in instance_model:
+            if (
+                not index.data(model.HasFailed) and
+                not index.data(model.HasSucceeded)
+            ):
+                index.model().setData(index, True, model.HasSucceeded)
+
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
