@@ -511,6 +511,11 @@ class Instance(Item):
         for idx in reversed(remove_indexes):
             self.items.pop(idx)
 
+        for item in self.items:
+            item.data["_is_idle"] = True
+            item.data["_has_succeeded"] = False
+            item.data["_has_processed"] = False
+
     def data(self, index, role):
         # This is because of bug without known cause
         # - on "reset" are called data for already removed indexes
