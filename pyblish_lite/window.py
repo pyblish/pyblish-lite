@@ -1016,6 +1016,12 @@ class Window(QtWidgets.QDialog):
                 failed = True
 
         for index in instance_model:
+            if (
+                not index.data(model.HasFailed) and
+                not index.data(model.HasSucceeded)
+            ):
+                index.model().setData(index, True, model.HasSucceeded)
+
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
