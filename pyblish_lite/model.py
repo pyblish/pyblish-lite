@@ -474,9 +474,14 @@ class Instance(Item):
 
         # GUI-only data
         item._type = "instance"
-        item._has_succeeded = False
-        item._has_failed = False
-        item._is_idle = True
+        if not hasattr(item, "_has_succeeded"):
+            item._has_succeeded = False
+
+        if not hasattr(item, "_has_failed"):
+            item._has_failed = False
+
+        if not hasattr(item, "_is_idle"):
+            item._is_idle = False
 
         # Merge `family` and `families` for backwards compatibility
         family = item.data["family"]
