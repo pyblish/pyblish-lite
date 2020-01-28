@@ -586,3 +586,23 @@ class ButtonWithMenu(QtWidgets.QWidget):
     def clearMenu(self):
         self.menu.clear()
         self.button.setToolTip("Presets not found")
+
+
+class CommentBox(QtWidgets.QLineEdit):
+
+    def __init__(self, placeholder_text, parent=None):
+        super(CommentBox, self).__init__(parent=parent)
+        self.placeholder = QtWidgets.QLabel(placeholder_text, self)
+        self.placeholder.move(2, 2)
+
+    def focusInEvent(self, event):
+        self.placeholder.setVisible(False)
+        return super(CommentBox, self).focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        current_text = self.text()
+        current_text = current_text.strip(" ")
+        self.setText(current_text)
+        if not self.text():
+            self.placeholder.setVisible(True)
+        return super(CommentBox, self).focusOutEvent(event)
