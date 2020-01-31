@@ -508,7 +508,13 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
             if not text or text == '<string>':
                 continue
 
-            text = str(text).replace('\n', '<br/>').replace(' ', '&nbsp;')
+            text = (
+                str(text)
+                .replace("<", "&#60;")
+                .replace(">", "&#62;")
+                .replace('\n', '<br/>')
+                .replace(' ', '&nbsp;')
+            )
 
             title_tag = (
                 '<span style=\" font-size:8pt; font-weight:600;'

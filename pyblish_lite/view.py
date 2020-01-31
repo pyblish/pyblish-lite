@@ -301,17 +301,14 @@ class PerspectiveWidget(QtWidgets.QWidget):
         header_widget = QtWidgets.QWidget()
         toggle_button = QtWidgets.QToolButton(header_widget)
         toggle_button.setMinimumHeight(50)
-
-        font = toggle_button.font()
-        font.setFamily('FontAwesome')
-        font.setPointSize(26)
-        toggle_button.setFont(font)
         toggle_button.setText(delegate.icons["angle-left"])
         toggle_button.setStyleSheet(
             "border-bottom: 3px solid lightblue;"
             "border-top: 0px;"
             "border-right: 1px solid #232323;"
             "border-left: 0px;"
+            "font-size: 26pt;"
+            "font-family: \"FontAwesome\";"
         )
         toggle_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
 
@@ -319,14 +316,11 @@ class PerspectiveWidget(QtWidgets.QWidget):
         indicator.setMinimumWidth(30)
 
         name = QtWidgets.QLabel('*Name of inspected', parent=header_widget)
-        font = QtGui.QFont()
-        font.setPointSize(16)
-        font.setBold(True)
-        font.setWeight(50)
-        font.setKerning(True)
-        name.setFont(font)
-
-        indicator.setFont(font)
+        name.setStyleSheet(
+            "font-size: 16pt;"
+            "font-style: bold;"
+            "font-weight: 50;"
+        )
 
         header_layout = QtWidgets.QHBoxLayout(header_widget)
         header_layout.setAlignment(QtCore.Qt.AlignLeft)
@@ -463,6 +457,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
                 check_color = self.indicator_colors["warning"]
 
         self.indicator.setStyleSheet(
+            'font-size: 16pt;'
+            'font-style: bold;'
+            'font-weight: 50;'
             'padding: 5px;'
             'background: {};color: {}'.format(
                 check_color['bg'], check_color['font']
@@ -601,3 +598,23 @@ class ButtonWithMenu(QtWidgets.QWidget):
     def clearMenu(self):
         self.menu.clear()
         self.button.setToolTip("Presets not found")
+
+
+class CommentBox(QtWidgets.QLineEdit):
+
+    def __init__(self, placeholder_text, parent=None):
+        super(CommentBox, self).__init__(parent=parent)
+        self.placeholder = QtWidgets.QLabel(placeholder_text, self)
+        self.placeholder.move(2, 2)
+
+    def focusInEvent(self, event):
+        self.placeholder.setVisible(False)
+        return super(CommentBox, self).focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        current_text = self.text()
+        current_text = current_text.strip(" ")
+        self.setText(current_text)
+        if not self.text():
+            self.placeholder.setVisible(True)
+        return super(CommentBox, self).focusOutEvent(event)
