@@ -104,8 +104,9 @@ class Proxy(QtCore.QAbstractProxyModel):
         source_rows = source.rowCount()
         source_indices = [source.index(i, 0) for i in range(source_rows)]
 
-        for section, group in groupby(source_indices,
-                                      key=self.groupby_key):
+        for section, group in groupby(
+            source_indices, key=self.groupby_key
+        ):
 
             # section
             label = self.groupby_label(section)
@@ -126,6 +127,7 @@ class Proxy(QtCore.QAbstractProxyModel):
                     continue
                 proxy_item = ProxyItem(index)
                 section_item.addChild(proxy_item)
+
             # Add only sections with at least one child
             if section_item.rowCount() > 0:
                 self.root.addChild(section_item)
@@ -161,6 +163,7 @@ class Proxy(QtCore.QAbstractProxyModel):
         else:
             self.dataChanged.emit(index, index, [role])
         self.layoutChanged.emit()
+        return True
 
     def is_header(self, index):
         """Return whether index is a header"""
@@ -173,9 +176,9 @@ class Proxy(QtCore.QAbstractProxyModel):
         for section_item in self.root.children():
             for item in section_item.children():
                 if item.source_index == index:
-                    return self.createIndex(item.row(),
-                                            index.column(),
-                                            item)
+                    return self.createIndex(
+                        item.row(), index.column(), item
+                    )
 
         return QtCore.QModelIndex()
 

@@ -6,7 +6,8 @@ from . import model
 from .awesome import tags as awesome
 
 colors = {
-    "warning": QtGui.QColor("#ff4a4a"),
+    "error": QtGui.QColor("#ff4a4a"),
+    "warning": QtGui.QColor("#ff9900"),
     "ok": QtGui.QColor("#77AE24"),
     "active": QtGui.QColor("#99CEEE"),
     "idle": QtCore.Qt.white,
@@ -82,13 +83,20 @@ class Item(QtWidgets.QStyledItemDelegate):
             check_color = colors["active"]
 
         elif index.data(model.HasFailed) is True:
-            check_color = colors["warning"]
+            check_color = colors["error"]
 
         elif index.data(model.HasSucceeded) is True:
             check_color = colors["ok"]
 
         elif index.data(model.HasProcessed) is True:
             check_color = colors["ok"]
+
+        if index.data(model.HasWarning) is True:
+            if (
+                index.data(model.HasFailed) is False and
+                index.data(model.HasSucceeded) is True
+            ):
+                check_color = colors["warning"]
 
         metrics = painter.fontMetrics()
 
@@ -97,10 +105,12 @@ class Item(QtWidgets.QStyledItemDelegate):
 
         assert label_rect.width() > 0
 
-        label = index.data(model.Label)
-        label = metrics.elidedText(label,
-                                   QtCore.Qt.ElideRight,
-                                   label_rect.width() - 20)
+        label = index.data(QtCore.Qt.DisplayRole)
+        label = metrics.elidedText(
+            label,
+            QtCore.Qt.ElideRight,
+            label_rect.width() - 20
+        )
 
         font_color = colors["idle"]
         if not index.data(model.IsChecked):
@@ -128,7 +138,7 @@ class Item(QtWidgets.QStyledItemDelegate):
             elif index.data(model.IsProcessing):
                 color = colors["active"]
             elif index.data(model.ActionFailed):
-                color = colors["warning"]
+                color = colors["error"]
             else:
                 color = colors["ok"]
 
@@ -212,7 +222,7 @@ class Section(QtWidgets.QStyledItemDelegate):
         group = index.data(model.GroupObject)
         if group.expanded:
             expander_icon = icons['minus-sign']
-        label = index.data(model.Label)
+        label = index.data(QtCore.Qt.DisplayRole)
         label = metrics.elidedText(
             label, QtCore.Qt.ElideRight, label_rect.width()
         )
@@ -290,8 +300,10 @@ class Artist(QtWidgets.QStyledItemDelegate):
         duration_rect.translate(content_rect.width() - 50, 0)
 
         label_rect = QtCore.QRectF(content_rect)
-        label_rect.translate(icon_rect.width() +
-                             spacing, 0)
+        label_rect.translate(
+            icon_rect.width() + spacing,
+            0
+        )
         label_rect.setHeight(metrics.lineSpacing() + spacing)
 
         families_rect = QtCore.QRectF(label_rect)
@@ -312,7 +324,7 @@ class Artist(QtWidgets.QStyledItemDelegate):
             check_color = colors["active"]
 
         elif index.data(model.HasFailed) is True:
-            check_color = colors["warning"]
+            check_color = colors["error"]
 
         elif index.data(model.HasSucceeded) is True:
             check_color = colors["ok"]
@@ -320,22 +332,29 @@ class Artist(QtWidgets.QStyledItemDelegate):
         elif index.data(model.HasProcessed) is True:
             check_color = colors["ok"]
 
-        icon = index.data(model.Icon) or icons["file"]
+        if index.data(model.HasWarning) is True:
+            if (
+                index.data(model.HasFailed) is False and
+                index.data(model.HasSucceeded) is True
+            ):
+                check_color = colors["warning"]
+
+        icon = index.data(QtCore.Qt.DecorationRole) or icons["file"]
         perspective_icon = icons["angle-right"]
-        label = index.data(model.Label)
+        label = index.data(QtCore.Qt.DisplayRole)
 
         families = ", ".join(index.data(model.Families))
         if families == '__context__':
             families = 'Context'
 
         # Elide
-        label = metrics.elidedText(label,
-                                   QtCore.Qt.ElideRight,
-                                   label_rect.width())
+        label = metrics.elidedText(
+            label, QtCore.Qt.ElideRight, label_rect.width()
+        )
 
-        families = metrics.elidedText(families,
-                                      QtCore.Qt.ElideRight,
-                                      label_rect.width())
+        families = metrics.elidedText(
+            families, QtCore.Qt.ElideRight, label_rect.width()
+        )
 
         font_color = colors["idle"]
         if not index.data(model.IsChecked):
@@ -419,7 +438,7 @@ class TerminalItem(QtWidgets.QStyledItemDelegate):
             icon_color = record_colors[index.data(model.LogLevel)]
 
         elif index.data(model.Type) == "error":
-            icon_color = colors["warning"]
+            icon_color = colors["error"]
 
         metrics = painter.fontMetrics()
 
@@ -428,7 +447,7 @@ class TerminalItem(QtWidgets.QStyledItemDelegate):
 
         assert label_rect.width() > 0
 
-        label = index.data(model.Label)
+        label = index.data(QtCore.Qt.DisplayRole)
         label = metrics.elidedText(
             label, QtCore.Qt.ElideRight, label_rect.width() - 20
         )
@@ -468,7 +487,7 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
 
     show_roles = {
-        model.QtCore.Qt.DisplayRole: 'Message',
+        QtCore.Qt.DisplayRole: 'Message',
         model.LogName: 'Plugin',
         model.LogPath: 'Path',
         model.LogLineNumber: 'Line',

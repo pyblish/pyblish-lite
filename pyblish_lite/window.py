@@ -697,7 +697,7 @@ class Window(QtWidgets.QDialog):
 
             details.show({
                 "icon": awesome["circle"],
-                "heading": index.data(model.Label).split("\n")[0],
+                "heading": index.data(QtCore.Qt.DisplayRole).split("\n")[0],
                 "subheading": "LogRecord (%s)" % index.data(model.LogLevel),
                 "text": text,
                 "timestamp": "",
@@ -717,7 +717,7 @@ class Window(QtWidgets.QDialog):
 
             details.show({
                 "icon": awesome["exclamation-triangle"],
-                "heading": index.data(model.Label).split("\n")[0],
+                "heading": index.data(QtCore.Qt.DisplayRole).split("\n")[0],
                 "subheading": "Exception",
                 "text": text,
                 "timestamp": "",
@@ -725,8 +725,10 @@ class Window(QtWidgets.QDialog):
 
         elif index.data(model.Type) == "plugin":
             details.show({
-                "icon": index.data(model.Icon) or awesome["filter"],
-                "heading": index.data(model.Label),
+                "icon": (
+                    index.data(QtCore.Qt.DecorationRole) or awesome["filter"]
+                ),
+                "heading": index.data(QtCore.Qt.DisplayRole),
                 "subheading": ", ".join(index.data(model.Families)),
                 "text": index.data(model.Docstring) or "",
                 "timestamp": str(index.data(model.Duration) or 0) + " ms",
@@ -734,8 +736,10 @@ class Window(QtWidgets.QDialog):
 
         elif index.data(model.Type) == "instance":
             details.show({
-                "icon": index.data(model.Icon) or awesome["file"],
-                "heading": index.data(model.Label),
+                "icon": (
+                    index.data(QtCore.Qt.DecorationRole) or awesome["file"]
+                ),
+                "heading": index.data(QtCore.Qt.DisplayRole),
                 "subheading": ", ".join(index.data(model.Families)),
                 "text": "",
                 "timestamp": str(index.data(model.Duration) or 0) + " ms",
@@ -881,7 +885,9 @@ class Window(QtWidgets.QDialog):
         plugin_proxies = self.data["proxies"]["plugins"]
         plugin_proxies.layoutChanged.emit()
 
-        self.info("%s %s" % (self.tr("Processing"), index.data(model.Label)))
+        self.info("{} {}".format(
+            self.tr("Processing"), index.data(QtCore.Qt.DisplayRole)
+        ))
 
     def on_plugin_action_menu_requested(self, pos):
         """The user right-clicked on a plug-in
@@ -955,7 +961,17 @@ class Window(QtWidgets.QDialog):
 
         self.info(self.tr("Finishing up reset.."))
 
-        models["instances"].update_instances()
+        items = [models["instances"].context_item]
+        items.extend([instance for instance in self.controller.context])
+
+        models["instances"].reset()
+        for item in items:
+            # Set processed, succeeded and idle back to default stage after
+            # collecting
+            item._is_idle = True
+            item._has_succeeded = False
+            item._has_processed = False
+            models["instances"].append(item)
 
         failed = False
         for index in self.data["models"]["plugins"]:
@@ -1219,9 +1235,11 @@ class Window(QtWidgets.QDialog):
         index = model_.items.index(plugin)
         index = model_.createIndex(index, 0)
 
-        for key, value in {model.ActionIdle: False,
-                           model.ActionFailed: False,
-                           model.IsProcessing: True}.items():
+        for key, value in {
+            model.ActionIdle: False,
+            model.ActionFailed: False,
+            model.IsProcessing: True
+        }.items():
             model_.setData(index, value, key)
 
         # Give Qt time to draw
@@ -1246,9 +1264,9 @@ class Window(QtWidgets.QDialog):
 
             # Explicitly clear potentially referenced data
             self.info(self.tr("Cleaning up models.."))
-            for v in self.data["views"].values():
-                v.model().deleteLater()
-                v.setModel(None)
+            for view in self.data["views"].values():
+                view.model().deleteLater()
+                view.setModel(None)
 
             self.info(self.tr("Cleaning up terminal.."))
             for item in self.data["models"]["terminal"].items:

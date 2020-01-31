@@ -278,12 +278,16 @@ class PerspectiveWidget(QtWidgets.QWidget):
             "bg": "#99CEEE",
             "font": "#ffffff"
         },
-        "warning": {
+        "error": {
             "bg": "#cc4a4a",
             "font": "#ffffff"
         },
         "ok": {
             "bg": "#69a567",
+            "font": "#ffffff"
+        },
+        "warning": {
+            "bg": "#ff9900",
             "font": "#ffffff"
         }
     }
@@ -439,11 +443,19 @@ class PerspectiveWidget(QtWidgets.QWidget):
         if index.data(model.IsProcessing) is True:
             check_color = self.indicator_colors["active"]
         elif index.data(model.HasFailed) is True:
-            check_color = self.indicator_colors["warning"]
+            check_color = self.indicator_colors["error"]
         elif index.data(model.HasSucceeded) is True:
             check_color = self.indicator_colors["ok"]
         elif index.data(model.HasProcessed) is True:
             check_color = self.indicator_colors["ok"]
+
+        if index.data(model.HasWarning) is True:
+            if (
+                index.data(model.HasFailed) is False and
+                index.data(model.HasSucceeded) is True
+            ):
+                check_color = self.indicator_colors["warning"]
+
         self.indicator.setStyleSheet(
             'font-size: 16pt;'
             'font-style: bold;'
