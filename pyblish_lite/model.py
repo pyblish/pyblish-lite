@@ -403,6 +403,8 @@ class Plugin(Item):
         new_records = result.get('records', [])
         if not item._has_warning:
             for record in new_records:
+                if not hasattr(record, "levelname"):
+                    continue
                 if str(record.levelname).lower() not in [
                     "warning", "critical", "error"
                 ]:
