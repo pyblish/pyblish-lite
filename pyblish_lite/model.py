@@ -498,12 +498,6 @@ class Instance(Item):
         if not hasattr(item, "_is_idle"):
             item._is_idle = False
 
-        # Merge `family` and `families` for backwards compatibility
-        family = item.data["family"]
-        families = [f for f in item.data.get("families")] or []
-        if family in families:
-            families.remove(family)
-        item.families = [family] + families
         return super(Instance, self).append(item)
 
     def update_instances(self):
