@@ -205,7 +205,6 @@ class Item(Abstract):
         # Common schema
         self.attr_schema = {
             IsOptional: "optional",
-            Families: "families",
             Id: "id",
             Actions: "actions",
             Order: "order",
@@ -252,6 +251,7 @@ class Plugin(Item):
             Label: "label",
             Name: "__name__",
             Icon: "icon",
+            Families: "families",
 
             IsChecked: "active",
             Docstring: "__doc__",
@@ -543,7 +543,23 @@ class Instance(Item):
             role = Icon
 
         item = super(Instance, self).data(index, Object)
-        if role == Object:
+        if role == Families:
+            if item._type == "context":
+                return ["Context"]
+
+            families = []
+            family = item.data.get("family")
+            if family:
+                families.append(family)
+
+            _families = item.data.get("families") or []
+            for fam in _families:
+                if fam not in families:
+                    families.append(fam)
+
+            return families
+
+        elif role == Object:
             return item
 
         elif role == Data:
