@@ -500,27 +500,28 @@ class Instance(Item):
 
         return super(Instance, self).append(item)
 
-    def update_instances(self):
-        add_indexes = []
-        for item in self.context_item:
-            if item not in self.items:
-                self.append(item)
-
-        remove_indexes = []
-        context_items = [item for item in self.context_item]
-        for idx, item in enumerate(self.items):
-            if item not in context_items:
-                if item == self.context_item:
-                    continue
-                remove_indexes.append(idx)
-
-        for idx in reversed(remove_indexes):
-            self.items.pop(idx)
-
-        for item in self.items:
-            item.data["_is_idle"] = True
-            item.data["_has_succeeded"] = False
-            item.data["_has_processed"] = False
+    # TODO remove if everything of PR #40 will work corretly
+    # def update_instances(self):
+    #     add_indexes = []
+    #     for item in self.context_item:
+    #         if item not in self.items:
+    #             self.append(item)
+    #
+    #     remove_indexes = []
+    #     context_items = [item for item in self.context_item]
+    #     for idx, item in enumerate(self.items):
+    #         if item not in context_items:
+    #             if item == self.context_item:
+    #                 continue
+    #             remove_indexes.append(idx)
+    #
+    #     for idx in reversed(remove_indexes):
+    #         self.items.pop(idx)
+    #
+    #     for item in self.items:
+    #         item.data["_is_idle"] = True
+    #         item.data["_has_succeeded"] = False
+    #         item.data["_has_processed"] = False
 
     def data(self, index, role):
         # This is because of bug without known cause
