@@ -205,7 +205,6 @@ class Item(Abstract):
         # Common schema
         self.attr_schema = {
             IsOptional: "optional",
-            Families: "families",
             Id: "id",
             Actions: "actions",
             Order: "order",
@@ -252,6 +251,7 @@ class Plugin(Item):
             Label: "label",
             Name: "__name__",
             Icon: "icon",
+            Families: "families",
 
             IsChecked: "active",
             Docstring: "__doc__",
@@ -498,35 +498,30 @@ class Instance(Item):
         if not hasattr(item, "_is_idle"):
             item._is_idle = False
 
-        # Merge `family` and `families` for backwards compatibility
-        family = item.data["family"]
-        families = [f for f in item.data.get("families")] or []
-        if family in families:
-            families.remove(family)
-        item.families = [family] + families
         return super(Instance, self).append(item)
 
-    def update_instances(self):
-        add_indexes = []
-        for item in self.context_item:
-            if item not in self.items:
-                self.append(item)
-
-        remove_indexes = []
-        context_items = [item for item in self.context_item]
-        for idx, item in enumerate(self.items):
-            if item not in context_items:
-                if item == self.context_item:
-                    continue
-                remove_indexes.append(idx)
-
-        for idx in reversed(remove_indexes):
-            self.items.pop(idx)
-
-        for item in self.items:
-            item.data["_is_idle"] = True
-            item.data["_has_succeeded"] = False
-            item.data["_has_processed"] = False
+    # TODO remove if everything of PR #40 will work corretly
+    # def update_instances(self):
+    #     add_indexes = []
+    #     for item in self.context_item:
+    #         if item not in self.items:
+    #             self.append(item)
+    #
+    #     remove_indexes = []
+    #     context_items = [item for item in self.context_item]
+    #     for idx, item in enumerate(self.items):
+    #         if item not in context_items:
+    #             if item == self.context_item:
+    #                 continue
+    #             remove_indexes.append(idx)
+    #
+    #     for idx in reversed(remove_indexes):
+    #         self.items.pop(idx)
+    #
+    #     for item in self.items:
+    #         item.data["_is_idle"] = True
+    #         item.data["_has_succeeded"] = False
+    #         item.data["_has_processed"] = False
 
     def data(self, index, role):
         # This is because of bug without known cause
@@ -543,7 +538,23 @@ class Instance(Item):
             role = Icon
 
         item = super(Instance, self).data(index, Object)
-        if role == Object:
+        if role == Families:
+            if item._type == "context":
+                return ["Context"]
+
+            families = []
+            family = item.data.get("family")
+            if family:
+                families.append(family)
+
+            _families = item.data.get("families") or []
+            for fam in _families:
+                if fam not in families:
+                    families.append(fam)
+
+            return families
+
+        elif role == Object:
             return item
 
         elif role == Data:
