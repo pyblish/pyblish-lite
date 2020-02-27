@@ -615,7 +615,11 @@ class Instance(Item):
         new_records = result.get('records', [])
         if not item._has_warning:
             for record in new_records:
-                if str(record.levelname).lower() != "warning":
+                if not hasattr(record, "levelname"):
+                    continue
+                if str(record.levelname).lower() not in [
+                    "warning", "critical", "error"
+                ]:
                     continue
                 self.setData(index, True, HasWarning)
                 break
