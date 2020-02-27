@@ -51,13 +51,18 @@ class Window(QtWidgets.QDialog):
     def __init__(self, controller, parent=None):
         super(Window, self).__init__(parent)
         icon = QtGui.QIcon(util.get_asset("img", "logo-extrasmall.png"))
+        if parent is None:
+            on_top_flag = QtCore.Qt.WindowStaysOnTopHint
+        else:
+            on_top_flag = QtCore.Qt.Dialog
+
         self.setWindowFlags(
             self.windowFlags() |
             QtCore.Qt.WindowTitleHint |
             QtCore.Qt.WindowMaximizeButtonHint |
             QtCore.Qt.WindowMinimizeButtonHint |
             QtCore.Qt.WindowCloseButtonHint |
-            QtCore.Qt.Dialog
+            on_top_flag
         )
         self.setWindowIcon(icon)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
