@@ -7,8 +7,8 @@ from itertools import groupby
 
 class ProxyItem(model.TreeItem):
     def __init__(self, source_index):
-        super(ProxyItem, self).__init__()
         self.source_index = source_index
+        super(ProxyItem, self).__init__()
 
     def data(self, role=QtCore.Qt.DisplayRole):
         return self.source_index.data(role)
