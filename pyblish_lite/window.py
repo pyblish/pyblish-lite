@@ -58,6 +58,7 @@ class Window(QtWidgets.QDialog):
 
         self.setWindowFlags(
             self.windowFlags() |
+            QtCore.Qt.CustomizeWindowHint |
             QtCore.Qt.WindowTitleHint |
             QtCore.Qt.WindowMaximizeButtonHint |
             QtCore.Qt.WindowMinimizeButtonHint |
@@ -219,16 +220,18 @@ class Window(QtWidgets.QDialog):
         instance_combo.setProperty("combolist", True)
 
         layout = QtWidgets.QHBoxLayout(terminal_footer)
-        for w in (search_box,
-                  instance_combo,
-                  plugin_combo,
-                  show_errors,
-                  show_records,
-                  show_debug,
-                  show_info,
-                  show_warning,
-                  show_error,
-                  show_critical):
+        for w in (
+            search_box,
+            instance_combo,
+            plugin_combo,
+            show_errors,
+            show_records,
+            show_debug,
+            show_info,
+            show_warning,
+            show_error,
+            show_critical
+        ):
             layout.addWidget(w)
 
         layout.setContentsMargins(0, 0, 0, 0)
@@ -847,9 +850,9 @@ class Window(QtWidgets.QDialog):
         self.controller.is_running = False
 
         buttons = self.data["buttons"]
-        buttons["reset"].show()
-        buttons["play"].hide()
-        buttons["stop"].hide()
+        buttons["reset"].setEnabled(True)
+        buttons["play"].setEnabled(False)
+        buttons["stop"].setEnabled(False)
 
         self.on_finished()
 
@@ -987,10 +990,10 @@ class Window(QtWidgets.QDialog):
                 break
 
         buttons = self.data["buttons"]
-        buttons["play"].setVisible(not failed)
-        buttons["validate"].setVisible(not failed)
-        buttons["reset"].show()
-        buttons["stop"].hide()
+        buttons["play"].setEnabled(not failed)
+        buttons["validate"].setEnabled(not failed)
+        buttons["reset"].setEnabled(True)
+        buttons["stop"].setEnabled(False)
 
         aditional_btns = self.data["aditional_btns"]
         aditional_btns["presets_button"].clearMenu()
@@ -1042,10 +1045,10 @@ class Window(QtWidgets.QDialog):
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
-        buttons["play"].setVisible(not failed)
-        buttons["validate"].hide()
-        buttons["reset"].show()
-        buttons["stop"].hide()
+        buttons["play"].setEnabled(not failed)
+        buttons["validate"].setEnabled(False)
+        buttons["reset"].setEnabled(True)
+        buttons["stop"].setEnabled(False)
 
     def on_was_published(self):
         plugin_model = self.data["models"]["plugins"]
@@ -1058,10 +1061,10 @@ class Window(QtWidgets.QDialog):
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
-        buttons["play"].hide()
-        buttons["validate"].hide()
-        buttons["reset"].show()
-        buttons["stop"].hide()
+        buttons["play"].setEnabled(False)
+        buttons["validate"].setEnabled(False)
+        buttons["reset"].setEnabled(True)
+        buttons["stop"].setEnabled(False)
 
         comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
         comment_box.hide()
@@ -1118,8 +1121,8 @@ class Window(QtWidgets.QDialog):
 
     def on_was_acted(self, result):
         buttons = self.data["buttons"]
-        buttons["reset"].show()
-        buttons["stop"].hide()
+        buttons["reset"].setEnabled(True)
+        buttons["stop"].setEnabled(False)
 
         # Update action with result
         model_ = self.data["models"]["plugins"]
@@ -1187,11 +1190,11 @@ class Window(QtWidgets.QDialog):
         # Reset current ids to secure no previous instances get mixed in.
         models["instances"].ids = []
 
-        for m in models.values():
-            m.reset()
+        for model in models.values():
+            model.reset()
 
-        for b in self.data["buttons"].values():
-            b.hide()
+        for button in self.data["buttons"].values():
+            button.setEnabled(False)
 
         comment_box = self.data["comment_intent"]["comment"]
         comment_box.hide()
@@ -1212,27 +1215,27 @@ class Window(QtWidgets.QDialog):
     def validate(self):
         self.info(self.tr("Preparing validate.."))
         for button in self.data["buttons"].values():
-            button.hide()
+            button.setEnabled(False)
 
-        self.data["buttons"]["stop"].show()
+        self.data["buttons"]["stop"].setEnabled(True)
         util.defer(5, self.controller.validate)
 
     def publish(self):
         self.info(self.tr("Preparing publish.."))
 
         for button in self.data["buttons"].values():
-            button.hide()
+            button.setEnabled(False)
 
-        self.data["buttons"]["stop"].show()
+        self.data["buttons"]["stop"].setEnabled(True)
         util.defer(5, self.controller.publish)
 
     def act(self, plugin, action):
         self.info("%s %s.." % (self.tr("Preparing"), action))
 
         for button in self.data["buttons"].values():
-            button.hide()
+            button.setEnabled(False)
 
-        self.data["buttons"]["stop"].show()
+        self.data["buttons"]["stop"].setEnabled(True)
         self.controller.is_running = True
 
         # Cause view to update, but it won't visually
