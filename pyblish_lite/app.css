@@ -51,25 +51,28 @@ QPushButton {
 	width: 27px;
 	height: 27px;
 	background: #555;
-	border: 1px solid #333;
+	border: 1px solid #aaa;
+	border-radius: 4px;
 	font-family: "FontAwesome";
 	font-size: 11pt;
 	color: white;
 	padding: 0px;
-	outline: none;
 }
 
-QPushButton:pressed {
-	background: "#777";
+QPushButton:pressed:hover {
+	color: #3784c5;
+	background: #444;
 }
 
 QPushButton:hover {
-	color: white;
-	background: "#666";
+	background: #505050;
+	border: 1px solid #3784c5;
 }
 
 QPushButton:disabled {
-	color: rgba(255, 255, 255, 50);
+	border: 1px solid #888;
+	background: #666;
+	color: #999;
 }
 
 QTextEdit, QLineEdit {
