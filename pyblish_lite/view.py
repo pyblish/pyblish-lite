@@ -153,6 +153,19 @@ class TerminalView(QtWidgets.QTreeView):
 
         return super(TerminalView, self).mouseReleaseEvent(event)
 
+    def sizeHint(self):
+        size = super(TerminalView, self).sizeHint()
+        height = 0
+        for idx in range(self.model().rowCount()):
+            index = self.model().index(idx, 0)
+            height += self.rowHeight(index)
+            item = index.data(model.GroupObject)
+            if item.expanded:
+                index = self.model().index(0, 1, index)
+                height += self.rowHeight(index)
+        size.setHeight(height)
+        return size
+
     def rowsInserted(self, parent, start, end):
         """Automatically scroll to bottom on each new item added
 

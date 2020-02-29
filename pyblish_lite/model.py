@@ -690,10 +690,10 @@ class Terminal(Abstract):
         key = self.schema[role]
         item[key] = value
 
-        if __binding__ in ("PyQt4", "PySide"):
-            self.dataChanged.emit(index, index)
-        else:
-            self.dataChanged.emit(index, index, [role])
+        args = [index, index]
+        if __binding__ not in ("PyQt4", "PySide"):
+            args.append([role])
+        self.dataChanged.emit(*args)
         return True
 
     def update_with_result(self, result):
@@ -1057,9 +1057,9 @@ class TerminalProxy(QtCore.QAbstractProxyModel):
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 1
 
-    def rowCount(self, parent):
+    def rowCount(self, parent=None):
 
-        if not parent.isValid():
+        if not parent or not parent.isValid():
             node = self.root
         else:
             node = parent.internalPointer()
@@ -1069,7 +1069,7 @@ class TerminalProxy(QtCore.QAbstractProxyModel):
 
         return node.rowCount()
 
-    def index(self, row, column, parent):
+    def index(self, row, column, parent=None):
         if parent and parent.isValid():
             parent_node = parent.internalPointer()
         else:
