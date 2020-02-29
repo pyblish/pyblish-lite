@@ -254,9 +254,21 @@ QToolButton:hover {
 	border: 1px solid #999;
 }
 
+#FooterSpacer, #FooterInfo {
+	background: transparent;
+}
+
 #Footer {
 	background: #555;
 	min-height: 43px;
+}
+
+#Footer[success="1"] {
+	background: #458056
+}
+
+#Footer[success="0"] {
+	background-color: #AA5050
 }
 
 #ClosingPlaceholder {

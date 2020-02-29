@@ -262,19 +262,16 @@ class Window(QtWidgets.QDialog):
 
         comment_box = view.CommentBox("Comment...", self)
         comment_box.setEnabled(False)
-        comment_box.hide()
 
         intent_box = QtWidgets.QComboBox()
 
         intent_model = model.IntentModel()
         intent_box.setModel(intent_model)
-        intent_box.hide()
         intent_box.currentIndexChanged.connect(self.on_intent_changed)
-        intent_view = intent_box.view()
-        # intent_view.setSpacing(2)
 
-        comment_intent_layout = QtWidgets.QHBoxLayout()
-        comment_intent_layout.setContentsMargins(5, 5, 5, 5)
+        comment_intent_widget = QtWidgets.QWidget()
+        comment_intent_layout = QtWidgets.QHBoxLayout(comment_intent_widget)
+        comment_intent_layout.setContentsMargins(0, 0, 0, 0)
         comment_intent_layout.setSpacing(5)
         comment_intent_layout.addWidget(comment_box)
         comment_intent_layout.addWidget(intent_box)
@@ -304,14 +301,14 @@ class Window(QtWidgets.QDialog):
         """
 
         footer = QtWidgets.QWidget()
-        info = QtWidgets.QLabel()
-        spacer = QtWidgets.QWidget()
-        reset = QtWidgets.QPushButton(awesome["refresh"])
-        validate = QtWidgets.QPushButton(awesome["flask"])
-        play = QtWidgets.QPushButton(awesome["play"])
-        stop = QtWidgets.QPushButton(awesome["stop"])
+        info = QtWidgets.QLabel(footer)
+        spacer = QtWidgets.QWidget(footer)
+        reset = QtWidgets.QPushButton(awesome["refresh"], footer)
+        validate = QtWidgets.QPushButton(awesome["flask"], footer)
+        play = QtWidgets.QPushButton(awesome["play"], footer)
+        stop = QtWidgets.QPushButton(awesome["stop"], footer)
 
-        layout = QtWidgets.QHBoxLayout(footer)
+        layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(5, 5, 5, 5)
         layout.addWidget(info, 0)
         layout.addWidget(spacer, 1)
@@ -319,6 +316,12 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(validate, 0)
         layout.addWidget(play, 0)
         layout.addWidget(stop, 0)
+
+        footer_layout = QtWidgets.QVBoxLayout(footer)
+        footer_layout.addWidget(comment_intent_widget)
+        footer_layout.addLayout(layout)
+
+        footer.setProperty("success", -1)
 
         # Placeholder for when GUI is closing
         # TODO(marcus): Fade to black and the the user about what's happening
@@ -338,7 +341,6 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(body, 3)
         layout.addWidget(self.perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
-        layout.addLayout(comment_intent_layout, 0)
         layout.addWidget(footer, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -439,7 +441,6 @@ class Window(QtWidgets.QDialog):
             "Header": header,
             "Body": body,
             "Footer": footer,
-            "Info": info,
 
             # Modals
             "Details": details,
@@ -461,6 +462,8 @@ class Window(QtWidgets.QDialog):
             "Stop": stop,
 
             # Misc
+            "FooterSpacer": spacer,
+            "FooterInfo": info,
             "CommentBox": comment_box,
             "CommentPlaceholder": comment_box.placeholder,
             "ClosingPlaceholder": closing_placeholder,
@@ -531,6 +534,7 @@ class Window(QtWidgets.QDialog):
                 "terminal": terminal_page,
             },
             "comment_intent": {
+                "comment_intent": comment_intent_widget,
                 "comment": comment_box,
                 "intent": intent_box
             },
@@ -804,16 +808,18 @@ class Window(QtWidgets.QDialog):
 
         page = self.data["pages"][target]
 
+        comment_intent = self.data["comment_intent"]["comment_intent"]
         comment_box = self.data["comment_intent"]["comment"]
         intent_box = self.data["comment_intent"]["intent"]
 
         if target == "terminal":
-            comment_box.hide()
-            intent_box.hide()
+            comment_intent.setVisible(False)
         else:
-            comment_box.setVisible(comment_box.isEnabled())
             intent_box.setVisible(
                 intent_box.model().has_items and intent_box.isEnabled()
+            )
+            comment_intent.setVisible(
+                comment_box.isEnabled() or intent_box.isVisible()
             )
 
         page.show()
@@ -821,24 +827,24 @@ class Window(QtWidgets.QDialog):
         self.data["tabs"]["current"] = target
 
     def on_validate_clicked(self):
+        comment_intent = self.data["comment_intent"]["comment_intent"]
         comment_box = self.data["comment_intent"]["comment"]
-        comment_box.setEnabled(False)
-        comment_box.hide()
-
         intent_box = self.data["comment_intent"]["intent"]
+
+        comment_intent.setVisible(False)
+        comment_box.setEnabled(False)
         intent_box.setEnabled(False)
-        intent_box.hide()
 
         self.validate()
 
     def on_play_clicked(self):
+        comment_intent = self.data["comment_intent"]["comment_intent"]
         comment_box = self.data["comment_intent"]["comment"]
-        comment_box.setEnabled(False)
-        comment_box.hide()
-
         intent_box = self.data["comment_intent"]["intent"]
+
+        comment_intent.setVisible(False)
+        comment_box.setEnabled(False)
         intent_box.setEnabled(False)
-        intent_box.hide()
 
         self.publish()
 
@@ -1011,11 +1017,13 @@ class Window(QtWidgets.QDialog):
         # This allows users to inject a comment from elsewhere,
         # or to perhaps provide a placeholder comment/template
         # for artists to fill in.
-        comment = self.controller.context.data.get("comment")
+        comment_intent_box = self.data["comment_intent"]["comment_intent"]
+        comment_intent_box.setVisible(True)
 
+        comment = self.controller.context.data.get("comment")
         comment_box = self.data["comment_intent"]["comment"]
         comment_box.setText(comment or None)
-        comment_box.setEnabled(comment is not None)
+        comment_box.setEnabled(True)
 
         intent_box = self.data["comment_intent"]["intent"]
         intent_box.setEnabled(True)
@@ -1066,11 +1074,9 @@ class Window(QtWidgets.QDialog):
         buttons["reset"].setEnabled(True)
         buttons["stop"].setEnabled(False)
 
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
-        comment_box.hide()
-
         if self.controller.current_error is None:
-            self.data["footer"].setStyleSheet("background-color: #458056")
+            self.data["footer"].setProperty("success", 1)
+            self.data["footer"].style().polish(self.data["footer"])
 
     def on_was_processed(self, result):
         models = self.data["models"]
@@ -1164,7 +1170,8 @@ class Window(QtWidgets.QDialog):
         error = self.controller.current_error
         if error is not None:
             self.info(self.tr("Stopped due to error(s), see Terminal."))
-            self.data["footer"].setStyleSheet("background-color: #AA5050")
+            self.data["footer"].setProperty("success", 0)
+            self.data["footer"].style().polish(self.data["footer"])
         else:
             self.info(self.tr("Finished successfully!"))
 
@@ -1180,7 +1187,8 @@ class Window(QtWidgets.QDialog):
         self.info(self.tr("About to reset.."))
 
         self.data["aditional_btns"]["presets_button"].setEnabled(False)
-        self.data["footer"].setStyleSheet("")
+        self.data["footer"].setProperty("success", -1)
+        self.data["footer"].style().polish(self.data["footer"])
 
         models = self.data["models"]
 
@@ -1196,14 +1204,13 @@ class Window(QtWidgets.QDialog):
         for button in self.data["buttons"].values():
             button.setEnabled(False)
 
-        comment_box = self.data["comment_intent"]["comment"]
-        comment_box.hide()
-
+        comment_intent_box = self.data["comment_intent"]["comment_intent"]
+        comment_intent_box.setVisible(False)
+        # comment_box = self.data["comment_intent"]["comment"]
         intent_box = self.data["comment_intent"]["intent"]
         intent_model = intent_box.model()
         if intent_model.has_items:
             intent_box.setCurrentIndex(0)
-        intent_box.hide()
 
         # Prepare Context object in controller (create new one)
         self.controller.prepare_for_reset()
@@ -1329,7 +1336,7 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        info = self.findChild(QtWidgets.QLabel, "Info")
+        info = self.findChild(QtWidgets.QLabel, "FooterInfo")
         info.setText(message)
 
         # Include message in terminal
