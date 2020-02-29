@@ -301,6 +301,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
         header_widget = QtWidgets.QWidget()
         toggle_button = QtWidgets.QToolButton(header_widget)
         toggle_button.setMinimumHeight(50)
+        toggle_button.setMinimumWidth(40)
         toggle_button.setText(delegate.icons["angle-left"])
         toggle_button.setStyleSheet(
             "border-bottom: 3px solid lightblue;"
