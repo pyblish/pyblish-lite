@@ -261,7 +261,6 @@ class Window(QtWidgets.QDialog):
         """
 
         comment_box = view.CommentBox("Comment...", self)
-        comment_box.setEnabled(False)
 
         intent_box = QtWidgets.QComboBox()
 
@@ -464,6 +463,7 @@ class Window(QtWidgets.QDialog):
             # Misc
             "FooterSpacer": spacer,
             "FooterInfo": info,
+            "CommentIntentWidget": comment_intent_widget,
             "CommentBox": comment_box,
             "CommentPlaceholder": comment_box.placeholder,
             "ClosingPlaceholder": closing_placeholder,
@@ -809,40 +809,28 @@ class Window(QtWidgets.QDialog):
         page = self.data["pages"][target]
 
         comment_intent = self.data["comment_intent"]["comment_intent"]
-        comment_box = self.data["comment_intent"]["comment"]
-        intent_box = self.data["comment_intent"]["intent"]
-
         if target == "terminal":
             comment_intent.setVisible(False)
         else:
-            intent_box.setVisible(
-                intent_box.model().has_items and intent_box.isEnabled()
-            )
-            comment_intent.setVisible(
-                comment_box.isEnabled() or intent_box.isVisible()
-            )
+            comment_intent.setVisible(True)
 
         page.show()
 
         self.data["tabs"]["current"] = target
 
     def on_validate_clicked(self):
-        comment_intent = self.data["comment_intent"]["comment_intent"]
         comment_box = self.data["comment_intent"]["comment"]
         intent_box = self.data["comment_intent"]["intent"]
 
-        comment_intent.setVisible(False)
         comment_box.setEnabled(False)
         intent_box.setEnabled(False)
 
         self.validate()
 
     def on_play_clicked(self):
-        comment_intent = self.data["comment_intent"]["comment_intent"]
         comment_box = self.data["comment_intent"]["comment"]
         intent_box = self.data["comment_intent"]["intent"]
 
-        comment_intent.setVisible(False)
         comment_box.setEnabled(False)
         intent_box.setEnabled(False)
 
@@ -1017,9 +1005,6 @@ class Window(QtWidgets.QDialog):
         # This allows users to inject a comment from elsewhere,
         # or to perhaps provide a placeholder comment/template
         # for artists to fill in.
-        comment_intent_box = self.data["comment_intent"]["comment_intent"]
-        comment_intent_box.setVisible(True)
-
         comment = self.controller.context.data.get("comment")
         comment_box = self.data["comment_intent"]["comment"]
         comment_box.setText(comment or None)
@@ -1172,6 +1157,11 @@ class Window(QtWidgets.QDialog):
             self.info(self.tr("Stopped due to error(s), see Terminal."))
             self.data["footer"].setProperty("success", 0)
             self.data["footer"].style().polish(self.data["footer"])
+            comment_box = self.data["comment_intent"]["comment"]
+            comment_box.setEnabled(False)
+            intent_box = self.data["comment_intent"]["intent"]
+            intent_box.setEnabled(False)
+
         else:
             self.info(self.tr("Finished successfully!"))
 
@@ -1204,11 +1194,9 @@ class Window(QtWidgets.QDialog):
         for button in self.data["buttons"].values():
             button.setEnabled(False)
 
-        comment_intent_box = self.data["comment_intent"]["comment_intent"]
-        comment_intent_box.setVisible(False)
-        # comment_box = self.data["comment_intent"]["comment"]
         intent_box = self.data["comment_intent"]["intent"]
         intent_model = intent_box.model()
+        intent_box.setVisible(intent_model.has_items)
         if intent_model.has_items:
             intent_box.setCurrentIndex(0)
 
