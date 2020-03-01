@@ -615,10 +615,6 @@ class Window(QtWidgets.QDialog):
         left_view.toggled.connect(self.on_item_toggled)
         right_view.toggled.connect(self.on_item_toggled)
 
-        artist_view.inspected.connect(self.on_item_inspected)
-        left_view.inspected.connect(self.on_item_inspected)
-        right_view.inspected.connect(self.on_item_inspected)
-
         reset.clicked.connect(self.on_reset_clicked)
         validate.clicked.connect(self.on_validate_clicked)
         play.clicked.connect(self.on_play_clicked)
@@ -692,72 +688,6 @@ class Window(QtWidgets.QDialog):
             index.model().setData(i, False, model.Expanded)
 
         index.model().setData(index, state, model.Expanded)
-
-    def on_item_inspected(self, index):
-        details = self.data["modals"]["details"]
-        details.move(QtGui.QCursor.pos())
-
-        if index.data(model.Type) == "record":
-
-            # Compose available data
-            data = list()
-            for key, value in index.data(model.Data).items():
-                if key.startswith("_"):
-                    continue
-
-                data.append("%s %s" % ((key + ":").ljust(12), value))
-
-            text = "\n".join(data)
-
-            details.show({
-                "icon": awesome["circle"],
-                "heading": index.data(QtCore.Qt.DisplayRole).split("\n")[0],
-                "subheading": "LogRecord (%s)" % index.data(model.LogLevel),
-                "text": text,
-                "timestamp": "",
-            })
-
-        elif index.data(model.Type) == "error":
-
-            # Compose available data
-            data = list()
-            for key, value in index.data(model.Data).items():
-                if key.startswith("_"):
-                    continue
-
-                data.append("%s %s" % ((key + ":").ljust(12), value))
-
-            text = "\n".join(data)
-
-            details.show({
-                "icon": awesome["exclamation-triangle"],
-                "heading": index.data(QtCore.Qt.DisplayRole).split("\n")[0],
-                "subheading": "Exception",
-                "text": text,
-                "timestamp": "",
-            })
-
-        elif index.data(model.Type) == "plugin":
-            details.show({
-                "icon": (
-                    index.data(QtCore.Qt.DecorationRole) or awesome["filter"]
-                ),
-                "heading": index.data(QtCore.Qt.DisplayRole),
-                "subheading": ", ".join(index.data(model.Families)),
-                "text": index.data(model.Docstring) or "",
-                "timestamp": str(index.data(model.Duration) or 0) + " ms",
-            })
-
-        elif index.data(model.Type) == "instance":
-            details.show({
-                "icon": (
-                    index.data(QtCore.Qt.DecorationRole) or awesome["file"]
-                ),
-                "heading": index.data(QtCore.Qt.DisplayRole),
-                "subheading": ", ".join(index.data(model.Families)),
-                "text": "",
-                "timestamp": str(index.data(model.Duration) or 0) + " ms",
-            })
 
     def on_item_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
