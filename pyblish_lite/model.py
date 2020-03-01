@@ -925,10 +925,12 @@ class TreeItem(object):
 class ProxyTerminalItem(TreeItem):
     def __init__(self, source_index):
         self._expanded = False
-        super(ProxyTerminalItem, self).__init__()
         self.model_index = source_index
+        super(ProxyTerminalItem, self).__init__()
 
     def setIsExpanded(self, in_bool):
+        if self.model_index.data(Object).get("type") == "info":
+            return
         self._expanded = in_bool
 
     @property
@@ -947,8 +949,8 @@ class ProxyTerminalItem(TreeItem):
 
 class ProxyTerminalDetail(TreeItem):
     def __init__(self, source_index):
-        super(ProxyTerminalDetail, self).__init__()
         self.source_index = source_index
+        super(ProxyTerminalDetail, self).__init__()
 
     def data(self, role=QtCore.Qt.DisplayRole):
         return self.source_index.data(role)
