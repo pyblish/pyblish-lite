@@ -171,6 +171,15 @@ QToolButton:hover {
 }
 
 /* Specific CSS */
+#PerspectiveToggleBtn {
+	border-bottom: 3px solid lightblue;
+	border-top: 0px;
+	border-radius: 0px;
+	border-right: 1px solid #232323;
+	border-left: 0px;
+	font-size: 26pt;
+	font-family: "FontAwesome";
+}
 
 #Terminal QComboBox::drop-down {
 	width: 60px;

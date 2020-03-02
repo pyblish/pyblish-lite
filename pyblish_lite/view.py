@@ -278,6 +278,17 @@ class Details(QtWidgets.QDialog):
         self.setVisible(True)
 
 
+class EllidableLabel(QtWidgets.QLabel):
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+
+        metrics = QtGui.QFontMetrics(self.font())
+        elided = metrics.elidedText(
+            self.text(), QtCore.Qt.ElideRight, self.width()
+        )
+        painter.drawText(self.rect(), self.alignment(), elided)
+
+
 class PerspectiveWidget(QtWidgets.QWidget):
     l_doc = '   Documentation'
     l_rec = '   Records'
@@ -312,24 +323,17 @@ class PerspectiveWidget(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout(self)
 
         header_widget = QtWidgets.QWidget()
-        toggle_button = QtWidgets.QToolButton(header_widget)
-        toggle_button.setMinimumHeight(50)
-        toggle_button.setMinimumWidth(40)
+        toggle_button = QtWidgets.QPushButton(parent=header_widget)
+        toggle_button.setObjectName("PerspectiveToggleBtn")
         toggle_button.setText(delegate.icons["angle-left"])
-        toggle_button.setStyleSheet(
-            "border-bottom: 3px solid lightblue;"
-            "border-top: 0px;"
-            "border-right: 1px solid #232323;"
-            "border-left: 0px;"
-            "font-size: 26pt;"
-            "font-family: \"FontAwesome\";"
-        )
-        toggle_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        toggle_button.setMinimumHeight(50)
+        toggle_button.setFixedWidth(40)
 
         indicator = QtWidgets.QLabel('', parent=header_widget)
-        indicator.setMinimumWidth(30)
+        indicator.setFixedWidth(30)
+        indicator.setAlignment(QtCore.Qt.AlignCenter)
 
-        name = QtWidgets.QLabel('*Name of inspected', parent=header_widget)
+        name = EllidableLabel('*Name of inspected', parent=header_widget)
         name.setStyleSheet(
             "font-size: 16pt;"
             "font-style: bold;"
