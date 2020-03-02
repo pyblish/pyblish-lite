@@ -58,7 +58,6 @@ class Window(QtWidgets.QDialog):
 
         self.setWindowFlags(
             self.windowFlags() |
-            QtCore.Qt.CustomizeWindowHint |
             QtCore.Qt.WindowTitleHint |
             QtCore.Qt.WindowMaximizeButtonHint |
             QtCore.Qt.WindowMinimizeButtonHint |
