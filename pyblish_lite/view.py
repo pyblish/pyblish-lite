@@ -372,10 +372,12 @@ class PerspectiveWidget(QtWidgets.QWidget):
             'padding: 0px;'
             'background: "#444";'
         )
+        contents_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
 
         scroll_widget.setWidgetResizable(True)
         scroll_widget.setWidget(contents_widget)
-
         self.indicator = indicator
         self.scroll_widget = scroll_widget
         self.contents_widget = contents_widget
