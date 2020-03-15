@@ -310,10 +310,10 @@ class Window(QtWidgets.QDialog):
         layout.setContentsMargins(5, 5, 5, 5)
         layout.addWidget(info, 0)
         layout.addWidget(spacer, 1)
+        layout.addWidget(stop, 0)
         layout.addWidget(reset, 0)
         layout.addWidget(validate, 0)
         layout.addWidget(play, 0)
-        layout.addWidget(stop, 0)
 
         footer_layout = QtWidgets.QVBoxLayout(footer)
         footer_layout.addWidget(comment_intent_widget)
