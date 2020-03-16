@@ -267,8 +267,6 @@ class Window(QtWidgets.QDialog):
         intent_box.setModel(intent_model)
         intent_box.hide()
         intent_box.currentIndexChanged.connect(self.on_intent_changed)
-        intent_view = intent_box.view()
-        # intent_view.setSpacing(2)
 
         comment_intent_layout = QtWidgets.QHBoxLayout()
         comment_intent_layout.setContentsMargins(5, 5, 5, 5)
