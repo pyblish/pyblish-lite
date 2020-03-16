@@ -1016,6 +1016,9 @@ class Window(QtWidgets.QDialog):
         comment_box.setEnabled(comment is not None)
 
         intent_box = self.data["comment_intent"]["intent"]
+        intent_model = intent_box.model()
+        if intent_model.has_items:
+            self.on_intent_changed()
         intent_box.setEnabled(True)
 
         # Refresh tab
