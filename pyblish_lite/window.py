@@ -702,12 +702,19 @@ class Window(QtWidgets.QDialog):
         index.model().setData(index, state, model.IsChecked)
 
         # Withdraw option to publish if no instances are toggled
-        play = self.findChild(QtWidgets.QWidget, "Play")
-        validate = self.findChild(QtWidgets.QWidget, "Validate")
-        any_instances = any(index.data(model.IsChecked)
-                            for index in self.data["models"]["instances"])
-        play.setEnabled(any_instances)
-        validate.setEnabled(any_instances)
+
+        any_instances = any(
+            index.data(model.IsChecked)
+            for index in self.data["models"]["instances"]
+        )
+
+        buttons = self.data["buttons"]
+        buttons["play"].setEnabled(
+            buttons["play"].isEnabled() and any_instances
+        )
+        buttons["validate"].setEnabled(
+            buttons["validate"].isEnabled() and any_instances
+        )
 
         # Emit signals
         if index.data(model.Type) == "instance":
