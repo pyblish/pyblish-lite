@@ -149,7 +149,7 @@ class IntentModel(QtGui.QStandardItemModel):
         if not items:
             return
 
-        for idx, item_value in enumerate(items.values()):
+        for idx, item_value in enumerate(items.keys()):
             if item_value == default:
                 self.default_index = idx
                 break
@@ -157,7 +157,7 @@ class IntentModel(QtGui.QStandardItemModel):
         self.add_items(items)
 
     def add_items(self, items):
-        for label, value in items.items():
+        for value, label in items.items():
             new_item = QtGui.QStandardItem()
             new_item.setData(label, QtCore.Qt.DisplayRole)
             new_item.setData(value, IntentItemValue)
