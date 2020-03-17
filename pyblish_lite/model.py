@@ -126,6 +126,7 @@ class IntentModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         super(IntentModel, self).__init__(parent)
         self._item_count = 0
+        self.default_index = 0
 
     @property
     def has_items(self):
@@ -134,6 +135,7 @@ class IntentModel(QtGui.QStandardItemModel):
     def reset(self):
         self.clear()
         self._item_count = 0
+        self.default_index = 0
 
         intents_preset = (
             get_presets()
@@ -142,17 +144,20 @@ class IntentModel(QtGui.QStandardItemModel):
             .get("ui", {})
             .get("intents", {})
         )
+        default = intents_preset.get("default")
         items = intents_preset.get("items", {})
         if not items:
             return
 
-        default = intents_preset.get("default", True)
-        if default:
-            self.add_items(self.default_item)
+        for idx, item_value in enumerate(items.keys()):
+            if item_value == default:
+                self.default_index = idx
+                break
+
         self.add_items(items)
 
     def add_items(self, items):
-        for label, value in items.items():
+        for value, label in items.items():
             new_item = QtGui.QStandardItem()
             new_item.setData(label, QtCore.Qt.DisplayRole)
             new_item.setData(value, IntentItemValue)

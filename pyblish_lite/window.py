@@ -267,8 +267,6 @@ class Window(QtWidgets.QDialog):
         intent_box.setModel(intent_model)
         intent_box.hide()
         intent_box.currentIndexChanged.connect(self.on_intent_changed)
-        intent_view = intent_box.view()
-        # intent_view.setSpacing(2)
 
         comment_intent_layout = QtWidgets.QHBoxLayout()
         comment_intent_layout.setContentsMargins(5, 5, 5, 5)
@@ -865,10 +863,13 @@ class Window(QtWidgets.QDialog):
     def on_intent_changed(self):
         intent_box = self.data["comment_intent"]["intent"]
         idx = intent_box.model().index(intent_box.currentIndex(), 0)
-        intent = intent_box.model().data(idx, model.IntentItemValue)
+        intent_value = intent_box.model().data(idx, model.IntentItemValue)
+        intent_label = intent_box.model().data(idx, QtCore.Qt.DisplayRole)
 
-        context = self.controller.context
-        context.data["intent"] = intent
+        self.controller.context.data["intent"] = {
+            "value": intent_value,
+            "label": intent_label
+        }
 
     def on_about_to_process(self, plugin, instance):
         """Reflect currently running pair in GUI"""
@@ -1015,6 +1016,9 @@ class Window(QtWidgets.QDialog):
         comment_box.setEnabled(comment is not None)
 
         intent_box = self.data["comment_intent"]["intent"]
+        intent_model = intent_box.model()
+        if intent_model.has_items:
+            self.on_intent_changed()
         intent_box.setEnabled(True)
 
         # Refresh tab
@@ -1199,7 +1203,7 @@ class Window(QtWidgets.QDialog):
         intent_box = self.data["comment_intent"]["intent"]
         intent_model = intent_box.model()
         if intent_model.has_items:
-            intent_box.setCurrentIndex(0)
+            intent_box.setCurrentIndex(intent_model.default_index)
         intent_box.hide()
 
         # Prepare Context object in controller (create new one)
