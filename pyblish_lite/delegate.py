@@ -578,11 +578,39 @@ class TerminalDetail(QtWidgets.QStyledItemDelegate):
         if size:
             return size
 
-        # This part is for cases when height is not set yet (not work correct)
-        text = index.model().data(index, QtCore.Qt.DisplayRole)
+        html_text = ''
+        for role, title in self.show_roles.items():
+            text = index.model().data(index, role)
+            # TODO Fix this issue:
+            # Maya and Nuke have LogFilename and LogPath in strange str object.
+            # When printed, empty string is show and value is equal to <string>
+            if not text or text == '<string>':
+                continue
 
+            text = (
+                str(text)
+                .replace("<", "&#60;")
+                .replace(">", "&#62;")
+                .replace('\n', '<br/>')
+                .replace(' ', '&nbsp;')
+            )
+
+            title_tag = (
+                '<span style=\" font-size:8pt; font-weight:600;'
+                # ' background-color:#bbb; color:#333;\" >{}:</span> '
+                ' color:#fff;\" >{}:</span> '
+            ).format(title)
+
+            html_text += (
+                '<tr><td width="100%" align=left>{}</td></tr>'
+                '<tr><td width="100%">{}</td></tr>'
+            ).format(title_tag, text)
+
+        html_text = '<table width="100%" cellspacing="3">{}</table>'.format(
+            html_text
+        )
         document = QtGui.QTextDocument()
-        document.setPlainText(text)
+        document.setHtml(html_text)
         document.setTextWidth(option.rect.width())
 
         return QtCore.QSize(document.idealWidth(), document.size().height())

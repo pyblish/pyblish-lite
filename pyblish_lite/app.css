@@ -51,12 +51,12 @@ QPushButton {
 	width: 27px;
 	height: 27px;
 	background: #555;
-	border: 1px solid #333;
+	border: 1px solid #aaa;
+	border-radius: 4px;
 	font-family: "FontAwesome";
 	font-size: 11pt;
 	color: white;
 	padding: 0px;
-	outline: none;
 }
 
 QPushButton:pressed {
@@ -171,6 +171,15 @@ QToolButton:hover {
 }
 
 /* Specific CSS */
+#PerspectiveToggleBtn {
+	border-bottom: 3px solid lightblue;
+	border-top: 0px;
+	border-radius: 0px;
+	border-right: 1px solid #232323;
+	border-left: 0px;
+	font-size: 26pt;
+	font-family: "FontAwesome";
+}
 
 #Terminal QComboBox::drop-down {
 	width: 60px;
@@ -229,8 +238,6 @@ QToolButton:hover {
 }
 
 #ButtonWithMenu {
-	width: 27px;
-	height: 27px;
 	background: #555;
 	border: 1px solid #fff;
 	border-radius: 4px;
@@ -251,13 +258,55 @@ QToolButton:hover {
 	border: 1px solid #999;
 }
 
+#FooterSpacer, #FooterInfo {
+	background: transparent;
+}
+
 #Footer {
 	background: #555;
 	min-height: 43px;
 }
 
+#Footer[success="1"] {
+	background: #458056
+}
+
+#Footer[success="0"] {
+	background-color: #AA5050
+}
+
+#Footer QPushButton {
+	background: #555;
+	border: 1px solid #aaa;
+	border-radius: 4px;
+	font-family: "FontAwesome";
+	font-size: 11pt;
+	color: white;
+	padding: 0px;
+}
+
+#Footer QPushButton:pressed:hover {
+	color: #3784c5;
+	background: #444;
+}
+
+#Footer QPushButton:hover {
+	background: #505050;
+	border: 2px solid #3784c5;
+}
+
+#Footer QPushButton:disabled {
+	border: 1px solid #888;
+	background: #666;
+	color: #999;
+}
+
 #ClosingPlaceholder {
 	background: rgba(0, 0, 0, 50);
+}
+
+#CommentIntentWidget {
+	background: transparent;
 }
 
 #CommentBox, #CommentPlaceholder {
@@ -271,12 +320,16 @@ QToolButton:hover {
 	selection-background-color: #222;
 }
 
+#CommentBox:disabled, #CommentPlaceholder:disabled, #IntentBox:disabled {
+	background: #555;
+}
+
 #CommentPlaceholder {
 	color: #888
 }
 
 #IntentBox {
-    background-color: #444;
+    background: #444;
 	font-size: 8pt;
 	padding: 5px;
     min-width: 75px;
@@ -290,6 +343,10 @@ QToolButton:hover {
 
 #IntentBox::down-arrow {
 	image: url("/img/down_arrow.png");
+}
+
+#IntentBox::down-arrow:disabled {
+	image: url();
 }
 
 #Details {

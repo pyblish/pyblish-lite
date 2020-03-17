@@ -153,6 +153,19 @@ class TerminalView(QtWidgets.QTreeView):
 
         return super(TerminalView, self).mouseReleaseEvent(event)
 
+    def sizeHint(self):
+        size = super(TerminalView, self).sizeHint()
+        height = 0
+        for idx in range(self.model().rowCount()):
+            index = self.model().index(idx, 0)
+            height += self.rowHeight(index)
+            item = index.data(model.GroupObject)
+            if item.expanded:
+                index = self.model().index(0, 1, index)
+                height += self.rowHeight(index)
+        size.setHeight(height)
+        return size
+
     def rowsInserted(self, parent, start, end):
         """Automatically scroll to bottom on each new item added
 
@@ -265,6 +278,17 @@ class Details(QtWidgets.QDialog):
         self.setVisible(True)
 
 
+class EllidableLabel(QtWidgets.QLabel):
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+
+        metrics = QtGui.QFontMetrics(self.font())
+        elided = metrics.elidedText(
+            self.text(), QtCore.Qt.ElideRight, self.width()
+        )
+        painter.drawText(self.rect(), self.alignment(), elided)
+
+
 class PerspectiveWidget(QtWidgets.QWidget):
     l_doc = '   Documentation'
     l_rec = '   Records'
@@ -299,23 +323,17 @@ class PerspectiveWidget(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout(self)
 
         header_widget = QtWidgets.QWidget()
-        toggle_button = QtWidgets.QToolButton(header_widget)
-        toggle_button.setMinimumHeight(50)
+        toggle_button = QtWidgets.QPushButton(parent=header_widget)
+        toggle_button.setObjectName("PerspectiveToggleBtn")
         toggle_button.setText(delegate.icons["angle-left"])
-        toggle_button.setStyleSheet(
-            "border-bottom: 3px solid lightblue;"
-            "border-top: 0px;"
-            "border-right: 1px solid #232323;"
-            "border-left: 0px;"
-            "font-size: 26pt;"
-            "font-family: \"FontAwesome\";"
-        )
-        toggle_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        toggle_button.setMinimumHeight(50)
+        toggle_button.setFixedWidth(40)
 
         indicator = QtWidgets.QLabel('', parent=header_widget)
-        indicator.setMinimumWidth(30)
+        indicator.setFixedWidth(30)
+        indicator.setAlignment(QtCore.Qt.AlignCenter)
 
-        name = QtWidgets.QLabel('*Name of inspected', parent=header_widget)
+        name = EllidableLabel('*Name of inspected', parent=header_widget)
         name.setStyleSheet(
             "font-size: 16pt;"
             "font-style: bold;"
@@ -354,10 +372,12 @@ class PerspectiveWidget(QtWidgets.QWidget):
             'padding: 0px;'
             'background: "#444";'
         )
+        contents_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
 
         scroll_widget.setWidgetResizable(True)
         scroll_widget.setWidget(contents_widget)
-
         self.indicator = indicator
         self.scroll_widget = scroll_widget
         self.contents_widget = contents_widget

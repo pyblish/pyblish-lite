@@ -219,16 +219,18 @@ class Window(QtWidgets.QDialog):
         instance_combo.setProperty("combolist", True)
 
         layout = QtWidgets.QHBoxLayout(terminal_footer)
-        for w in (search_box,
-                  instance_combo,
-                  plugin_combo,
-                  show_errors,
-                  show_records,
-                  show_debug,
-                  show_info,
-                  show_warning,
-                  show_error,
-                  show_critical):
+        for w in (
+            search_box,
+            instance_combo,
+            plugin_combo,
+            show_errors,
+            show_records,
+            show_debug,
+            show_info,
+            show_warning,
+            show_error,
+            show_critical
+        ):
             layout.addWidget(w)
 
         layout.setContentsMargins(0, 0, 0, 0)
@@ -258,18 +260,16 @@ class Window(QtWidgets.QDialog):
         """
 
         comment_box = view.CommentBox("Comment...", self)
-        comment_box.setEnabled(False)
-        comment_box.hide()
 
         intent_box = QtWidgets.QComboBox()
 
         intent_model = model.IntentModel()
         intent_box.setModel(intent_model)
-        intent_box.hide()
         intent_box.currentIndexChanged.connect(self.on_intent_changed)
 
-        comment_intent_layout = QtWidgets.QHBoxLayout()
-        comment_intent_layout.setContentsMargins(5, 5, 5, 5)
+        comment_intent_widget = QtWidgets.QWidget()
+        comment_intent_layout = QtWidgets.QHBoxLayout(comment_intent_widget)
+        comment_intent_layout.setContentsMargins(0, 0, 0, 0)
         comment_intent_layout.setSpacing(5)
         comment_intent_layout.addWidget(comment_box)
         comment_intent_layout.addWidget(intent_box)
@@ -299,21 +299,27 @@ class Window(QtWidgets.QDialog):
         """
 
         footer = QtWidgets.QWidget()
-        info = QtWidgets.QLabel()
-        spacer = QtWidgets.QWidget()
-        reset = QtWidgets.QPushButton(awesome["refresh"])
-        validate = QtWidgets.QPushButton(awesome["flask"])
-        play = QtWidgets.QPushButton(awesome["play"])
-        stop = QtWidgets.QPushButton(awesome["stop"])
+        info = QtWidgets.QLabel(footer)
+        spacer = QtWidgets.QWidget(footer)
+        reset = QtWidgets.QPushButton(awesome["refresh"], footer)
+        validate = QtWidgets.QPushButton(awesome["flask"], footer)
+        play = QtWidgets.QPushButton(awesome["play"], footer)
+        stop = QtWidgets.QPushButton(awesome["stop"], footer)
 
-        layout = QtWidgets.QHBoxLayout(footer)
+        layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(5, 5, 5, 5)
         layout.addWidget(info, 0)
         layout.addWidget(spacer, 1)
+        layout.addWidget(stop, 0)
         layout.addWidget(reset, 0)
         layout.addWidget(validate, 0)
         layout.addWidget(play, 0)
-        layout.addWidget(stop, 0)
+
+        footer_layout = QtWidgets.QVBoxLayout(footer)
+        footer_layout.addWidget(comment_intent_widget)
+        footer_layout.addLayout(layout)
+
+        footer.setProperty("success", -1)
 
         # Placeholder for when GUI is closing
         # TODO(marcus): Fade to black and the the user about what's happening
@@ -333,7 +339,6 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(body, 3)
         layout.addWidget(self.perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
-        layout.addLayout(comment_intent_layout, 0)
         layout.addWidget(footer, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -434,7 +439,6 @@ class Window(QtWidgets.QDialog):
             "Header": header,
             "Body": body,
             "Footer": footer,
-            "Info": info,
 
             # Modals
             "Details": details,
@@ -456,6 +460,9 @@ class Window(QtWidgets.QDialog):
             "Stop": stop,
 
             # Misc
+            "FooterSpacer": spacer,
+            "FooterInfo": info,
+            "CommentIntentWidget": comment_intent_widget,
             "CommentBox": comment_box,
             "CommentPlaceholder": comment_box.placeholder,
             "ClosingPlaceholder": closing_placeholder,
@@ -526,6 +533,7 @@ class Window(QtWidgets.QDialog):
                 "terminal": terminal_page,
             },
             "comment_intent": {
+                "comment_intent": comment_intent_widget,
                 "comment": comment_box,
                 "intent": intent_box
             },
@@ -606,10 +614,6 @@ class Window(QtWidgets.QDialog):
         left_view.toggled.connect(self.on_item_toggled)
         right_view.toggled.connect(self.on_item_toggled)
 
-        artist_view.inspected.connect(self.on_item_inspected)
-        left_view.inspected.connect(self.on_item_inspected)
-        right_view.inspected.connect(self.on_item_inspected)
-
         reset.clicked.connect(self.on_reset_clicked)
         validate.clicked.connect(self.on_validate_clicked)
         play.clicked.connect(self.on_play_clicked)
@@ -684,72 +688,6 @@ class Window(QtWidgets.QDialog):
 
         index.model().setData(index, state, model.Expanded)
 
-    def on_item_inspected(self, index):
-        details = self.data["modals"]["details"]
-        details.move(QtGui.QCursor.pos())
-
-        if index.data(model.Type) == "record":
-
-            # Compose available data
-            data = list()
-            for key, value in index.data(model.Data).items():
-                if key.startswith("_"):
-                    continue
-
-                data.append("%s %s" % ((key + ":").ljust(12), value))
-
-            text = "\n".join(data)
-
-            details.show({
-                "icon": awesome["circle"],
-                "heading": index.data(QtCore.Qt.DisplayRole).split("\n")[0],
-                "subheading": "LogRecord (%s)" % index.data(model.LogLevel),
-                "text": text,
-                "timestamp": "",
-            })
-
-        elif index.data(model.Type) == "error":
-
-            # Compose available data
-            data = list()
-            for key, value in index.data(model.Data).items():
-                if key.startswith("_"):
-                    continue
-
-                data.append("%s %s" % ((key + ":").ljust(12), value))
-
-            text = "\n".join(data)
-
-            details.show({
-                "icon": awesome["exclamation-triangle"],
-                "heading": index.data(QtCore.Qt.DisplayRole).split("\n")[0],
-                "subheading": "Exception",
-                "text": text,
-                "timestamp": "",
-            })
-
-        elif index.data(model.Type) == "plugin":
-            details.show({
-                "icon": (
-                    index.data(QtCore.Qt.DecorationRole) or awesome["filter"]
-                ),
-                "heading": index.data(QtCore.Qt.DisplayRole),
-                "subheading": ", ".join(index.data(model.Families)),
-                "text": index.data(model.Docstring) or "",
-                "timestamp": str(index.data(model.Duration) or 0) + " ms",
-            })
-
-        elif index.data(model.Type) == "instance":
-            details.show({
-                "icon": (
-                    index.data(QtCore.Qt.DecorationRole) or awesome["file"]
-                ),
-                "heading": index.data(QtCore.Qt.DisplayRole),
-                "subheading": ", ".join(index.data(model.Families)),
-                "text": "",
-                "timestamp": str(index.data(model.Duration) or 0) + " ms",
-            })
-
     def on_item_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
         if not index.data(model.IsIdle):
@@ -764,12 +702,19 @@ class Window(QtWidgets.QDialog):
         index.model().setData(index, state, model.IsChecked)
 
         # Withdraw option to publish if no instances are toggled
-        play = self.findChild(QtWidgets.QWidget, "Play")
-        validate = self.findChild(QtWidgets.QWidget, "Validate")
-        any_instances = any(index.data(model.IsChecked)
-                            for index in self.data["models"]["instances"])
-        play.setEnabled(any_instances)
-        validate.setEnabled(any_instances)
+
+        any_instances = any(
+            index.data(model.IsChecked)
+            for index in self.data["models"]["instances"]
+        )
+
+        buttons = self.data["buttons"]
+        buttons["play"].setEnabled(
+            buttons["play"].isEnabled() and any_instances
+        )
+        buttons["validate"].setEnabled(
+            buttons["validate"].isEnabled() and any_instances
+        )
 
         # Emit signals
         if index.data(model.Type) == "instance":
@@ -799,17 +744,11 @@ class Window(QtWidgets.QDialog):
 
         page = self.data["pages"][target]
 
-        comment_box = self.data["comment_intent"]["comment"]
-        intent_box = self.data["comment_intent"]["intent"]
-
+        comment_intent = self.data["comment_intent"]["comment_intent"]
         if target == "terminal":
-            comment_box.hide()
-            intent_box.hide()
+            comment_intent.setVisible(False)
         else:
-            comment_box.setVisible(comment_box.isEnabled())
-            intent_box.setVisible(
-                intent_box.model().has_items and intent_box.isEnabled()
-            )
+            comment_intent.setVisible(True)
 
         page.show()
 
@@ -817,23 +756,19 @@ class Window(QtWidgets.QDialog):
 
     def on_validate_clicked(self):
         comment_box = self.data["comment_intent"]["comment"]
-        comment_box.setEnabled(False)
-        comment_box.hide()
-
         intent_box = self.data["comment_intent"]["intent"]
+
+        comment_box.setEnabled(False)
         intent_box.setEnabled(False)
-        intent_box.hide()
 
         self.validate()
 
     def on_play_clicked(self):
         comment_box = self.data["comment_intent"]["comment"]
-        comment_box.setEnabled(False)
-        comment_box.hide()
-
         intent_box = self.data["comment_intent"]["intent"]
+
+        comment_box.setEnabled(False)
         intent_box.setEnabled(False)
-        intent_box.hide()
 
         self.publish()
 
@@ -845,9 +780,9 @@ class Window(QtWidgets.QDialog):
         self.controller.is_running = False
 
         buttons = self.data["buttons"]
-        buttons["reset"].show()
-        buttons["play"].hide()
-        buttons["stop"].hide()
+        buttons["reset"].setEnabled(True)
+        buttons["play"].setEnabled(False)
+        buttons["stop"].setEnabled(False)
 
         self.on_finished()
 
@@ -988,10 +923,10 @@ class Window(QtWidgets.QDialog):
                 break
 
         buttons = self.data["buttons"]
-        buttons["play"].setVisible(not failed)
-        buttons["validate"].setVisible(not failed)
-        buttons["reset"].show()
-        buttons["stop"].hide()
+        buttons["play"].setEnabled(not failed)
+        buttons["validate"].setEnabled(not failed)
+        buttons["reset"].setEnabled(True)
+        buttons["stop"].setEnabled(False)
 
         aditional_btns = self.data["aditional_btns"]
         aditional_btns["presets_button"].clearMenu()
@@ -1010,10 +945,9 @@ class Window(QtWidgets.QDialog):
         # or to perhaps provide a placeholder comment/template
         # for artists to fill in.
         comment = self.controller.context.data.get("comment")
-
         comment_box = self.data["comment_intent"]["comment"]
         comment_box.setText(comment or None)
-        comment_box.setEnabled(comment is not None)
+        comment_box.setEnabled(True)
 
         intent_box = self.data["comment_intent"]["intent"]
         intent_model = intent_box.model()
@@ -1046,10 +980,10 @@ class Window(QtWidgets.QDialog):
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
-        buttons["play"].setVisible(not failed)
-        buttons["validate"].hide()
-        buttons["reset"].show()
-        buttons["stop"].hide()
+        buttons["play"].setEnabled(not failed)
+        buttons["validate"].setEnabled(False)
+        buttons["reset"].setEnabled(True)
+        buttons["stop"].setEnabled(False)
 
     def on_was_published(self):
         plugin_model = self.data["models"]["plugins"]
@@ -1062,16 +996,14 @@ class Window(QtWidgets.QDialog):
             index.model().setData(index, False, model.IsIdle)
 
         buttons = self.data["buttons"]
-        buttons["play"].hide()
-        buttons["validate"].hide()
-        buttons["reset"].show()
-        buttons["stop"].hide()
-
-        comment_box = self.findChild(QtWidgets.QWidget, "CommentBox")
-        comment_box.hide()
+        buttons["play"].setEnabled(False)
+        buttons["validate"].setEnabled(False)
+        buttons["reset"].setEnabled(True)
+        buttons["stop"].setEnabled(False)
 
         if self.controller.current_error is None:
-            self.data["footer"].setStyleSheet("background-color: #458056")
+            self.data["footer"].setProperty("success", 1)
+            self.data["footer"].style().polish(self.data["footer"])
 
     def on_was_processed(self, result):
         models = self.data["models"]
@@ -1122,8 +1054,8 @@ class Window(QtWidgets.QDialog):
 
     def on_was_acted(self, result):
         buttons = self.data["buttons"]
-        buttons["reset"].show()
-        buttons["stop"].hide()
+        buttons["reset"].setEnabled(True)
+        buttons["stop"].setEnabled(False)
 
         # Update action with result
         model_ = self.data["models"]["plugins"]
@@ -1165,7 +1097,13 @@ class Window(QtWidgets.QDialog):
         error = self.controller.current_error
         if error is not None:
             self.info(self.tr("Stopped due to error(s), see Terminal."))
-            self.data["footer"].setStyleSheet("background-color: #AA5050")
+            self.data["footer"].setProperty("success", 0)
+            self.data["footer"].style().polish(self.data["footer"])
+            comment_box = self.data["comment_intent"]["comment"]
+            comment_box.setEnabled(False)
+            intent_box = self.data["comment_intent"]["intent"]
+            intent_box.setEnabled(False)
+
         else:
             self.info(self.tr("Finished successfully!"))
 
@@ -1181,7 +1119,8 @@ class Window(QtWidgets.QDialog):
         self.info(self.tr("About to reset.."))
 
         self.data["aditional_btns"]["presets_button"].setEnabled(False)
-        self.data["footer"].setStyleSheet("")
+        self.data["footer"].setProperty("success", -1)
+        self.data["footer"].style().polish(self.data["footer"])
 
         models = self.data["models"]
 
@@ -1191,20 +1130,17 @@ class Window(QtWidgets.QDialog):
         # Reset current ids to secure no previous instances get mixed in.
         models["instances"].ids = []
 
-        for m in models.values():
-            m.reset()
+        for model in models.values():
+            model.reset()
 
-        for b in self.data["buttons"].values():
-            b.hide()
-
-        comment_box = self.data["comment_intent"]["comment"]
-        comment_box.hide()
+        for button in self.data["buttons"].values():
+            button.setEnabled(False)
 
         intent_box = self.data["comment_intent"]["intent"]
         intent_model = intent_box.model()
+        intent_box.setVisible(intent_model.has_items)
         if intent_model.has_items:
             intent_box.setCurrentIndex(intent_model.default_index)
-        intent_box.hide()
 
         # Prepare Context object in controller (create new one)
         self.controller.prepare_for_reset()
@@ -1216,27 +1152,27 @@ class Window(QtWidgets.QDialog):
     def validate(self):
         self.info(self.tr("Preparing validate.."))
         for button in self.data["buttons"].values():
-            button.hide()
+            button.setEnabled(False)
 
-        self.data["buttons"]["stop"].show()
+        self.data["buttons"]["stop"].setEnabled(True)
         util.defer(5, self.controller.validate)
 
     def publish(self):
         self.info(self.tr("Preparing publish.."))
 
         for button in self.data["buttons"].values():
-            button.hide()
+            button.setEnabled(False)
 
-        self.data["buttons"]["stop"].show()
+        self.data["buttons"]["stop"].setEnabled(True)
         util.defer(5, self.controller.publish)
 
     def act(self, plugin, action):
         self.info("%s %s.." % (self.tr("Preparing"), action))
 
         for button in self.data["buttons"].values():
-            button.hide()
+            button.setEnabled(False)
 
-        self.data["buttons"]["stop"].show()
+        self.data["buttons"]["stop"].setEnabled(True)
         self.controller.is_running = True
 
         # Cause view to update, but it won't visually
@@ -1330,7 +1266,7 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        info = self.findChild(QtWidgets.QLabel, "Info")
+        info = self.findChild(QtWidgets.QLabel, "FooterInfo")
         info.setText(message)
 
         # Include message in terminal
