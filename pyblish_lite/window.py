@@ -487,14 +487,6 @@ class Window(QtWidgets.QDialog):
         controller.was_acted.connect(self.on_was_acted)
         controller.was_finished.connect(self.on_was_finished)
 
-        controller.passed_group.connect(overview_instance_proxy.rebuild)
-        controller.was_acted.connect(overview_instance_proxy.rebuild)
-        controller.was_finished.connect(overview_instance_proxy.rebuild)
-
-        controller.passed_group.connect(overview_instance_view.expandAll)
-        controller.was_acted.connect(overview_instance_view.expandAll)
-        controller.was_finished.connect(overview_instance_view.expandAll)
-
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
         # right away.
@@ -891,6 +883,9 @@ class Window(QtWidgets.QDialog):
         self.update_compatibility()
 
     def on_passed_group(self):
+        self.overview_instance_proxy.rebuild()
+        self.overview_instance_view.expandAll()
+
         plugin_model = self.data["models"]["plugins"]
         instance_model = self.data["models"]["instances"]
 
@@ -919,6 +914,9 @@ class Window(QtWidgets.QDialog):
         self.footer_button_stop.setEnabled(False)
 
     def on_was_finished(self):
+        self.overview_instance_proxy.rebuild()
+        self.overview_instance_view.expandAll()
+
         plugin_model = self.data["models"]["plugins"]
         instance_model = self.data["models"]["instances"]
 
@@ -995,11 +993,14 @@ class Window(QtWidgets.QDialog):
         self.data['proxies']['terminal'].rebuild()
 
         self.update_compatibility()
-        
+
         if self.last_persp_index:
             self.perspective_widget.set_context(self.last_persp_index)
 
     def on_was_acted(self, result):
+        self.overview_instance_proxy.rebuild()
+        self.overview_instance_view.expandAll()
+
         self.footer_button_reset.setEnabled(True)
         self.footer_button_stop.setEnabled(False)
 

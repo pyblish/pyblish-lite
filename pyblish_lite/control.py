@@ -24,7 +24,8 @@ except Exception:
     def get_presets(): return {}
 
 
-class IterationBreak(Exception): pass
+class IterationBreak(Exception):
+    pass
 
 
 class Controller(QtCore.QObject):
