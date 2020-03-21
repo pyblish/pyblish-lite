@@ -49,7 +49,7 @@ from .vendor.Qt import QtCore, QtGui, QtWidgets
 
 class Window(QtWidgets.QDialog):
     def __init__(self, controller, parent=None):
-        super(Window, self).__init__(parent)
+        super(Window, self).__init__(parent=parent)
         icon = QtGui.QIcon(util.get_asset("img", "logo-extrasmall.png"))
         if parent is None:
             on_top_flag = QtCore.Qt.WindowStaysOnTopHint
@@ -324,8 +324,10 @@ class Window(QtWidgets.QDialog):
         # Placeholder for when GUI is closing
         # TODO(marcus): Fade to black and the the user about what's happening
         closing_placeholder = QtWidgets.QWidget(self)
-        closing_placeholder.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
-                                          QtWidgets.QSizePolicy.Expanding)
+        closing_placeholder.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding
+        )
         closing_placeholder.hide()
 
         self.last_persp_index = None
@@ -469,24 +471,26 @@ class Window(QtWidgets.QDialog):
             "IntentBox": intent_box
         }
 
-        for name, w in names.items():
-            w.setObjectName(name)
+        for name, _widget in names.items():
+            _widget.setObjectName(name)
 
         # Enable CSS on plain QWidget objects
-        for w in (header,
-                  body,
-                  artist_page,
-                  comment_box,
-                  overview_page,
-                  terminal_page,
-                  footer,
-                  play,
-                  validate,
-                  stop,
-                  details,
-                  reset,
-                  closing_placeholder):
-            w.setAttribute(QtCore.Qt.WA_StyledBackground)
+        for _widget in (
+            header,
+            body,
+            artist_page,
+            comment_box,
+            overview_page,
+            terminal_page,
+            footer,
+            play,
+            validate,
+            stop,
+            details,
+            reset,
+            closing_placeholder
+        ):
+            _widget.setAttribute(QtCore.Qt.WA_StyledBackground)
 
         self.data = {
             "header": header,

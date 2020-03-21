@@ -52,13 +52,6 @@ class Item(QtWidgets.QListView):
         self._inspecting = False
         super(Item, self).leaveEvent(event)
 
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.MidButton:
-            index = self.indexAt(event.pos())
-            self.inspected.emit(index) if index.isValid() else None
-
-        return super(Item, self).mousePressEvent(event)
-
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             indexes = self.selectionModel().selectedIndexes()
