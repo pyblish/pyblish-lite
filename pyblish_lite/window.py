@@ -57,12 +57,12 @@ class Window(QtWidgets.QDialog):
             on_top_flag = QtCore.Qt.Dialog
 
         self.setWindowFlags(
-            self.windowFlags() |
-            QtCore.Qt.WindowTitleHint |
-            QtCore.Qt.WindowMaximizeButtonHint |
-            QtCore.Qt.WindowMinimizeButtonHint |
-            QtCore.Qt.WindowCloseButtonHint |
-            on_top_flag
+            self.windowFlags()
+            | QtCore.Qt.WindowTitleHint
+            | QtCore.Qt.WindowMaximizeButtonHint
+            | QtCore.Qt.WindowMinimizeButtonHint
+            | QtCore.Qt.WindowCloseButtonHint
+            | on_top_flag
         )
         self.setWindowIcon(icon)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -569,46 +569,49 @@ class Window(QtWidgets.QDialog):
         """
 
         artist_tab.toggled.connect(
-            lambda: self.on_tab_changed("artist"))
+            lambda: self.on_tab_changed("artist")
+        )
         overview_tab.toggled.connect(
-            lambda: self.on_tab_changed("overview"))
+            lambda: self.on_tab_changed("overview")
+        )
         terminal_tab.toggled.connect(
-            lambda: self.on_tab_changed("terminal"))
+            lambda: self.on_tab_changed("terminal")
+        )
 
         left_view.show_perspective.connect(self.toggle_perspective_widget)
         right_view.show_perspective.connect(self.toggle_perspective_widget)
 
-        controller.was_reset.connect(self.on_was_reset)
-        controller.was_validated.connect(self.on_was_validated)
-        controller.was_published.connect(self.on_was_published)
+        controller.passed_group.connect(self.on_passed_group)
         controller.was_acted.connect(self.on_was_acted)
-        controller.was_finished.connect(self.on_finished)
+        controller.was_finished.connect(self.on_was_finished)
 
         controller.was_reset.connect(left_proxy.rebuild)
-        controller.was_validated.connect(left_proxy.rebuild)
-        controller.was_published.connect(left_proxy.rebuild)
         controller.was_acted.connect(left_proxy.rebuild)
         controller.was_finished.connect(left_proxy.rebuild)
 
         controller.was_reset.connect(left_view.expandAll)
-        controller.was_validated.connect(left_view.expandAll)
-        controller.was_published.connect(left_view.expandAll)
         controller.was_acted.connect(left_view.expandAll)
         controller.was_finished.connect(left_view.expandAll)
 
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
         # right away.
-        controller.was_discovered.connect(self.on_was_discovered,
-                                          QtCore.Qt.DirectConnection)
+        controller.was_reset.connect(
+            self.on_was_reset,
+            QtCore.Qt.DirectConnection
+        )
 
         # This is called synchronously on each process
-        controller.was_processed.connect(self.on_was_processed,
-                                         QtCore.Qt.DirectConnection)
+        controller.was_processed.connect(
+            self.on_was_processed,
+            QtCore.Qt.DirectConnection
+        )
 
         # NOTE: Listeners to this signal are run in the main thread
-        controller.about_to_process.connect(self.on_about_to_process,
-                                            QtCore.Qt.DirectConnection)
+        controller.about_to_process.connect(
+            self.on_about_to_process,
+            QtCore.Qt.DirectConnection
+        )
 
         artist_view.toggled.connect(self.on_item_toggled)
         left_view.toggled.connect(self.on_item_toggled)
@@ -621,7 +624,8 @@ class Window(QtWidgets.QDialog):
         comment_box.textChanged.connect(self.on_comment_entered)
         comment_box.returnPressed.connect(self.on_play_clicked)
         right_view.customContextMenuRequested.connect(
-            self.on_plugin_action_menu_requested)
+            self.on_plugin_action_menu_requested
+        )
 
         for box in (show_errors,
                     show_records,
@@ -777,34 +781,29 @@ class Window(QtWidgets.QDialog):
 
     def on_stop_clicked(self):
         self.info("Stopping..")
-        self.controller.is_running = False
+        self.controller.stop()
 
         buttons = self.data["buttons"]
         buttons["reset"].setEnabled(True)
         buttons["play"].setEnabled(False)
         buttons["stop"].setEnabled(False)
 
-        self.on_finished()
-
     def on_comment_entered(self):
         """The user has typed a comment"""
         text_edit = self.data["comment_intent"]["comment"]
-        comment = text_edit.text()
-
         # Store within context
-        context = self.controller.context
-        context.data["comment"] = comment
+        self.controller.context.data["comment"] = text_edit.text()
 
     def on_intent_changed(self):
         intent_box = self.data["comment_intent"]["intent"]
         idx = intent_box.model().index(intent_box.currentIndex(), 0)
         intent_value = intent_box.model().data(idx, model.IntentItemValue)
         intent_label = intent_box.model().data(idx, QtCore.Qt.DisplayRole)
-
-        self.controller.context.data["intent"] = {
-            "value": intent_value,
-            "label": intent_label
-        }
+        if self.controller.context:
+            self.controller.context.data["intent"] = {
+                "value": intent_value,
+                "label": intent_label
+            }
 
     def on_about_to_process(self, plugin, instance):
         """Reflect currently running pair in GUI"""
@@ -862,12 +861,6 @@ class Window(QtWidgets.QDialog):
 
         menu.popup(self.data["views"]["right"].viewport().mapToGlobal(pos))
 
-    def on_was_discovered(self):
-        models = self.data["models"]
-        for key, value in self.controller.plugins.items():
-            for plugin in value:
-                models["plugins"].append(plugin)
-
     def update_compatibility(self):
         models = self.data["models"]
         proxies = self.data["proxies"]
@@ -901,30 +894,12 @@ class Window(QtWidgets.QDialog):
 
     def on_was_reset(self):
         models = self.data["models"]
-
-        self.info(self.tr("Finishing up reset.."))
-
-        items = [models["instances"].context_item]
-        items.extend([instance for instance in self.controller.context])
-
-        models["instances"].reset()
-        for item in items:
-            # Set processed, succeeded and idle back to default stage after
-            # collecting
-            item._is_idle = True
-            item._has_succeeded = False
-            item._has_processed = False
-            models["instances"].append(item)
-
-        failed = False
-        for index in self.data["models"]["plugins"]:
-            if index.data(model.HasFailed):
-                failed = True
-                break
+        for plugin in self.controller.plugins:
+            models["plugins"].append(plugin)
 
         buttons = self.data["buttons"]
-        buttons["play"].setEnabled(not failed)
-        buttons["validate"].setEnabled(not failed)
+        buttons["play"].setEnabled(True)
+        buttons["validate"].setEnabled(True)
         buttons["reset"].setEnabled(True)
         buttons["stop"].setEnabled(False)
 
@@ -957,8 +932,9 @@ class Window(QtWidgets.QDialog):
 
         # Refresh tab
         self.on_tab_changed(self.data["tabs"]["current"])
+        self.update_compatibility()
 
-    def on_was_validated(self):
+    def on_passed_group(self):
         plugin_model = self.data["models"]["plugins"]
         instance_model = self.data["models"]["instances"]
 
@@ -972,8 +948,8 @@ class Window(QtWidgets.QDialog):
 
         for index in instance_model:
             if (
-                not index.data(model.HasFailed) and
-                not index.data(model.HasSucceeded)
+                not index.data(model.HasFailed)
+                and not index.data(model.HasSucceeded)
             ):
                 index.model().setData(index, True, model.HasSucceeded)
 
@@ -981,11 +957,13 @@ class Window(QtWidgets.QDialog):
 
         buttons = self.data["buttons"]
         buttons["play"].setEnabled(not failed)
-        buttons["validate"].setEnabled(False)
+        buttons["validate"].setEnabled(
+            not failed and not self.controller.validated
+        )
         buttons["reset"].setEnabled(True)
         buttons["stop"].setEnabled(False)
 
-    def on_was_published(self):
+    def on_was_finished(self):
         plugin_model = self.data["models"]["plugins"]
         instance_model = self.data["models"]["instances"]
 
@@ -1001,9 +979,22 @@ class Window(QtWidgets.QDialog):
         buttons["reset"].setEnabled(True)
         buttons["stop"].setEnabled(False)
 
-        if self.controller.current_error is None:
-            self.data["footer"].setProperty("success", 1)
-            self.data["footer"].style().polish(self.data["footer"])
+        success_val = 1
+        if self.controller.errored:
+            self.info(self.tr("Stopped due to error(s), see Terminal."))
+            comment_box = self.data["comment_intent"]["comment"]
+            comment_box.setEnabled(False)
+            intent_box = self.data["comment_intent"]["intent"]
+            intent_box.setEnabled(False)
+
+        else:
+            success_val = 0
+            self.info(self.tr("Finished successfully!"))
+
+        self.data["footer"].setProperty("success", success_val)
+        self.data["footer"].style().polish(self.data["footer"])
+
+        self.update_compatibility()
 
     def on_was_processed(self, result):
         models = self.data["models"]
@@ -1087,27 +1078,6 @@ class Window(QtWidgets.QDialog):
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)
         models["terminal"].update_with_result(result)
-
-        self.on_finished()
-
-    def on_finished(self):
-        """Finished signal handler"""
-        self.controller.is_running = False
-
-        error = self.controller.current_error
-        if error is not None:
-            self.info(self.tr("Stopped due to error(s), see Terminal."))
-            self.data["footer"].setProperty("success", 0)
-            self.data["footer"].style().polish(self.data["footer"])
-            comment_box = self.data["comment_intent"]["comment"]
-            comment_box.setEnabled(False)
-            intent_box = self.data["comment_intent"]["intent"]
-            intent_box.setEnabled(False)
-
-        else:
-            self.info(self.tr("Finished successfully!"))
-
-        self.update_compatibility()
     # -------------------------------------------------------------------------
     #
     # Functions
@@ -1143,7 +1113,7 @@ class Window(QtWidgets.QDialog):
             intent_box.setCurrentIndex(intent_model.default_index)
 
         # Prepare Context object in controller (create new one)
-        self.controller.prepare_for_reset()
+        self.controller.reset()
         # Append context object to instances model
         self.data["models"]["instances"].append(self.controller.context)
         # Launch controller reset
@@ -1235,7 +1205,7 @@ class Window(QtWidgets.QDialog):
 
         if self.controller.is_running:
             self.info(self.tr("..as soon as processing is finished.."))
-            self.controller.is_running = False
+            self.controller.stop()
             self.finished.connect(self.close)
             util.defer(2000, on_problem)
             return event.ignore()
@@ -1250,7 +1220,7 @@ class Window(QtWidgets.QDialog):
 
         if self.controller.is_running:
             self.info(self.tr("Stopping.."))
-            self.controller.is_running = False
+            self.controller.stop()
 
     # -------------------------------------------------------------------------
     #

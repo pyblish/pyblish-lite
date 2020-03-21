@@ -248,10 +248,12 @@ class PluginOrderGroupProxy(Proxy):
         ).groupby_key(source_index)
         label = "Other"
 
-        mapping = {pyblish.plugin.CollectorOrder: "Collector",
-                   pyblish.plugin.ValidatorOrder: "Validator",
-                   pyblish.plugin.ExtractorOrder: "Extractor",
-                   pyblish.plugin.IntegratorOrder: "Integrator"}
+        mapping = {
+            pyblish.plugin.CollectorOrder: "Collector",
+            pyblish.plugin.ValidatorOrder: "Validator",
+            pyblish.plugin.ExtractorOrder: "Extractor",
+            pyblish.plugin.IntegratorOrder: "Integrator"
+        }
         for order, _type in mapping.items():
             if pyblish.lib.inrange(plugin_order, base=order):
                 label = _type

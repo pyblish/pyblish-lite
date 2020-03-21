@@ -4,6 +4,8 @@ from __future__ import (absolute_import, division, print_function,
 import os
 import sys
 import numbers
+import copy
+import collections
 
 from .vendor.Qt import QtCore
 from .vendor.six import text_type
@@ -132,6 +134,7 @@ class OrderGroups:
         self.groups = self._object_groups
         self.validation_order = self._object_validation_order
         self.group_range = self._object_group_range
+        self.reset = self._object_reset
 
         # set
         if group_range is not None:
@@ -156,6 +159,19 @@ class OrderGroups:
                 group_range=obj.group_range()
             )
         return obj._groups
+
+    @staticmethod
+    def _reset_method(obj):
+        obj._groups = None
+        obj._validation_order = None
+        obj._group_range = None
+
+    @classmethod
+    def reset(cls):
+        return cls._reset_method(cls)
+
+    def _object_reset(self):
+        return self._reset_method(self)
 
     @classmethod
     def groups(cls):
@@ -193,11 +209,30 @@ class OrderGroups:
         return self._group_range_method(self)
 
     @staticmethod
+    def sort_groups(_groups_dict):
+        sorted_dict = collections.OrderedDict()
+
+        # make sure wont affect any dictionary as pointer
+        groups_dict = copy.deepcopy(_groups_dict)
+        last_order = None
+        if None in groups_dict:
+            last_order = groups_dict.pop(None)
+
+        for key in sorted(groups_dict):
+            sorted_dict[key] = groups_dict[key]
+
+        if last_order is not None:
+            sorted_dict[None] = last_order
+
+        return sorted_dict
+
+    @staticmethod
     def parse_group_str(groups_str=None, group_range=None):
         if groups_str is None:
             groups_str = os.environ.get("PYBLISH_GROUP_SETTING")
-            if groups_str is None:
-                groups_str = OrderGroups.default_groups
+
+        if groups_str is None:
+            return OrderGroups.sort_groups(OrderGroups.default_groups)
 
         items = groups_str.split(",")
         groups = {}
@@ -224,7 +259,7 @@ class OrderGroups:
 
             groups[order] = label
 
-        return groups
+        return OrderGroups.sort_groups(groups)
 
     @staticmethod
     def parse_validation_order(validation_order_value=None, group_range=None):
