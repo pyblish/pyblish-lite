@@ -69,6 +69,8 @@ class Window(QtWidgets.QDialog):
 
         self.controller = controller
 
+        main_widget = QtWidgets.QWidget(self)
+
         """General layout
          __________________       _____________________
         |                  |     |       |       |     |
@@ -88,35 +90,38 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        header = QtWidgets.QWidget()
-        layout = QtWidgets.QHBoxLayout(header)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        header = QtWidgets.QWidget(parent=main_widget)
 
-        tab_widget = QtWidgets.QWidget()
-        artist_tab = QtWidgets.QRadioButton()
-        overview_tab = QtWidgets.QRadioButton()
-        terminal_tab = QtWidgets.QRadioButton()
-        spacer = QtWidgets.QWidget()
+        header_tab_widget = QtWidgets.QWidget(header)
+        header_tab_artist = QtWidgets.QRadioButton(header_tab_widget)
+        header_tab_overview = QtWidgets.QRadioButton(header_tab_widget)
+        header_tab_terminal = QtWidgets.QRadioButton(header_tab_widget)
+        header_spacer = QtWidgets.QWidget(header_tab_widget)
 
-        aditional_btns = QtWidgets.QWidget()
+        header_aditional_btns = QtWidgets.QWidget(header_tab_widget)
 
-        aditional_btns_layout = QtWidgets.QHBoxLayout(aditional_btns)
+        aditional_btns_layout = QtWidgets.QHBoxLayout(header_aditional_btns)
 
         presets_button = view.ButtonWithMenu(awesome["filter"])
         presets_button.setEnabled(False)
         aditional_btns_layout.addWidget(presets_button)
 
-        layout_tab = QtWidgets.QHBoxLayout(tab_widget)
+        layout_tab = QtWidgets.QHBoxLayout(header_tab_widget)
         layout_tab.setContentsMargins(0, 0, 0, 0)
         layout_tab.setSpacing(0)
-        layout_tab.addWidget(artist_tab, 0)
-        layout_tab.addWidget(overview_tab, 0)
-        layout_tab.addWidget(terminal_tab, 0)
-        layout_tab.addWidget(spacer, 1)  # Compress items to the left
-        layout_tab.addWidget(aditional_btns, 1)
+        layout_tab.addWidget(header_tab_artist, 0)
+        layout_tab.addWidget(header_tab_overview, 0)
+        layout_tab.addWidget(header_tab_terminal, 0)
+        # Compress items to the left
+        layout_tab.addWidget(header_spacer, 1)
+        layout_tab.addWidget(header_aditional_btns, 1)
 
-        layout.addWidget(tab_widget)
+        layout = QtWidgets.QHBoxLayout(header)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(header_tab_widget)
+
+        header.setLayout(layout)
 
         """Artist Page
          __________________
@@ -130,11 +135,16 @@ class Window(QtWidgets.QDialog):
         |__________________|
 
         """
+        instance_model = model.Instance()
+        plugin_model = model.Plugin()
+
+        filter_model = model.ProxyModel(plugin_model)
 
         artist_page = QtWidgets.QWidget()
 
         artist_view = view.Item()
         artist_view.show_perspective.connect(self.toggle_perspective_widget)
+        artist_view.setModel(instance_model)
 
         artist_delegate = delegate.Artist()
         artist_view.setItemDelegate(artist_delegate)
@@ -143,6 +153,8 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(artist_view)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(0)
+
+        artist_page.setLayout(layout)
 
         """Overview Page
          ___________________
@@ -158,18 +170,29 @@ class Window(QtWidgets.QDialog):
 
         overview_page = QtWidgets.QWidget()
 
-        left_view = tree.View()
-        right_view = tree.View()
+        overview_instance_view = tree.View()
+        overview_plugin_view = tree.View()
 
-        item_delegate = delegate.ItemAndSection()
-        left_view.setItemDelegate(item_delegate)
-        right_view.setItemDelegate(item_delegate)
+        overview_item_delegate = delegate.ItemAndSection()
+        overview_instance_view.setItemDelegate(overview_item_delegate)
+        overview_plugin_view.setItemDelegate(overview_item_delegate)
+
+        overview_instance_proxy = tree.FamilyGroupProxy()
+        overview_instance_proxy.setSourceModel(instance_model)
+        overview_instance_proxy.set_group_role(model.Families)
+        overview_instance_view.setModel(overview_instance_proxy)
+
+        overview_plugin_proxy = tree.PluginOrderGroupProxy()
+        overview_plugin_proxy.setSourceModel(plugin_model)
+        overview_plugin_proxy.set_group_role(model.Order)
+        overview_plugin_view.setModel(overview_plugin_proxy)
 
         layout = QtWidgets.QHBoxLayout(overview_page)
-        layout.addWidget(left_view, 1)
-        layout.addWidget(right_view, 1)
+        layout.addWidget(overview_instance_view, 1)
+        layout.addWidget(overview_plugin_view, 1)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(0)
+        overview_page.setLayout(layout)
 
         """Terminal
 
@@ -202,44 +225,11 @@ class Window(QtWidgets.QDialog):
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(0)
 
-        terminal_footer = QtWidgets.QWidget()
-
-        search_box = QtWidgets.QLineEdit()
-        instance_combo = QtWidgets.QComboBox()
-        plugin_combo = QtWidgets.QComboBox()
-        show_errors = QtWidgets.QCheckBox()
-        show_records = QtWidgets.QCheckBox()
-        show_debug = QtWidgets.QCheckBox()
-        show_info = QtWidgets.QCheckBox()
-        show_warning = QtWidgets.QCheckBox()
-        show_error = QtWidgets.QCheckBox()
-        show_critical = QtWidgets.QCheckBox()
-
-        plugin_combo.setProperty("combolist", True)
-        instance_combo.setProperty("combolist", True)
-
-        layout = QtWidgets.QHBoxLayout(terminal_footer)
-        for w in (
-            search_box,
-            instance_combo,
-            plugin_combo,
-            show_errors,
-            show_records,
-            show_debug,
-            show_info,
-            show_warning,
-            show_error,
-            show_critical
-        ):
-            layout.addWidget(w)
-
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(3)
+        terminal_container.setLayout(layout)
 
         terminal_page = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(terminal_page)
         layout.addWidget(terminal_container)
-        # layout.addWidget(terminal_footer)  # TODO
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -274,21 +264,6 @@ class Window(QtWidgets.QDialog):
         comment_intent_layout.addWidget(comment_box)
         comment_intent_layout.addWidget(intent_box)
 
-        """Details View
-         ____________________________
-        |                            |
-        | An Item              23 ms |
-        | - family                   |
-        |                            |
-        |----------------------------|
-        |                            |
-        | Docstring                  |
-        |____________________________|
-
-        """
-
-        details = view.Details(self)
-
         """Footer
          ______________________
         |             ___  ___ |
@@ -298,32 +273,41 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        footer = QtWidgets.QWidget()
-        info = QtWidgets.QLabel(footer)
-        spacer = QtWidgets.QWidget(footer)
-        reset = QtWidgets.QPushButton(awesome["refresh"], footer)
-        validate = QtWidgets.QPushButton(awesome["flask"], footer)
-        play = QtWidgets.QPushButton(awesome["play"], footer)
-        stop = QtWidgets.QPushButton(awesome["stop"], footer)
+        footer_widget = QtWidgets.QWidget(main_widget)
+
+        footer_info = QtWidgets.QLabel(footer_widget)
+        footer_spacer = QtWidgets.QWidget(footer_widget)
+        footer_button_reset = QtWidgets.QPushButton(
+            awesome["refresh"], footer_widget
+        )
+        footer_button_validate = QtWidgets.QPushButton(
+            awesome["flask"], footer_widget
+        )
+        footer_button_play = QtWidgets.QPushButton(
+            awesome["play"], footer_widget
+        )
+        footer_button_stop = QtWidgets.QPushButton(
+            awesome["stop"], footer_widget
+        )
 
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(5, 5, 5, 5)
-        layout.addWidget(info, 0)
-        layout.addWidget(spacer, 1)
-        layout.addWidget(stop, 0)
-        layout.addWidget(reset, 0)
-        layout.addWidget(validate, 0)
-        layout.addWidget(play, 0)
+        layout.addWidget(footer_info, 0)
+        layout.addWidget(footer_spacer, 1)
+        layout.addWidget(footer_button_stop, 0)
+        layout.addWidget(footer_button_reset, 0)
+        layout.addWidget(footer_button_validate, 0)
+        layout.addWidget(footer_button_play, 0)
 
-        footer_layout = QtWidgets.QVBoxLayout(footer)
+        footer_layout = QtWidgets.QVBoxLayout(footer_widget)
         footer_layout.addWidget(comment_intent_widget)
         footer_layout.addLayout(layout)
 
-        footer.setProperty("success", -1)
+        footer_widget.setProperty("success", -1)
 
         # Placeholder for when GUI is closing
         # TODO(marcus): Fade to black and the the user about what's happening
-        closing_placeholder = QtWidgets.QWidget(self)
+        closing_placeholder = QtWidgets.QWidget(main_widget)
         closing_placeholder.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Expanding
@@ -335,21 +319,21 @@ class Window(QtWidgets.QDialog):
         self.perspective_widget.hide()
 
         # Main layout
-        self.main_widget = QtWidgets.QWidget(self)
-        layout = QtWidgets.QVBoxLayout(self.main_widget)
+        layout = QtWidgets.QVBoxLayout(main_widget)
         layout.addWidget(header, 0)
         layout.addWidget(body, 3)
         layout.addWidget(self.perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
-        layout.addWidget(footer, 0)
+        layout.addWidget(footer_widget, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        self.main_widget.setLayout(layout)
+        main_widget.setLayout(layout)
 
         self.main_layout = QtWidgets.QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
-        self.main_layout.addWidget(self.main_widget)
+        self.main_layout.addWidget(main_widget)
+
         """Animation
            ___
           /   \
@@ -363,10 +347,8 @@ class Window(QtWidgets.QDialog):
         """
 
         # Display info
-        info_effect = QtWidgets.QGraphicsOpacityEffect(info)
-        info.setGraphicsEffect(info_effect)
-
-        timeline = QtCore.QSequentialAnimationGroup()
+        info_effect = QtWidgets.QGraphicsOpacityEffect(footer_info)
+        footer_info.setGraphicsEffect(info_effect)
 
         on = QtCore.QPropertyAnimation(info_effect, b"opacity")
         on.setDuration(0)
@@ -383,6 +365,7 @@ class Window(QtWidgets.QDialog):
         fade.setStartValue(1.0)
         fade.setEndValue(0.0)
 
+        timeline = QtCore.QSequentialAnimationGroup()
         timeline.addAnimation(on)
         timeline.addPause(50)
         timeline.addAnimation(off)
@@ -416,34 +399,11 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        instance_model = model.Instance()
-        plugin_model = model.Plugin()
-
-        filter_model = model.ProxyModel(plugin_model)
-
-        artist_view.setModel(instance_model)
-
-        left_proxy = tree.FamilyGroupProxy()
-        left_proxy.setSourceModel(instance_model)
-        left_proxy.set_group_role(model.Families)
-        left_view.setModel(left_proxy)
-
-        right_proxy = tree.PluginOrderGroupProxy()
-        right_proxy.setSourceModel(plugin_model)
-        right_proxy.set_group_role(model.Order)
-        right_view.setModel(right_proxy)
-
-        instance_combo.setModel(instance_model)
-        plugin_combo.setModel(plugin_model)
-
         names = {
             # Main
             "Header": header,
             "Body": body,
-            "Footer": footer,
-
-            # Modals
-            "Details": details,
+            "Footer": footer_widget,
 
             # Pages
             "Artist": artist_page,
@@ -451,19 +411,20 @@ class Window(QtWidgets.QDialog):
             "Terminal": terminal_page,
 
             # Tabs
-            "ArtistTab": artist_tab,
-            "OverviewTab": overview_tab,
-            "TerminalTab": terminal_tab,
+            "ArtistTab": header_tab_artist,
+            "OverviewTab": header_tab_overview,
+            "TerminalTab": header_tab_terminal,
 
             # Buttons
-            "Play": play,
-            "Validate": validate,
-            "Reset": reset,
-            "Stop": stop,
+            "Play": footer_button_play,
+            "Validate": footer_button_validate,
+            "Reset": footer_button_reset,
+            "Stop": footer_button_stop,
 
             # Misc
-            "FooterSpacer": spacer,
-            "FooterInfo": info,
+            "HeaderSpacer": header_spacer,
+            "FooterSpacer": footer_spacer,
+            "FooterInfo": footer_info,
             "CommentIntentWidget": comment_intent_widget,
             "CommentBox": comment_box,
             "CommentPlaceholder": comment_box.placeholder,
@@ -482,85 +443,18 @@ class Window(QtWidgets.QDialog):
             comment_box,
             overview_page,
             terminal_page,
-            footer,
-            play,
-            validate,
-            stop,
-            details,
-            reset,
+            footer_widget,
+            footer_button_play,
+            footer_button_validate,
+            footer_button_stop,
+            footer_button_reset,
+            footer_spacer,
             closing_placeholder
         ):
             _widget.setAttribute(QtCore.Qt.WA_StyledBackground)
 
-        self.data = {
-            "header": header,
-            "body": body,
-            "footer": footer,
-            "views": {
-                "artist": artist_view,
-                "left": left_view,
-                "right": right_view,
-                "terminal": terminal_view,
-            },
-            "modals": {
-                "details": details
-            },
-            "proxies": {
-                "plugins": right_proxy,
-                "instances": left_proxy,
-                "terminal": terminal_proxy
-            },
-            "models": {
-                "instances": instance_model,
-                "plugins": plugin_model,
-                "filter": filter_model,
-                "terminal": terminal_model,
-                "intent_model": intent_model
-            },
-            "terminal_toggles": {
-                "record": show_records,
-                "debug": show_debug,
-                "info": show_info,
-                "warning": show_warning,
-                "error": show_error,
-                "critical": show_critical
-            },
-            "tabs": {
-                "artist": artist_tab,
-                "overview": overview_tab,
-                "terminal": terminal_tab,
-                "current": "artist"
-            },
-            "pages": {
-                "artist": artist_page,
-                "overview": overview_page,
-                "terminal": terminal_page,
-            },
-            "comment_intent": {
-                "comment_intent": comment_intent_widget,
-                "comment": comment_box,
-                "intent": intent_box
-            },
-            "buttons": {
-                "play": play,
-                "validate": validate,
-                "stop": stop,
-                "reset": reset
-            },
-            "aditional_btns": {
-                "presets_button": presets_button
-            },
-            "animation": {
-                "display_info": info_animation,
-            },
-
-            "state": {
-                "is_closing": False,
-            }
-        }
-
         # Pressing Enter defaults to Play
-        play.setFocus()
+        footer_button_play.setFocus()
 
         """Signals
          ________     ________
@@ -572,30 +466,34 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        artist_tab.toggled.connect(
+        header_tab_artist.toggled.connect(
             lambda: self.on_tab_changed("artist")
         )
-        overview_tab.toggled.connect(
+        header_tab_overview.toggled.connect(
             lambda: self.on_tab_changed("overview")
         )
-        terminal_tab.toggled.connect(
+        header_tab_terminal.toggled.connect(
             lambda: self.on_tab_changed("terminal")
         )
 
-        left_view.show_perspective.connect(self.toggle_perspective_widget)
-        right_view.show_perspective.connect(self.toggle_perspective_widget)
+        overview_instance_view.show_perspective.connect(
+            self.toggle_perspective_widget
+        )
+        overview_plugin_view.show_perspective.connect(
+            self.toggle_perspective_widget
+        )
 
         controller.passed_group.connect(self.on_passed_group)
         controller.was_acted.connect(self.on_was_acted)
         controller.was_finished.connect(self.on_was_finished)
 
-        controller.was_reset.connect(left_proxy.rebuild)
-        controller.was_acted.connect(left_proxy.rebuild)
-        controller.was_finished.connect(left_proxy.rebuild)
+        controller.passed_group.connect(overview_instance_proxy.rebuild)
+        controller.was_acted.connect(overview_instance_proxy.rebuild)
+        controller.was_finished.connect(overview_instance_proxy.rebuild)
 
-        controller.was_reset.connect(left_view.expandAll)
-        controller.was_acted.connect(left_view.expandAll)
-        controller.was_finished.connect(left_view.expandAll)
+        controller.passed_group.connect(overview_instance_view.expandAll)
+        controller.was_acted.connect(overview_instance_view.expandAll)
+        controller.was_finished.connect(overview_instance_view.expandAll)
 
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered
@@ -618,27 +516,78 @@ class Window(QtWidgets.QDialog):
         )
 
         artist_view.toggled.connect(self.on_item_toggled)
-        left_view.toggled.connect(self.on_item_toggled)
-        right_view.toggled.connect(self.on_item_toggled)
+        overview_instance_view.toggled.connect(self.on_item_toggled)
+        overview_plugin_view.toggled.connect(self.on_item_toggled)
 
-        reset.clicked.connect(self.on_reset_clicked)
-        validate.clicked.connect(self.on_validate_clicked)
-        play.clicked.connect(self.on_play_clicked)
-        stop.clicked.connect(self.on_stop_clicked)
+        footer_button_stop.clicked.connect(self.on_stop_clicked)
+        footer_button_reset.clicked.connect(self.on_reset_clicked)
+        footer_button_validate.clicked.connect(self.on_validate_clicked)
+        footer_button_play.clicked.connect(self.on_play_clicked)
+
         comment_box.textChanged.connect(self.on_comment_entered)
         comment_box.returnPressed.connect(self.on_play_clicked)
-        right_view.customContextMenuRequested.connect(
+        overview_plugin_view.customContextMenuRequested.connect(
             self.on_plugin_action_menu_requested
         )
 
-        for box in (show_errors,
-                    show_records,
-                    show_debug,
-                    show_info,
-                    show_warning,
-                    show_error,
-                    show_critical):
-            box.setChecked(True)
+        self.main_widget = main_widget
+
+        self.footer_button_reset = footer_button_reset
+        self.footer_button_validate = footer_button_validate
+        self.footer_button_play = footer_button_play
+        self.footer_button_stop = footer_button_stop
+
+        self.overview_instance_proxy = overview_instance_proxy
+        self.overview_instance_view = overview_instance_view
+
+        self.data = {
+            "header": header,
+            "body": body,
+            "footer": footer_widget,
+            "views": {
+                "artist": artist_view,
+                "left": overview_instance_view,
+                "right": overview_plugin_view,
+                "terminal": terminal_view,
+            },
+            "proxies": {
+                "plugins": overview_plugin_proxy,
+                "instances": overview_instance_proxy,
+                "terminal": terminal_proxy
+            },
+            "models": {
+                "instances": instance_model,
+                "plugins": plugin_model,
+                "filter": filter_model,
+                "terminal": terminal_model,
+                "intent_model": intent_model
+            },
+            "tabs": {
+                "artist": header_tab_artist,
+                "overview": header_tab_overview,
+                "terminal": header_tab_terminal,
+                "current": "artist"
+            },
+            "pages": {
+                "artist": artist_page,
+                "overview": overview_page,
+                "terminal": terminal_page,
+            },
+            "comment_intent": {
+                "comment_intent": comment_intent_widget,
+                "comment": comment_box,
+                "intent": intent_box
+            },
+            "aditional_btns": {
+                "presets_button": presets_button
+            },
+            "animation": {
+                "display_info": info_animation,
+            },
+            "state": {
+                "is_closing": False,
+            }
+        }
 
         self.data["tabs"][settings.InitialTab].setChecked(True)
 
@@ -716,12 +665,11 @@ class Window(QtWidgets.QDialog):
             for index in self.data["models"]["instances"]
         )
 
-        buttons = self.data["buttons"]
-        buttons["play"].setEnabled(
-            buttons["play"].isEnabled() and any_instances
+        self.footer_button_play.setEnabled(
+            self.footer_button_play.isEnabled() and any_instances
         )
-        buttons["validate"].setEnabled(
-            buttons["validate"].isEnabled() and any_instances
+        self.footer_button_validate.setEnabled(
+            self.footer_button_validate.isEnabled() and any_instances
         )
 
         # Emit signals
@@ -787,10 +735,9 @@ class Window(QtWidgets.QDialog):
         self.info("Stopping..")
         self.controller.stop()
 
-        buttons = self.data["buttons"]
-        buttons["reset"].setEnabled(True)
-        buttons["play"].setEnabled(False)
-        buttons["stop"].setEnabled(False)
+        self.footer_button_reset.setEnabled(True)
+        self.footer_button_play.setEnabled(False)
+        self.footer_button_stop.setEnabled(False)
 
     def on_comment_entered(self):
         """The user has typed a comment"""
@@ -897,15 +844,20 @@ class Window(QtWidgets.QDialog):
                 right_view.collapse(child_idx)
 
     def on_was_reset(self):
+        # Append context object to instances model
+        self.data["models"]["instances"].append(self.controller.context)
+
+        self.overview_instance_proxy.rebuild()
+        self.overview_instance_view.expandAll()
+
         models = self.data["models"]
         for plugin in self.controller.plugins:
             models["plugins"].append(plugin)
 
-        buttons = self.data["buttons"]
-        buttons["play"].setEnabled(True)
-        buttons["validate"].setEnabled(True)
-        buttons["reset"].setEnabled(True)
-        buttons["stop"].setEnabled(False)
+        self.footer_button_play.setEnabled(True)
+        self.footer_button_validate.setEnabled(True)
+        self.footer_button_reset.setEnabled(True)
+        self.footer_button_stop.setEnabled(False)
 
         aditional_btns = self.data["aditional_btns"]
         aditional_btns["presets_button"].clearMenu()
@@ -959,13 +911,12 @@ class Window(QtWidgets.QDialog):
 
             index.model().setData(index, False, model.IsIdle)
 
-        buttons = self.data["buttons"]
-        buttons["play"].setEnabled(not failed)
-        buttons["validate"].setEnabled(
+        self.footer_button_play.setEnabled(not failed)
+        self.footer_button_validate.setEnabled(
             not failed and not self.controller.validated
         )
-        buttons["reset"].setEnabled(True)
-        buttons["stop"].setEnabled(False)
+        self.footer_button_reset.setEnabled(True)
+        self.footer_button_stop.setEnabled(False)
 
     def on_was_finished(self):
         plugin_model = self.data["models"]["plugins"]
@@ -977,13 +928,12 @@ class Window(QtWidgets.QDialog):
         for index in instance_model:
             index.model().setData(index, False, model.IsIdle)
 
-        buttons = self.data["buttons"]
-        buttons["play"].setEnabled(False)
-        buttons["validate"].setEnabled(False)
-        buttons["reset"].setEnabled(True)
-        buttons["stop"].setEnabled(False)
+        self.footer_button_play.setEnabled(False)
+        self.footer_button_validate.setEnabled(False)
+        self.footer_button_reset.setEnabled(True)
+        self.footer_button_stop.setEnabled(False)
 
-        success_val = 1
+        success_val = 0
         if self.controller.errored:
             self.info(self.tr("Stopped due to error(s), see Terminal."))
             comment_box = self.data["comment_intent"]["comment"]
@@ -992,7 +942,7 @@ class Window(QtWidgets.QDialog):
             intent_box.setEnabled(False)
 
         else:
-            success_val = 0
+            success_val = 1
             self.info(self.tr("Finished successfully!"))
 
         self.data["footer"].setProperty("success", success_val)
@@ -1044,13 +994,14 @@ class Window(QtWidgets.QDialog):
 
         self.data['proxies']['terminal'].rebuild()
 
+        self.update_compatibility()
+        
         if self.last_persp_index:
             self.perspective_widget.set_context(self.last_persp_index)
 
     def on_was_acted(self, result):
-        buttons = self.data["buttons"]
-        buttons["reset"].setEnabled(True)
-        buttons["stop"].setEnabled(False)
+        self.footer_button_reset.setEnabled(True)
+        self.footer_button_stop.setEnabled(False)
 
         # Update action with result
         model_ = self.data["models"]["plugins"]
@@ -1107,8 +1058,10 @@ class Window(QtWidgets.QDialog):
         for model in models.values():
             model.reset()
 
-        for button in self.data["buttons"].values():
-            button.setEnabled(False)
+        self.footer_button_stop.setEnabled(False)
+        self.footer_button_reset.setEnabled(False)
+        self.footer_button_validate.setEnabled(False)
+        self.footer_button_play.setEnabled(False)
 
         intent_box = self.data["comment_intent"]["intent"]
         intent_model = intent_box.model()
@@ -1117,36 +1070,38 @@ class Window(QtWidgets.QDialog):
             intent_box.setCurrentIndex(intent_model.default_index)
 
         # Prepare Context object in controller (create new one)
-        self.controller.reset()
-        # Append context object to instances model
-        self.data["models"]["instances"].append(self.controller.context)
+        # self.controller.reset()
+
         # Launch controller reset
         util.defer(500, self.controller.reset)
 
     def validate(self):
         self.info(self.tr("Preparing validate.."))
-        for button in self.data["buttons"].values():
-            button.setEnabled(False)
+        self.footer_button_stop.setEnabled(True)
+        self.footer_button_reset.setEnabled(False)
+        self.footer_button_validate.setEnabled(False)
+        self.footer_button_play.setEnabled(False)
 
-        self.data["buttons"]["stop"].setEnabled(True)
         util.defer(5, self.controller.validate)
 
     def publish(self):
         self.info(self.tr("Preparing publish.."))
 
-        for button in self.data["buttons"].values():
-            button.setEnabled(False)
+        self.footer_button_stop.setEnabled(True)
+        self.footer_button_reset.setEnabled(False)
+        self.footer_button_validate.setEnabled(False)
+        self.footer_button_play.setEnabled(False)
 
-        self.data["buttons"]["stop"].setEnabled(True)
         util.defer(5, self.controller.publish)
 
     def act(self, plugin, action):
         self.info("%s %s.." % (self.tr("Preparing"), action))
 
-        for button in self.data["buttons"].values():
-            button.setEnabled(False)
+        self.footer_button_stop.setEnabled(True)
+        self.footer_button_reset.setEnabled(False)
+        self.footer_button_validate.setEnabled(False)
+        self.footer_button_play.setEnabled(False)
 
-        self.data["buttons"]["stop"].setEnabled(True)
         self.controller.is_running = True
 
         # Cause view to update, but it won't visually

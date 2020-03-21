@@ -258,7 +258,7 @@ QToolButton:hover {
 	border: 1px solid #999;
 }
 
-#FooterSpacer, #FooterInfo {
+#FooterSpacer, #FooterInfo, #HeaderSpacer {
 	background: transparent;
 }
 

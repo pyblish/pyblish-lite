@@ -7,6 +7,7 @@ an active window manager; such as via Travis-CI.
 """
 import os
 import sys
+import traceback
 
 from .vendor.Qt import QtCore
 
@@ -23,7 +24,13 @@ except Exception:
     def get_presets(): return {}
 
 
+class IterationBreak(Exception): pass
+
+
 class Controller(QtCore.QObject):
+    COLLECT_STATE_BEFORE = 0
+    COLLECT_STATE_COLLECTED = 1
+    COLLECT_STATE_AFTER = 2
 
     # Emitted when the GUI is about to start processing;
     # e.g. resetting, validating or publishing.
@@ -71,6 +78,7 @@ class Controller(QtCore.QObject):
         # Orders which changes GUI
         # - passing collectors order disables plugin/instance toggle
         self.collectors_order = None
+        self.collect_state = self.COLLECT_STATE_BEFORE
         self.collected = False
 
         # - passing validators order disables validate button and gives ability
@@ -84,9 +92,9 @@ class Controller(QtCore.QObject):
         plugin_groups_keys = list(plugin_groups.keys())
         self.collectors_order = plugin_groups_keys[0]
         self.validators_order = self.order_groups.validation_order()
-        next_order = None
+        next_group_order = None
         if len(plugin_groups_keys) > 1:
-            next_order = plugin_groups_keys[1]
+            next_group_order = plugin_groups_keys[1]
 
         # This is used to track whether or not to continue
         # processing when, for example, validation has failed.
@@ -94,8 +102,8 @@ class Controller(QtCore.QObject):
             "stop_on_validation": False,
             # Used?
             "last_plugin_order": None,
-            "current_order": self.collectors_order,
-            "next_order": next_order,
+            "current_group_order": self.collectors_order,
+            "next_group_order": next_group_order,
             "nextOrder": None,
             "ordersWithError": set()
         }
@@ -181,7 +189,9 @@ class Controller(QtCore.QObject):
         targets = pyblish.logic.registered_targets() or ["default"]
         self.plugins = pyblish.logic.plugins_by_targets(plugins, targets)
 
-    def on_finished(self):
+    def on_published(self):
+        if self.is_running:
+            self.is_running = False
         self.was_finished.emit()
 
     def stop(self):
@@ -228,46 +238,56 @@ class Controller(QtCore.QObject):
     def _pair_yielder(self, plugins):
         for plugin in plugins:
             if (
-                self.processing["current_order"] is not None
-                and plugin.order > self.processing["current_order"]
+                self.processing["current_group_order"] is not None
+                and plugin.order > self.processing["current_group_order"]
             ):
-                new_next_order = None
-                new_current_order = self.processing["next_order"]
-                if new_current_order is not None:
+                new_next_group_order = None
+                new_current_group_order = self.processing["next_group_order"]
+                if new_current_group_order is not None:
                     current_next_order_found = False
                     for order in self.order_groups.groups().keys():
                         if current_next_order_found:
-                            new_next_order = order
+                            new_next_group_order = order
                             break
 
-                        if order == new_current_order:
+                        if order == new_current_group_order:
                             current_next_order_found = True
 
-                self.processing["current_order"] = new_current_order
-                self.processing["next_order"] = new_next_order
-                print("***** passed group")
+                self.processing["next_group_order"] = new_next_group_order
+                self.processing["current_group_order"] = (
+                    new_current_group_order
+                )
                 self.passed_group.emit()
+                if self.errored:
+                    yield IterationBreak("Last group errored")
 
-            if not self.collected and plugin.order > self.collectors_order:
-                self.collected = True
-                raise StopIteration("Collected")
+            if (
+                not self.collect_state & self.COLLECT_STATE_COLLECTED
+                and plugin.order > self.collectors_order
+            ):
+                self.collect_state |= self.COLLECT_STATE_COLLECTED
+                yield IterationBreak("Collected")
 
             if not self.validated and plugin.order > self.validators_order:
                 self.validated = True
                 if self.processing["stop_on_validation"]:
-                    raise StopIteration("Validated")
+                    yield IterationBreak("Validated")
+
+            if (
+                not self.collect_state & self.COLLECT_STATE_AFTER
+                and plugin.order > self.collectors_order
+            ):
+                self.collect_state |= self.COLLECT_STATE_AFTER
 
             # Stop if was stopped
             if self.stopped:
-                raise StopIteration("Stopped")
+                yield IterationBreak("Stopped")
 
             # check test if will stop
             self.processing["nextOrder"] = plugin.order
             message = self.test(**self.processing)
             if message:
-                raise StopIteration(
-                    "Stopped due to \"{}\"".format(message)
-                )
+                yield IterationBreak("Stopped due to \"{}\"".format(message))
 
             self.processing["last_plugin_order"] = plugin.order
             if not plugin.active:
@@ -284,7 +304,7 @@ class Controller(QtCore.QObject):
                             "%s was inactive, skipping.." % instance
                         )
                         continue
-                    yield plugin, instance
+                    yield (plugin, instance)
             else:
                 families = util.collect_families_from_instances(
                     self.context, only_active=True
@@ -294,7 +314,8 @@ class Controller(QtCore.QObject):
                 )
                 if not plugins:
                     continue
-                yield plugin, None
+                yield (plugin, None)
+        yield (None, None)
 
     def iterate_and_process(self, on_finished=lambda: None):
         """ Iterating inserted plugins with current context.
@@ -303,23 +324,26 @@ class Controller(QtCore.QObject):
         """
         def on_next():
             try:
-                if self.current_pair is None:
-                    self.current_pair = next(self.pair_generator, (None, None))
-                else:
-                    self.current_pair = next(self.pair_generator)
+                self.current_pair = next(self.pair_generator)
+                if isinstance(self.current_pair, IterationBreak):
+                    raise self.current_pair
+
+            except IterationBreak:
+                self.is_running = False
+                return util.defer(500, on_finished)
 
             except StopIteration:
                 self.is_running = False
                 # All pairs were processed successfully!
-                if self.stopped:
-                    return
                 return util.defer(500, on_finished)
 
             except Exception:
                 # This is a bug
                 exc_type, exc_msg, exc_tb = sys.exc_info()
+                traceback.print_exception(exc_type, exc_msg, exc_tb)
                 self.is_running = False
                 self.current_pair = (None, None)
+
                 return util.defer(
                     500, lambda: on_unexpected_error(error=exc_msg)
                 )
@@ -332,24 +356,21 @@ class Controller(QtCore.QObject):
 
         def on_process():
             try:
-                print("*** on_process: begin {}".format(str(self.current_pair)))
                 result = self._process(*self.current_pair)
                 if result["error"] is not None:
-                    self.current_error = result["error"]
+                    self.errored = True
 
-                print("*** on_process: after _process")
                 self.was_processed.emit(result)
-                print("*** on_process: was_processed emit")
 
             except Exception:
+                # TODO this should be handled much differently
                 exc_type, exc_msg, exc_tb = sys.exc_info()
-                # return
+                traceback.print_exception(exc_type, exc_msg, exc_tb)
                 return util.defer(
                     500, lambda: on_unexpected_error(error=exc_msg)
                 )
 
             util.defer(10, on_next)
-            print("*** on_process: after on_next")
 
         def on_unexpected_error(error):
             util.u_print(u"An unexpected error occurred:\n %s" % error)
@@ -372,7 +393,7 @@ class Controller(QtCore.QObject):
     def publish(self):
         """ Iterate and process all remaining plugins."""
         self.processing["stop_on_validation"] = False
-        self.iterate_and_process(self.on_finished)
+        self.iterate_and_process(self.on_published)
 
     def cleanup(self):
         """Forcefully delete objects from memory
