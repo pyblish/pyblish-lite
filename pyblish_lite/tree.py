@@ -326,24 +326,14 @@ class View(QtWidgets.QTreeView):
     def focusOutEvent(self, event):
         self.selectionModel().clear()
 
-    def leaveEvent(self, event):
-        self._inspecting = False
-        super(View, self).leaveEvent(event)
-
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.MidButton:
-            index = self.indexAt(event.pos())
-            self.inspected.emit(index) if index.isValid() else None
-
-        return super(View, self).mousePressEvent(event)
-
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             indexes = self.selectionModel().selectedIndexes()
             if len(indexes) == 1:
                 index = indexes[0]
                 # If instance or Plugin
-                if index.data(model.Object) is not None:
+                item = index.data(model.ItemRole)
+                if item.type() == model.ItemType:
                     if event.pos().x() < 20:
                         self.toggled.emit(index, None)
                     if event.pos().x() > self.width()-20:
@@ -354,11 +344,15 @@ class View(QtWidgets.QTreeView):
                     else:
                         self.expand(index)
 
-                    self.clearSelection()
+                    self.selectionModel().select(
+                        index, QtCore.QItemSelectionModel.Deselect
+                    )
+
             # Deselect all group labels
             if len(indexes) > 0:
                 for index in indexes:
-                    if index.data(model.Object) is None:
+                    item = index.data(model.ItemRole)
+                    if item.type() == model.GroupType:
                         self.selectionModel().select(
                             index, QtCore.QItemSelectionModel.Deselect
                         )

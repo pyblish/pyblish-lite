@@ -44,6 +44,9 @@ class Controller(QtCore.QObject):
     # Emmited when previous group changed
     passed_group = QtCore.Signal()
 
+    # Emmited when want to change state of instances
+    switch_toggleability = QtCore.Signal(bool)
+
     # ??? Probably action finished
     was_acted = QtCore.Signal(dict)
 
@@ -255,27 +258,25 @@ class Controller(QtCore.QObject):
                 self.processing["current_group_order"] = (
                     new_current_group_order
                 )
+
+                if self.collect_state == 0:
+                    self.collect_state = 1
+                    self.switch_toggleability.emit(True)
+                    self.passed_group.emit()
+                    yield IterationBreak("Collected")
+
                 self.passed_group.emit()
                 if self.errored:
                     yield IterationBreak("Last group errored")
 
-            if (
-                self.collect_state == 0
-                and plugin.order > self.collectors_order
-            ):
-                self.collect_state = 1
-                yield IterationBreak("Collected")
+            if self.collect_state == 1:
+                self.collect_state = 2
+                self.switch_toggleability.emit(False)
 
             if not self.validated and plugin.order > self.validators_order:
                 self.validated = True
                 if self.processing["stop_on_validation"]:
                     yield IterationBreak("Validated")
-
-            if (
-                self.collect_state == 1
-                and plugin.order > self.collectors_order
-            ):
-                self.collect_state = 2
 
             # Stop if was stopped
             if self.stopped:

@@ -31,6 +31,7 @@ from . import settings, util
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, QtGui, __binding__
 from .vendor.six import text_type
+from .constants import PluginStates
 
 try:
     from pypeapp import config
@@ -105,6 +106,39 @@ LogSize = QtCore.Qt.UserRole + 50
 ExcFunc = QtCore.Qt.UserRole + 51
 ExcTraceback = QtCore.Qt.UserRole + 52
 
+ItemType = QtGui.QStandardItem.UserType
+GroupType = QtGui.QStandardItem.UserType + 1
+
+dev_offset = 53
+ObjectRole = QtCore.Qt.UserRole + 0 + dev_offset
+PublishFlagsRole = QtCore.Qt.UserRole + 1 + dev_offset
+
+DocstringRole = QtCore.Qt.UserRole + 2 + dev_offset
+FamiliesRole = QtCore.Qt.UserRole + 3 + dev_offset
+DocstringRole = QtCore.Qt.UserRole + 4 + dev_offset
+PathModuleRole = QtCore.Qt.UserRole + 5 + dev_offset
+
+LogRecordsRole = QtCore.Qt.UserRole + 6 + dev_offset
+
+PluginActionsVisibleRole = QtCore.Qt.UserRole + 7 + dev_offset
+PluginValidActionsRole = QtCore.Qt.UserRole + 8 + dev_offset
+
+PluginActionIdle = QtCore.Qt.UserRole + 9 + dev_offset
+PluginActionFailed = QtCore.Qt.UserRole + 10 + dev_offset
+
+ItemRole = QtCore.Qt.UserRole + 11 + dev_offset
+IsOptionalRole = QtCore.Qt.UserRole + 12 + dev_offset
+IsEnabledRole = QtCore.Qt.UserRole + 13 + dev_offset
+
+
+class QAwesomeIconFactory:
+    icons = {}
+    @classmethod
+    def icon(cls, icon_name):
+        if icon_name not in cls.icons:
+            cls.icons[icon_name] = awesome.get(icon_name)
+        return cls.icons[icon_name]
+
 
 class IntentModel(QtGui.QStandardItemModel):
     """Model for QComboBox with intents.
@@ -164,6 +198,358 @@ class IntentModel(QtGui.QStandardItemModel):
 
             self.setItem(self._item_count, new_item)
             self._item_count += 1
+
+
+class PluginItem(QtGui.QStandardItem):
+    """Plugin item implementation."""
+
+    def __init__(self, plugin):
+        super(PluginItem, self).__init__()
+
+        item_text = plugin.__name__
+        if settings.UseLabel:
+            if hasattr(plugin, "label") and plugin.label:
+                item_text = plugin.label
+
+        self.plugin = plugin
+
+        self.setData(plugin, ObjectRole)
+        self.setData(item_text, QtCore.Qt.DisplayRole)
+        self.setData(False, IsEnabledRole)
+        self.setData(0, PublishFlagsRole)
+
+        icon_name = ""
+        if hasattr(plugin, "icon") and plugin.icon:
+            icon_name = plugin.icon
+        icon = QAwesomeIconFactory.icon(icon_name)
+        self.setData(icon, QtCore.Qt.DecorationRole)
+
+        actions = []
+        if hasattr(plugin, "actions") and plugin.actions:
+            actions = list(plugin.actions)
+        plugin.actions = actions
+
+        is_checked = True
+        is_optional = getattr(plugin, "optional", False)
+        if is_optional:
+            is_checked = getattr(plugin, "active", True)
+
+        plugin.active = is_checked
+        plugin.optional = is_optional
+
+        flags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        self.setFlags(flags)
+
+    def setFlag(self, flag, value=True):
+        flags = self.flags()
+        if value is True:
+            flags |= flag
+        elif flags & flag:
+            flags ^= flag
+        self.setFlags(flags)
+
+    def type(self):
+        return ItemType
+
+    def data(self, role=QtCore.Qt.DisplayRole):
+        if role == ItemRole:
+            return self
+
+        if role == IsOptionalRole:
+            return self.plugin.optional
+
+        if role == ObjectRole:
+            return self.plugin
+
+        if role == QtCore.Qt.CheckStateRole:
+            return self.plugin.active
+
+        if role == PathModuleRole:
+            return self.plugin.__module__
+
+        if role == FamiliesRole:
+            return self.plugin.families
+
+        if role == DocstringRole:
+            return self.plugin.__doc__
+
+        if role == PluginActionsVisibleRole:
+            # Can only run actions on active plug-ins.
+            if not self.plugin.active or not self.plugin.actions:
+                return False
+
+            publish_states = self.data(PublishFlagsRole)
+            if (
+                not publish_states & PluginStates.IsCompatible
+                or publish_states & PluginStates.WasSkipped
+            ):
+                return False
+
+            # Context specific actions
+            for action in self.plugin.actions:
+                if action.on == "failed":
+                    if publish_states & PluginStates.HasError:
+                        return True
+
+                elif action.on == "succeeded":
+                    if (
+                        publish_states & PluginStates.WasProcessed
+                        and not publish_states & PluginStates.HasError
+                    ):
+                        return True
+
+                elif action.on == "processed":
+                    if publish_states & PluginStates.WasProcessed:
+                        return True
+
+                elif action.on == "notProcessed":
+                    if not publish_states & PluginStates.WasProcessed:
+                        return True
+
+            return False
+
+        if role == PluginValidActionsRole:
+            valid_actions = []
+
+            # Can only run actions on active plug-ins.
+            if not self.plugin.active or not self.plugin.actions:
+                return valid_actions
+
+            if not self.plugin.active or not self.plugin.actions:
+                return False
+
+            publish_states = self.data(PublishFlagsRole)
+            if (
+                not publish_states & PluginStates.IsCompatible
+                or publish_states & PluginStates.WasSkipped
+            ):
+                return False
+
+            # Context specific actions
+            for action in self.plugin.actions:
+                valid = False
+                if action.on == "failed":
+                    if publish_states & PluginStates.HasError:
+                        valid = True
+
+                elif action.on == "succeeded":
+                    if (
+                        publish_states & PluginStates.WasProcessed
+                        and not publish_states & PluginStates.HasError
+                    ):
+                        valid = True
+
+                elif action.on == "processed":
+                    if publish_states & PluginStates.WasProcessed:
+                        valid = True
+
+                elif action.on == "notProcessed":
+                    if not publish_states & PluginStates.WasProcessed:
+                        valid = True
+
+                if valid:
+                    valid_actions.append(action)
+
+            if not valid_actions:
+                return valid_actions
+
+            actions_len = len(valid_actions)
+            # Discard empty groups
+            indexex_to_remove = []
+            for idx, action in enumerate(valid_actions):
+                if action.__type__ != "category":
+                    continue
+
+                next_id = idx + 1
+                if next_id >= actions_len:
+                    indexex_to_remove.append(idx)
+                    continue
+
+                next = valid_actions[next_id]
+                if next.__type__ != "action":
+                    indexex_to_remove.append(idx)
+
+            for idx in reversed(indexex_to_remove):
+                valid_actions.pop(idx)
+
+            return valid_actions
+
+        return super(PluginItem, self).data(role)
+
+    def setData(self, value, role=(QtCore.Qt.UserRole+1)):
+        if role == QtCore.Qt.CheckStateRole:
+            if not self.data(IsEnabledRole):
+                return False
+            self.plugin.active = value
+            self.emitDataChanged()
+            return True
+
+        if role == PublishFlagsRole:
+            if isinstance(value, list):
+                _value = self.data(PublishFlagsRole)
+                for flag in value:
+                    _value |= flag
+                value = _value
+
+            elif isinstance(value, dict):
+                _value = self.data(PublishFlagsRole)
+                for flag, _bool in value.items():
+                    if _bool is True:
+                        _value |= flag
+                    elif _value & flag:
+                        _value ^= flag
+                value = _value
+
+        return super(PluginItem, self).setData(value, role)
+
+
+class PluginGroupItem(QtGui.QStandardItem):
+    def flags(self):
+        return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+
+    def data(self, role=QtCore.Qt.DisplayRole):
+        if role == ItemRole:
+            return self
+        return super(PluginGroupItem, self).data(role)
+
+    def type(self):
+        return GroupType
+
+
+class PluginModel(QtGui.QStandardItemModel):
+    def __init__(self, controller, *args, **kwargs):
+        super(PluginModel, self).__init__(*args, **kwargs)
+
+        self.controller = controller
+        self.checkstates = {}
+        self.group_items = {}
+        self.plugin_items = {}
+
+    def reset(self):
+        self.group_items = {}
+        self.plugin_items = {}
+        self.clear()
+
+    def append(self, plugin):
+        plugin_groups = self.controller.order_groups.groups()
+        label = "Other"
+        for order, _label in reversed(plugin_groups.items()):
+            if order is None or plugin.order < order:
+                label = _label
+            else:
+                break
+
+        group_item = self.group_items.get(label)
+        if not group_item:
+            group_item = PluginGroupItem(label)
+            self.appendRow(group_item)
+            self.group_items[label] = group_item
+
+        new_item = PluginItem(plugin)
+        group_item.appendRow(new_item)
+
+        self.plugin_items[plugin._id] = new_item
+
+    def store_checkstates(self):
+        self.checkstates.clear()
+
+        for plugin_item in self.plugin_items.values():
+            if not plugin_item.plugin.optional:
+                continue
+            mod = plugin_item.plugin.__module__
+            class_name = plugin_item.plugin.__class__.__name__
+            uid = "{}.{}".format(mod, class_name)
+
+            self.checkstates[uid] = plugin_item.data(QtCore.Qt.CheckStateRole)
+
+    def restore_checkstates(self):
+        for plugin_item in self.plugin_items.values():
+            if not plugin_item.plugin.optional:
+                continue
+            mod = plugin_item.plugin.__module__
+            class_name = plugin_item.plugin.__class__.__name__
+            uid = "{}.{}".format(mod, class_name)
+
+            state = self.checkstates.get(uid)
+            if state is not None:
+                plugin_item.setData(state, QtCore.Qt.CheckStateRole)
+
+    def update_with_result(self, result, action=False):
+        plugin = result["plugin"]
+        item = self.plugin_items[plugin._id]
+
+        new_flag_states = {
+            PluginStates.InProgress: False,
+            PluginStates.WasProcessed: True
+        }
+
+        publish_states = item.data(PublishFlagsRole)
+
+        has_warning = publish_states & PluginStates.HasWarning
+        new_records = result.get("records") or []
+        if not has_warning:
+            for record in new_records:
+                if not hasattr(record, "levelname"):
+                    continue
+
+                if str(record.levelname).lower() in [
+                    "warning", "critical", "error"
+                ]:
+                    new_flag_states[PluginStates.HasWarning] = True
+                    break
+
+        if (
+            not publish_states & PluginStates.HasError
+            and not result["success"]
+        ):
+            new_flag_states[PluginStates.HasError] = True
+
+        item.setData(new_flag_states, PublishFlagsRole)
+
+        records = item.data(LogRecordsRole) or []
+        records.extend(new_records)
+
+        item.setData(new_records, LogRecordsRole)
+
+    def update_compatibility(self, context, instances):
+        families = util.collect_families_from_instances(context, True)
+        for plugin_item in self.plugin_items.values():
+            publish_states = plugin_item.data(PublishFlagsRole)
+            if (
+                publish_states & PluginStates.WasProcessed
+                or publish_states & PluginStates.WasSkipped
+            ):
+                continue
+
+            is_compatible = False
+            # A plugin should always show if it has processed.
+            if plugin_item.plugin.__instanceEnabled__:
+                compatibleInstances = pyblish.logic.instances_by_plugin(
+                    context, plugin_item.plugin
+                )
+                for instance in instances:
+                    if not instance.data.get("publish"):
+                        continue
+
+                    if instance in compatibleInstances:
+                        is_compatible = True
+                        break
+            else:
+                plugins = pyblish.logic.plugins_by_families(
+                    [plugin_item.plugin], families
+                )
+                if plugins:
+                    is_compatible = True
+
+            current_is_compatible = publish_states & PluginStates.IsCompatible
+            if (
+                (is_compatible and not current_is_compatible)
+                or (not is_compatible and current_is_compatible)
+            ):
+                new_flag = {
+                    PluginStates.IsCompatible: is_compatible
+                }
+                plugin_item.setData(new_flag, PublishFlagsRole)
 
 
 class Abstract(QtCore.QAbstractListModel):
