@@ -18,10 +18,11 @@ import pyblish.lib
 import pyblish.version
 
 from . import util
+
 try:
     from pypeapp.config import get_presets
 except Exception:
-    def get_presets(): return {}
+    get_presets = dict
 
 
 class IterationBreak(Exception):
