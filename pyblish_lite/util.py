@@ -110,16 +110,16 @@ class OrderGroups:
     # `group_range` is set to "1"
     __groups_str_example__ = (
         # half of `group_range` is added to 0 because number means it is Order
-        "0\\Collector"
+        "0=Collector"
         # if `<` is before than it means group range is not used
         # but is expected that number is already max
-        ",<1.5\\Validator"
+        ",<1.5=Validator"
         # "Extractor" will be used in range `<1.5; 2.5)`
-        ",<2.5\\Extractor"
-        ",<3.5\\Integrator"
+        ",<2.5=Extractor"
+        ",<3.5=Integrator"
         # "Other" if number is not set than all remaining plugins are in
         # - in this case Other's range is <3.5; infinity)
-        ",\\Other"
+        ",Other"
     )
 
     _groups = None
@@ -237,23 +237,30 @@ class OrderGroups:
         items = groups_str.split(",")
         groups = {}
         for item in items:
-            order, label = item.split("\\")
-            order = order.strip()
-            if not order:
+            if "=" not in item:
                 order = None
-            elif order.startswith("<"):
-                order = float(order.replace("<", ""))
+                label = item
             else:
-                if group_range is None:
-                    group_range = OrderGroups.default_group_range
-                    print("Using default Plugin group range \"{}\".".format(
-                        OrderGroups.default_group_range
-                    ))
-                order = float(order) + float(group_range) / 2
+                order, label = item.split("=")
+                order = order.strip()
+                if not order:
+                    order = None
+                elif order.startswith("<"):
+                    order = float(order.replace("<", ""))
+                else:
+                    if group_range is None:
+                        group_range = OrderGroups.default_group_range
+                        print(
+                            "Using default Plugin group range \"{}\".".format(
+                                OrderGroups.default_group_range
+                            )
+                        )
+                    order = float(order) + float(group_range) / 2
 
             if order in groups:
                 print((
-                    "Order \"{}\" is registered twice. Using first found."
+                    "Order \"{}\" is registered more than once."
+                    " Using first found."
                 ).format(str(order)))
                 continue
 
