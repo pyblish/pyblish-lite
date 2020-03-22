@@ -639,7 +639,7 @@ class Window(QtWidgets.QDialog):
 
     def on_item_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
-        if not index.data(model.IsIdle):
+        if self.controller.collect_state != 1:
             return self.info("Cannot toggle")
 
         if not index.data(model.IsOptional):

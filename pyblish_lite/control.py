@@ -29,10 +29,6 @@ class IterationBreak(Exception):
 
 
 class Controller(QtCore.QObject):
-    COLLECT_STATE_BEFORE = 0
-    COLLECT_STATE_COLLECTED = 1
-    COLLECT_STATE_AFTER = 2
-
     # Emitted when the GUI is about to start processing;
     # e.g. resetting, validating or publishing.
     about_to_process = QtCore.Signal(object, object)
@@ -79,7 +75,7 @@ class Controller(QtCore.QObject):
         # Orders which changes GUI
         # - passing collectors order disables plugin/instance toggle
         self.collectors_order = None
-        self.collect_state = self.COLLECT_STATE_BEFORE
+        self.collect_state = 0
         self.collected = False
 
         # - passing validators order disables validate button and gives ability
@@ -263,10 +259,10 @@ class Controller(QtCore.QObject):
                     yield IterationBreak("Last group errored")
 
             if (
-                not self.collect_state & self.COLLECT_STATE_COLLECTED
+                self.collect_state == 0
                 and plugin.order > self.collectors_order
             ):
-                self.collect_state |= self.COLLECT_STATE_COLLECTED
+                self.collect_state = 1
                 yield IterationBreak("Collected")
 
             if not self.validated and plugin.order > self.validators_order:
@@ -275,10 +271,10 @@ class Controller(QtCore.QObject):
                     yield IterationBreak("Validated")
 
             if (
-                not self.collect_state & self.COLLECT_STATE_AFTER
+                self.collect_state == 1
                 and plugin.order > self.collectors_order
             ):
-                self.collect_state |= self.COLLECT_STATE_AFTER
+                self.collect_state = 2
 
             # Stop if was stopped
             if self.stopped:
