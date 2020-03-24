@@ -622,6 +622,11 @@ class Window(QtWidgets.QDialog):
         for plugin_item in self.plugin_model.plugin_items.values():
             plugin_item.setData(enable_value, Roles.IsEnabledRole)
 
+        for instance_item in (
+            self.instance_overview_model.instance_items.values()
+        ):
+            instance_item.setData(enable_value, Roles.IsEnabledRole)
+
     def on_item_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
         if not index.data(Roles.IsOptionalRole):

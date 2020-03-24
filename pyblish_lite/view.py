@@ -1,7 +1,7 @@
 import sys
 from .vendor.Qt import QtCore, QtWidgets, QtGui
 from . import model, delegate
-from .constants import Roles
+from .constants import PluginStates, InstanceStates, Roles
 
 
 class Item(QtWidgets.QListView):
@@ -111,7 +111,7 @@ class OverviewView(QtWidgets.QTreeView):
                 index = indexes[0]
                 # If instance or Plugin
                 item = index.data(Roles.ItemRole)
-                if item.type() == model.ItemType:
+                if item.type() in (model.InstanceType, model.PluginType):
                     if event.pos().x() < 20:
                         self.toggled.emit(index, None)
                     elif event.pos().x() > self.width() - 20:
@@ -393,20 +393,52 @@ class PerspectiveWidget(QtWidgets.QWidget):
         return '\n'.join(trimmed)
 
     def set_context(self, index):
-        models = self.parent_widget.data['models']
-        doc = None
-        if index.data(Roles.TypeRole) == "instance":
-            self.indicator.setText('I')
+        item = index.data(Roles.ItemRole)
+        if item.type() == model.InstanceType:
             is_plugin = False
-        elif index.data(Roles.TypeRole) == "plugin":
-            self.indicator.setText('P')
+            if item.is_context:
+                type_indicator = "C"
+            else:
+                type_indicator = "I"
+
+            check_color_name = "idle"
+            publish_states = index.data(Roles.PublishFlagsRole)
+            if publish_states & InstanceStates.InProgress:
+                check_color_name = "active"
+
+            elif publish_states & InstanceStates.HasError:
+                check_color_name = "error"
+
+            elif publish_states & InstanceStates.HasWarning:
+                check_color_name = "warning"
+
+            elif publish_states & InstanceStates.HasFinished:
+                check_color_name = "ok"
+
+        elif index.data(Roles.TypeRole) == model.PluginType:
+            type_indicator = "P"
+
             is_plugin = True
             doc = index.data(Roles.DocstringRole)
-            doc_str = ''
+            doc_str = ""
             have_doc = False
             if doc:
                 have_doc = True
                 doc_str = self.trim(doc)
+
+            check_color_name = "idle"
+            publish_states = index.data(Roles.PublishFlagsRole)
+            if publish_states & PluginStates.InProgress:
+                check_color_name = "active"
+
+            elif publish_states & PluginStates.HasError:
+                check_color_name = "error"
+
+            elif publish_states & PluginStates.HasWarning:
+                check_color_name = "warning"
+
+            elif publish_states & PluginStates.WasProcessed:
+                check_color_name = "ok"
 
             self.documentation.toggle_content(have_doc)
             doc_label = QtWidgets.QLabel(doc_str)
@@ -420,46 +452,32 @@ class PerspectiveWidget(QtWidgets.QWidget):
             path_label.setWordWrap(True)
             path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.path.set_content(path_label)
-        elif index.data(Roles.TypeRole) == "context":
-            self.indicator.setText('C')
-            is_plugin = False
         else:
+            self.indicator.setText("?")
+            self.path.setVisible(False)
+            self.documentation.setVisible(False)
+            self.records.setVisible(False)
             return
 
-        check_color = self.indicator_colors["idle"]
-        if index.data(Roles.IsProcessing) is True:
-            check_color = self.indicator_colors["active"]
-        elif index.data(Roles.HasFailed) is True:
-            check_color = self.indicator_colors["error"]
-        elif index.data(Roles.HasSucceeded) is True:
-            check_color = self.indicator_colors["ok"]
-        elif index.data(Roles.HasProcessed) is True:
-            check_color = self.indicator_colors["ok"]
+        self.indicator.setText(type_indicator)
+        check_color = self.indicator_colors[check_color_name]
+        # TODO do through stylesheets
+        self.indicator.setStyleSheet((
+            "font-size: 16pt;"
+            "font-style: bold;"
+            "font-weight: 50;"
+            "padding: 5px;"
+            "background: {};color: {}"
+        ).format(check_color["bg"], check_color["font"]))
 
-        if index.data(Roles.HasWarning) is True:
-            if (
-                index.data(Roles.HasFailed) is False and
-                index.data(Roles.HasSucceeded) is True
-            ):
-                check_color = self.indicator_colors["warning"]
-
-        self.indicator.setStyleSheet(
-            'font-size: 16pt;'
-            'font-style: bold;'
-            'font-weight: 50;'
-            'padding: 5px;'
-            'background: {};color: {}'.format(
-                check_color['bg'], check_color['font']
-            )
-        )
-
-        label = index.data(Roles.Label)
+        label = index.data(QtCore.Qt.DisplayRole)
         self.name_widget.setText(label)
 
         self.path.setVisible(is_plugin)
         self.documentation.setVisible(is_plugin)
+        self.records.setVisible(True)
 
-        records = index.data(Roles.LogRecord) or []
+        records = index.data(Roles.LogRecordsRole) or []
 
         len_records = 0
         if records:
@@ -476,12 +494,12 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
         rec_view.setModel(rec_proxy)
 
-        data = {'records': records}
+        data = {"records": records}
         rec_model.update_with_result(data)
         rec_proxy.rebuild()
 
         self.records.button_toggle.setText(
-            '{} ({})'.format(self.l_rec, len_records)
+            "{} ({})".format(self.l_rec, len_records)
         )
         self.records.set_content(rec_view)
         self.records.toggle_content(len_records > 0)

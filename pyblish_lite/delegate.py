@@ -53,7 +53,7 @@ icons = {
 }
 
 
-class PluginItem(QtWidgets.QStyledItemDelegate):
+class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
     """Generic delegate for model items"""
 
     def paint(self, painter, option, index):
@@ -80,10 +80,7 @@ class PluginItem(QtWidgets.QStyledItemDelegate):
         )
 
         publish_states = index.data(Roles.PublishFlagsRole)
-        if not publish_states & PluginStates.IsCompatible:
-            check_color = colors["active"]
-
-        elif publish_states & PluginStates.InProgress:
+        if publish_states & PluginStates.InProgress:
             check_color = colors["active"]
 
         elif publish_states & PluginStates.HasError:
@@ -184,7 +181,7 @@ class PluginItem(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20)
 
 
-class InstanceItem(QtWidgets.QStyledItemDelegate):
+class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
     """Generic delegate for model items"""
 
     def paint(self, painter, option, index):
@@ -298,7 +295,7 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
 
         item = index.data(Roles.ItemRole)
-        if item.type() == model.ItemType:
+        if item.type() in (model.InstanceType, model.PluginType):
             self.item_delegate.paint(painter, option, index)
             return
 
@@ -372,12 +369,12 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
 
 class PluginDelegate(OverviewGroupSection):
     """Generic delegate for model items in proxy tree view"""
-    item_class = PluginItem
+    item_class = PluginItemDelegate
 
 
 class InstanceDelegate(OverviewGroupSection):
     """Generic delegate for model items in proxy tree view"""
-    item_class = InstanceItem
+    item_class = InstanceItemDelegate
 
 
 class ArtistDelegate(QtWidgets.QStyledItemDelegate):

@@ -40,8 +40,9 @@ except Exception:
     get_presets = dict
 
 # ItemTypes
-ItemType = QtGui.QStandardItem.UserType
-GroupType = QtGui.QStandardItem.UserType + 1
+InstanceType = QtGui.QStandardItem.UserType
+PluginType = QtGui.QStandardItem.UserType + 1
+GroupType = QtGui.QStandardItem.UserType + 2
 
 
 class QAwesomeIconFactory:
@@ -155,7 +156,7 @@ class PluginItem(QtGui.QStandardItem):
         )
 
     def type(self):
-        return ItemType
+        return PluginType
 
     def data(self, role=QtCore.Qt.DisplayRole):
         if role == Roles.ItemRole:
@@ -522,7 +523,7 @@ class PluginFilterProxy(QtCore.QSortFilterProxyModel):
     def filterAcceptsRow(self, source_row, source_parent):
         item = source_parent.child(source_row, 0)
         item_type = item.data(Roles.TypeRole)
-        if item_type != ItemType:
+        if item_type != PluginType:
             return True
 
         publish_states = item.data(Roles.PublishFlagsRole)
@@ -546,6 +547,7 @@ class InstanceItem(QtGui.QStandardItem):
             self.is_context = True
 
         instance._publish_states = publish_states
+        instance._logs = []
         instance.optional = getattr(instance, "optional", True)
         instance.data["publish"] = instance.data.get("publish", True)
         instance.data["label"] = (
@@ -559,7 +561,7 @@ class InstanceItem(QtGui.QStandardItem):
         return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
     def type(self):
-        return ItemType
+        return InstanceType
 
     def data(self, role=QtCore.Qt.DisplayRole):
         if role == Roles.TypeRole:
@@ -611,6 +613,9 @@ class InstanceItem(QtGui.QStandardItem):
         if role == Roles.PublishFlagsRole:
             return self.instance._publish_states
 
+        if role == Roles.LogRecordsRole:
+            return self.instance._logs
+
         return super(InstanceItem, self).data(role)
 
     def setData(self, value, role=(QtCore.Qt.UserRole + 1)):
@@ -651,6 +656,11 @@ class InstanceItem(QtGui.QStandardItem):
                     )
 
             self.instance._publish_states = value
+            self.emitDataChanged()
+            return True
+
+        if role == Roles.LogRecordsRole:
+            self.instance._logs = value
             self.emitDataChanged()
             return True
 
@@ -752,7 +762,7 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
         records = item.data(Roles.LogRecordsRole) or []
         records.extend(new_records)
 
-        item.setData(new_records, Roles.LogRecordsRole)
+        item.setData(records, Roles.LogRecordsRole)
 
     def update_compatibility(self, context, instances):
         families = util.collect_families_from_instances(context, True)
