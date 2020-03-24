@@ -535,7 +535,7 @@ class PluginFilterProxy(QtCore.QSortFilterProxyModel):
 
 
 class InstanceItem(QtGui.QStandardItem):
-    """Plugin item implementation."""
+    """Instance item implementation."""
 
     def __init__(self, instance):
         super(InstanceItem, self).__init__()
@@ -637,6 +637,19 @@ class InstanceItem(QtGui.QStandardItem):
                         _value ^= flag
                 value = _value
 
+            if value & InstanceStates.HasWarning:
+                if self.parent():
+                    self.parent().setData(
+                        {GroupStates.HasWarning: True},
+                        Roles.PublishFlagsRole
+                    )
+            if value & InstanceStates.HasError:
+                if self.parent():
+                    self.parent().setData(
+                        {GroupStates.HasError: True},
+                        Roles.PublishFlagsRole
+                    )
+
             self.instance._publish_states = value
             self.emitDataChanged()
             return True
@@ -645,6 +658,9 @@ class InstanceItem(QtGui.QStandardItem):
 
 
 class InstanceOverviewModel(QtGui.QStandardItemModel):
+
+    group_created = QtCore.Signal(QtCore.QModelIndex)
+
     def __init__(self, controller, *args, **kwargs):
         super(InstanceOverviewModel, self).__init__(*args, **kwargs)
 
@@ -666,6 +682,7 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
             group_item = GroupItem(families[0])
             self.appendRow(group_item)
             self.group_items[families[0]] = group_item
+            self.group_created.emit(group_item.index())
 
         group_item.appendRow(new_item)
         instance_id = instance.id
@@ -784,6 +801,8 @@ class InstanceArtistModel(QtGui.QStandardItemModel):
         self.instance_items = {}
 
     def on_item_changed(self, item):
+        if item.data(Roles.TypeRole) == GroupType:
+            return
         my_item = self.instance_items[item.instance.id]
         my_item.emitDataChanged()
 

@@ -516,6 +516,10 @@ class Window(QtWidgets.QDialog):
             self.on_plugin_action_menu_requested
         )
 
+        instance_overview_model.group_created.connect(
+            overview_instance_view.expand
+        )
+
         self.main_widget = main_widget
 
         self.header_widget = header_widget
@@ -804,10 +808,17 @@ class Window(QtWidgets.QDialog):
         self.footer_button_play.setFocus()
 
     def on_passed_group(self, order):
-        self.overview_instance_view.expandAll()
+        for group_item in self.instance_overview_model.group_items.values():
+            item = group_item.data(Roles.ItemRole)
+            if self.overview_plugin_view.isExpanded(item.index()):
+                continue
 
-        failed = False
-        passed_groups = []
+            if (
+                item.publish_states & GroupStates.HasError
+                or item.publish_states & GroupStates.HasWarning
+            ):
+                self.overview_instance_view.expand(item.index())
+
         for group_item in self.plugin_model.group_items.values():
             # TODO check only plugins from the group
             item = group_item.data(Roles.ItemRole)
@@ -840,8 +851,6 @@ class Window(QtWidgets.QDialog):
         )
 
     def on_was_finished(self):
-        self.overview_instance_view.expandAll()
-
         self.footer_button_play.setEnabled(False)
         self.footer_button_validate.setEnabled(False)
         self.footer_button_reset.setEnabled(True)
@@ -913,8 +922,6 @@ class Window(QtWidgets.QDialog):
 
     def on_was_acted(self, result):
         # TODO implement
-        self.overview_instance_view.expandAll()
-
         self.footer_button_reset.setEnabled(True)
         self.footer_button_stop.setEnabled(False)
 
