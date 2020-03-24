@@ -818,6 +818,19 @@ class Window(QtWidgets.QDialog):
             instance_proxies = self.data["proxies"]["instances"]
             instance_proxies.layoutChanged.emit()
 
+        buttons = self.data["buttons"]
+        if buttons["play"].isEnabled():
+            buttons["play"].setEnabled(False)
+
+        if buttons["validate"].isEnabled():
+            buttons["validate"].setEnabled(False)
+
+        if buttons["reset"].isEnabled():
+            buttons["reset"].setEnabled(False)
+
+        if not buttons["reset"].isEnabled():
+            buttons["stop"].setEnabled(True)
+
         plugin_model = self.data["models"]["plugins"]
         index = plugin_model.items.index(plugin)
         index = plugin_model.createIndex(index, 0)
