@@ -47,7 +47,7 @@ class Controller(QtCore.QObject):
     # Emmited when want to change state of instances
     switch_toggleability = QtCore.Signal(bool)
 
-    # ??? Probably action finished
+    # On action finished
     was_acted = QtCore.Signal(dict)
 
     # Emitted when processing has stopped
@@ -196,8 +196,10 @@ class Controller(QtCore.QObject):
             result = pyblish.plugin.process(
                 plugin, self.context, None, action.id
             )
+            self.is_running = False
             self.was_acted.emit(result)
 
+        self.is_running = True
         util.defer(100, on_next)
 
     def emit_(self, signal, kwargs):

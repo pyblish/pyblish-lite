@@ -127,11 +127,10 @@ class PluginItem(QtGui.QStandardItem):
 
         self.plugin = plugin
 
-        self.setData(plugin, Roles.ObjectRole)
         self.setData(item_text, QtCore.Qt.DisplayRole)
         self.setData(False, Roles.IsEnabledRole)
         self.setData(0, Roles.PublishFlagsRole)
-
+        self.setData(0, Roles.PluginActionProgressRole)
         icon_name = ""
         if hasattr(plugin, "icon") and plugin.icon:
             icon_name = plugin.icon
@@ -293,6 +292,22 @@ class PluginItem(QtGui.QStandardItem):
             self.plugin.active = value
             self.emitDataChanged()
             return True
+
+        if role == Roles.PluginActionProgressRole:
+            if isinstance(value, list):
+                _value = self.data(Roles.PluginActionProgressRole)
+                for flag in value:
+                    _value |= flag
+                value = _value
+
+            elif isinstance(value, dict):
+                _value = self.data(Roles.PluginActionProgressRole)
+                for flag, _bool in value.items():
+                    if _bool is True:
+                        _value |= flag
+                    elif _value & flag:
+                        _value ^= flag
+                value = _value
 
         if role == Roles.PublishFlagsRole:
             if isinstance(value, list):

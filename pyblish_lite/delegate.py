@@ -4,7 +4,7 @@ from .vendor.Qt import QtWidgets, QtGui, QtCore
 
 from . import model
 from .awesome import tags as awesome
-from .constants import PluginStates, InstanceStates, Roles
+from .constants import PluginStates, InstanceStates, PluginActionStates, Roles
 
 colors = {
     "error": QtGui.QColor("#ff4a4a"),
@@ -129,15 +129,15 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
         # Draw action icon
         if index.data(Roles.PluginActionsVisibleRole):
             painter.save()
-
-            if index.data(Roles.ActionIdle):
-                color = colors["idle"]
-            elif index.data(Roles.InProgress):
-                color = colors["active"]
-            elif index.data(Roles.ActionFailed):
+            action_state = index.data(Roles.PluginActionProgressRole)
+            if action_state & PluginActionStates.HasFailed:
                 color = colors["error"]
-            else:
+            elif action_state & PluginActionStates.HasFinished:
                 color = colors["ok"]
+            elif action_state & PluginActionStates.InProgress:
+                color = colors["active"]
+            else:
+                color = colors["idle"]
 
             painter.setFont(fonts["smallAwesome"])
             painter.setPen(QtGui.QPen(color))

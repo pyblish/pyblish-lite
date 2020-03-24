@@ -45,7 +45,9 @@ from . import delegate, model, settings, util, view
 from .awesome import tags as awesome
 
 from .vendor.Qt import QtCore, QtGui, QtWidgets
-from .constants import PluginStates, InstanceStates, GroupStates, Roles
+from .constants import (
+    PluginStates, PluginActionStates, InstanceStates, GroupStates, Roles
+)
 
 
 class Window(QtWidgets.QDialog):
@@ -934,39 +936,6 @@ class Window(QtWidgets.QDialog):
         if self.last_persp_index:
             self.perspective_widget.set_context(self.last_persp_index)
 
-    def on_was_acted(self, result):
-        # TODO implement
-        self.footer_button_reset.setEnabled(True)
-        self.footer_button_stop.setEnabled(False)
-
-        # Update action with result
-        index = self.plugin_model.items.index(result["plugin"])
-        index = self.plugin_model.createIndex(index, 0)
-
-        self.plugin_model.setData(index, not result["success"], Roles.ActionFailed)
-        self.plugin_model.setData(index, False, Roles.InProgress)
-
-        models = self.data["models"]
-
-        error = result.get('error')
-        if error:
-            records = result.get('records') or []
-            fname, line_no, func, exc = error.traceback
-
-            records.append({
-                'label': str(error),
-                'type': 'error',
-                'filename': str(fname),
-                'lineno': str(line_no),
-                'func': str(func),
-                'traceback': error.formatted_traceback
-            })
-
-            result['records'] = records
-
-        self.plugin_model.update_with_result(result)
-        models["instances"].update_with_result(result)
-        models["terminal"].update_with_result(result)
     # -------------------------------------------------------------------------
     #
     # Functions
@@ -1034,18 +1003,12 @@ class Window(QtWidgets.QDialog):
         self.footer_button_validate.setEnabled(False)
         self.footer_button_play.setEnabled(False)
 
-        self.controller.is_running = True
-
         # Cause view to update, but it won't visually
         # happen until Qt is given time to idle..
         plugin_item = self.plugin_model.plugin_items[plugin._id]
-
-        for key, value in {
-            Roles.ActionIdle: False,
-            Roles.ActionFailed: False,
-            Roles.InProgress: True
-        }.items():
-            plugin_item.setData(value, key)
+        plugin_item.setData(
+            PluginActionStates.InProgress, Roles.PluginActionProgressRole
+        )
 
         # Give Qt time to draw
         util.defer(100, lambda: self.controller.act(
@@ -1053,6 +1016,38 @@ class Window(QtWidgets.QDialog):
         ))
 
         self.info(self.tr("Action prepared."))
+
+    def on_was_acted(self, result):
+        self.footer_button_reset.setEnabled(True)
+        self.footer_button_stop.setEnabled(False)
+
+        # Update action with result
+        plugin_item = self.plugin_model.plugin_items[result["plugin"].id]
+        action_state = plugin_item.data(Roles.PluginActionProgressRole)
+        action_state |= PluginActionStates.HasFinished
+
+        error = result.get("error")
+        if error:
+            action_state |= PluginActionStates.HasFailed
+            records = result.get("records") or []
+            fname, line_no, func, exc = error.traceback
+
+            records.append({
+                "label": str(error),
+                "type": "error",
+                "filename": str(fname),
+                "lineno": str(line_no),
+                "func": str(func),
+                "traceback": error.formatted_traceback
+            })
+
+            result["records"] = records
+
+        plugin_item.setData(action_state, Roles.PluginActionProgressRole)
+
+        self.plugin_model.update_with_result(result)
+        self.instance_overview_model.update_with_result(result)
+        self.data["models"]["terminal"].update_with_result(result)
 
     def closeEvent(self, event):
         """Perform post-flight checks before closing

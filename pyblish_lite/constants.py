@@ -47,8 +47,9 @@ Roles = roles(
 
     "LogRecordsRole",
 
-    "PluginActionIdle",
-    "PluginActionFailed",
+    "PluginActionsVisibleRole",
+    "PluginValidActionsRole",
+    "PluginActionProgressRole",
 
     "ItemRole",
     "IsOptionalRole",
@@ -56,10 +57,6 @@ Roles = roles(
 
     "IntentItemValue",
 
-    "PluginActionsVisibleRole",
-    "PluginValidActionsRole",
-    "ActionIdle",
-    "ActionFailed",
 
     # Terminal Roles
     "Label",
@@ -104,4 +101,11 @@ GroupStates = flags(
     "HasError",
     "HasFinished",
     type_name="GroupStates"
+)
+
+PluginActionStates = flags(
+    "InProgress",
+    "HasFailed",
+    "HasFinished",
+    type_name="PluginActionStates"
 )

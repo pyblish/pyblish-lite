@@ -6,8 +6,8 @@ from .constants import PluginStates, InstanceStates, Roles
 
 class Item(QtWidgets.QListView):
     # An item is requesting to be toggled, with optional forced-state
-    toggled = QtCore.Signal("QModelIndex", object)
-    show_perspective = QtCore.Signal("QModelIndex")
+    toggled = QtCore.Signal(QtCore.QModelIndex, object)
+    show_perspective = QtCore.Signal(QtCore.QModelIndex)
 
     def __init__(self, parent=None):
         super(Item, self).__init__(parent)
@@ -61,8 +61,8 @@ class Item(QtWidgets.QListView):
 
 class OverviewView(QtWidgets.QTreeView):
     # An item is requesting to be toggled, with optional forced-state
-    toggled = QtCore.Signal("QModelIndex", object)
-    show_perspective = QtCore.Signal("QModelIndex")
+    toggled = QtCore.Signal(QtCore.QModelIndex, object)
+    show_perspective = QtCore.Signal(QtCore.QModelIndex)
 
     def __init__(self, parent=None):
         super(OverviewView, self).__init__(parent)
@@ -140,7 +140,7 @@ class OverviewView(QtWidgets.QTreeView):
 
 class TerminalView(QtWidgets.QTreeView):
     # An item is requesting to be toggled, with optional forced-state
-    toggled = QtCore.Signal("QModelIndex", object)
+    toggled = QtCore.Signal(QtCore.QModelIndex, object)
 
     def __init__(self, parent=None):
         super(TerminalView, self).__init__(parent)
