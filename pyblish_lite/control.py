@@ -18,7 +18,7 @@ import pyblish.lib
 import pyblish.version
 
 from . import util
-
+from .constants import InstanceStates
 try:
     from pypeapp.config import get_presets
 except Exception:
@@ -133,36 +133,26 @@ class Controller(QtCore.QObject):
         return result
 
     def reset_context(self):
-        self.context = None
+        self.context = pyblish.api.Context()
 
-        new_context = pyblish.api.Context()
+        self.context._publish_states = InstanceStates.ContextType
+        self.context.optional = False
 
-        new_context._has_failed = False
-        new_context._has_succeeded = False
-        new_context._has_processed = False
-        new_context._has_warning = False
-        new_context._is_processing = False
-        new_context._is_idle = False
-        new_context._type = "context"
-        new_context.optional = False
+        self.context.data["publish"] = True
+        self.context.data["label"] = "Context"
+        self.context.data["name"] = "context"
 
-        new_context.data["publish"] = True
-        new_context.data["label"] = "Context"
-        new_context.data["name"] = "context"
-
-        new_context.data["host"] = reversed(pyblish.api.registered_hosts())
-        new_context.data["port"] = int(
+        self.context.data["host"] = reversed(pyblish.api.registered_hosts())
+        self.context.data["port"] = int(
             os.environ.get("PYBLISH_CLIENT_PORT", -1)
         )
-        new_context.data["connectTime"] = pyblish.lib.time(),
-        new_context.data["pyblishVersion"] = pyblish.version,
-        new_context.data["pythonVersion"] = sys.version
+        self.context.data["connectTime"] = pyblish.lib.time(),
+        self.context.data["pyblishVersion"] = pyblish.version,
+        self.context.data["pythonVersion"] = sys.version
 
-        new_context.data["icon"] = "book"
+        self.context.data["icon"] = "book"
 
-        new_context.families = ("__context__",)
-
-        self.context = new_context
+        self.context.families = ("__context__",)
 
     def reset(self):
         """Discover plug-ins and run collection."""

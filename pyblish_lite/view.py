@@ -1,15 +1,13 @@
 import sys
 from .vendor.Qt import QtCore, QtWidgets, QtGui
 from . import model, delegate
-import traceback
+from .constants import Roles
 
 
 class Item(QtWidgets.QListView):
     # An item is requesting to be toggled, with optional forced-state
     toggled = QtCore.Signal("QModelIndex", object)
     show_perspective = QtCore.Signal("QModelIndex")
-    # An item is requesting details
-    inspected = QtCore.Signal("QModelIndex")
 
     def __init__(self, parent=None):
         super(Item, self).__init__(parent)
@@ -61,6 +59,85 @@ class Item(QtWidgets.QListView):
         return super(Item, self).mouseReleaseEvent(event)
 
 
+class OverviewView(QtWidgets.QTreeView):
+    # An item is requesting to be toggled, with optional forced-state
+    toggled = QtCore.Signal("QModelIndex", object)
+    show_perspective = QtCore.Signal("QModelIndex")
+
+    def __init__(self, parent=None):
+        super(OverviewView, self).__init__(parent)
+
+        self.horizontalScrollBar().hide()
+        self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setItemsExpandable(True)
+        self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollPerPixel)
+        self.setHeaderHidden(True)
+        self.setRootIsDecorated(False)
+        self.setIndentation(0)
+
+    def event(self, event):
+        if not event.type() == QtCore.QEvent.KeyPress:
+            return super(OverviewView, self).event(event)
+
+        elif event.key() == QtCore.Qt.Key_Space:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, None)
+
+            return True
+
+        elif event.key() == QtCore.Qt.Key_Backspace:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, False)
+
+            return True
+
+        elif event.key() == QtCore.Qt.Key_Return:
+            for index in self.selectionModel().selectedIndexes():
+                self.toggled.emit(index, True)
+
+            return True
+
+        return super(OverviewView, self).event(event)
+
+    def focusOutEvent(self, event):
+        self.selectionModel().clear()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            indexes = self.selectionModel().selectedIndexes()
+            if len(indexes) == 1:
+                index = indexes[0]
+                # If instance or Plugin
+                item = index.data(Roles.ItemRole)
+                if item.type() == model.ItemType:
+                    if event.pos().x() < 20:
+                        self.toggled.emit(index, None)
+                    elif event.pos().x() > self.width() - 20:
+                        self.show_perspective.emit(index)
+                else:
+                    # self.setExpanded(index, self.isExpanded(index))
+                    if self.isExpanded(index):
+                        self.collapse(index)
+                    else:
+                        self.expand(index)
+
+                    self.selectionModel().select(
+                        index, QtCore.QItemSelectionModel.Deselect
+                    )
+
+            # Deselect all group labels
+            for index in indexes:
+                item = index.data(Roles.ItemRole)
+                if item.type() == model.GroupType:
+                    self.selectionModel().select(
+                        index, QtCore.QItemSelectionModel.Deselect
+                    )
+
+        return super(OverviewView, self).mouseReleaseEvent(event)
+
+
 class TerminalView(QtWidgets.QTreeView):
     # An item is requesting to be toggled, with optional forced-state
     toggled = QtCore.Signal("QModelIndex", object)
@@ -81,7 +158,7 @@ class TerminalView(QtWidgets.QTreeView):
         self.collapsed.connect(self.change_expanded)
 
     def change_expanded(self, index):
-        group = index.data(model.GroupObject)
+        group = index.data(Roles.GroupObjectRole)
         if group:
             group.setIsExpanded(self.isExpanded(index))
         self.model().layoutChanged.emit()
@@ -122,7 +199,7 @@ class TerminalView(QtWidgets.QTreeView):
             indexes = self.selectionModel().selectedIndexes()
             if len(indexes) == 1:
                 index = indexes[0]
-                if index.data(model.GroupObject):
+                if index.data(Roles.GroupObjectRole):
                     if self.isExpanded(index):
                         self.collapse(index)
                     else:
@@ -131,7 +208,7 @@ class TerminalView(QtWidgets.QTreeView):
             # Deselect all group labels
             if len(indexes) > 0:
                 for index in indexes:
-                    if index.data(model.GroupObject):
+                    if index.data(Roles.GroupObjectRole):
                         self.selectionModel().select(
                             index, QtCore.QItemSelectionModel.Deselect
                         )
@@ -144,7 +221,7 @@ class TerminalView(QtWidgets.QTreeView):
         for idx in range(self.model().rowCount()):
             index = self.model().index(idx, 0)
             height += self.rowHeight(index)
-            item = index.data(model.GroupObject)
+            item = index.data(Roles.GroupObjectRole)
             if item.expanded:
                 index = self.model().index(0, 1, index)
                 height += self.rowHeight(index)
@@ -318,13 +395,13 @@ class PerspectiveWidget(QtWidgets.QWidget):
     def set_context(self, index):
         models = self.parent_widget.data['models']
         doc = None
-        if index.data(model.Type) == "instance":
+        if index.data(Roles.TypeRole) == "instance":
             self.indicator.setText('I')
             is_plugin = False
-        elif index.data(model.Type) == "plugin":
+        elif index.data(Roles.TypeRole) == "plugin":
             self.indicator.setText('P')
             is_plugin = True
-            doc = index.data(model.Docstring)
+            doc = index.data(Roles.DocstringRole)
             doc_str = ''
             have_doc = False
             if doc:
@@ -336,33 +413,33 @@ class PerspectiveWidget(QtWidgets.QWidget):
             doc_label.setWordWrap(True)
             doc_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.documentation.set_content(doc_label)
-            path = index.data(model.PathModule) or ''
+            path = index.data(Roles.PathModuleRole) or ''
 
             self.path.toggle_content(path.strip() != '')
             path_label = QtWidgets.QLabel(path)
             path_label.setWordWrap(True)
             path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.path.set_content(path_label)
-        elif index.data(model.Type) == "context":
+        elif index.data(Roles.TypeRole) == "context":
             self.indicator.setText('C')
             is_plugin = False
         else:
             return
 
         check_color = self.indicator_colors["idle"]
-        if index.data(model.IsProcessing) is True:
+        if index.data(Roles.IsProcessing) is True:
             check_color = self.indicator_colors["active"]
-        elif index.data(model.HasFailed) is True:
+        elif index.data(Roles.HasFailed) is True:
             check_color = self.indicator_colors["error"]
-        elif index.data(model.HasSucceeded) is True:
+        elif index.data(Roles.HasSucceeded) is True:
             check_color = self.indicator_colors["ok"]
-        elif index.data(model.HasProcessed) is True:
+        elif index.data(Roles.HasProcessed) is True:
             check_color = self.indicator_colors["ok"]
 
-        if index.data(model.HasWarning) is True:
+        if index.data(Roles.HasWarning) is True:
             if (
-                index.data(model.HasFailed) is False and
-                index.data(model.HasSucceeded) is True
+                index.data(Roles.HasFailed) is False and
+                index.data(Roles.HasSucceeded) is True
             ):
                 check_color = self.indicator_colors["warning"]
 
@@ -376,13 +453,13 @@ class PerspectiveWidget(QtWidgets.QWidget):
             )
         )
 
-        label = index.data(model.Label)
+        label = index.data(Roles.Label)
         self.name_widget.setText(label)
 
         self.path.setVisible(is_plugin)
         self.documentation.setVisible(is_plugin)
 
-        records = index.data(model.LogRecord) or []
+        records = index.data(Roles.LogRecord) or []
 
         len_records = 0
         if records:
