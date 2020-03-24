@@ -533,6 +533,7 @@ class Window(QtWidgets.QDialog):
         self.overview_instance_view = overview_instance_view
         self.overview_plugin_view = overview_plugin_view
         self.plugin_model = plugin_model
+        self.plugin_proxy = plugin_proxy
         self.instance_overview_model = instance_overview_model
         self.instance_artist_model = instance_artist_model
 
@@ -809,31 +810,39 @@ class Window(QtWidgets.QDialog):
 
     def on_passed_group(self, order):
         for group_item in self.instance_overview_model.group_items.values():
-            item = group_item.data(Roles.ItemRole)
-            if self.overview_plugin_view.isExpanded(item.index()):
+            if self.overview_instance_view.isExpanded(group_item.index()):
                 continue
 
             if (
-                item.publish_states & GroupStates.HasError
-                or item.publish_states & GroupStates.HasWarning
+                group_item.publish_states & GroupStates.HasError
+                or group_item.publish_states & GroupStates.HasWarning
             ):
-                self.overview_instance_view.expand(item.index())
+                self.overview_instance_view.expand(group_item.index())
 
         for group_item in self.plugin_model.group_items.values():
             # TODO check only plugins from the group
-            item = group_item.data(Roles.ItemRole)
-            if item.publish_states & GroupStates.HasFinished:
+            if (
+                group_item.publish_states & GroupStates.HasFinished
+                or group_item.order >= order
+            ):
                 continue
 
-            if item.order >= order:
-                continue
-
-            if not item.publish_states & GroupStates.HasError:
-                item.setData(
-                    {GroupStates.HasFinished: True},
-                    Roles.PublishFlagsRole
+            if (
+                group_item.publish_states & GroupStates.HasError
+                or group_item.publish_states & GroupStates.HasWarning
+            ):
+                self.overview_plugin_view.expand(
+                    self.plugin_proxy.mapFromSource(group_item.index())
                 )
-                self.overview_plugin_view.collapse(item.index())
+                continue
+
+            group_item.setData(
+                {GroupStates.HasFinished: True},
+                Roles.PublishFlagsRole
+            )
+            self.overview_plugin_view.collapse(
+                self.plugin_proxy.mapFromSource(group_item.index())
+            )
 
     def on_was_stopped(self):
         self.footer_button_play.setEnabled(not self.controller.errored)
