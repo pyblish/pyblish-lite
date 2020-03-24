@@ -45,7 +45,7 @@ from . import delegate, model, settings, util, view
 from .awesome import tags as awesome
 
 from .vendor.Qt import QtCore, QtGui, QtWidgets
-from .constants import PluginStates, InstanceStates, Roles
+from .constants import PluginStates, InstanceStates, GroupStates, Roles
 
 
 class Window(QtWidgets.QDialog):
@@ -136,15 +136,15 @@ class Window(QtWidgets.QDialog):
         |__________________|
 
         """
-        instance_model = model.InstanceModel(controller)
 
         artist_page = QtWidgets.QWidget()
 
         artist_view = view.Item()
         artist_view.show_perspective.connect(self.toggle_perspective_widget)
-        artist_view.setModel(instance_model)
+        instance_artist_model = model.InstanceArtistModel()
+        artist_view.setModel(instance_artist_model)
 
-        artist_delegate = delegate.Artist()
+        artist_delegate = delegate.ArtistDelegate()
         artist_view.setItemDelegate(artist_delegate)
 
         layout = QtWidgets.QVBoxLayout(artist_page)
@@ -174,7 +174,11 @@ class Window(QtWidgets.QDialog):
             parent=overview_instance_view
         )
         overview_instance_view.setItemDelegate(overview_instance_delegate)
-        overview_instance_view.setModel(instance_model)
+        instance_overview_model = model.InstanceOverviewModel(controller)
+        overview_instance_view.setModel(instance_overview_model)
+        instance_overview_model.itemChanged.connect(
+            instance_artist_model.on_item_changed
+        )
 
         overview_plugin_view = view.OverviewView(parent=overview_page)
         overview_plugin_delegate = delegate.PluginDelegate(
@@ -182,7 +186,9 @@ class Window(QtWidgets.QDialog):
         )
         overview_plugin_view.setItemDelegate(overview_plugin_delegate)
         plugin_model = model.PluginModel(controller)
-        overview_plugin_view.setModel(plugin_model)
+        plugin_proxy = model.PluginFilterProxy()
+        plugin_proxy.setSourceModel(plugin_model)
+        overview_plugin_view.setModel(plugin_proxy)
 
         layout = QtWidgets.QHBoxLayout(overview_page)
         layout.addWidget(overview_instance_view, 1)
@@ -477,23 +483,17 @@ class Window(QtWidgets.QDialog):
             self.toggle_perspective_widget
         )
 
-        controller.passed_group.connect(self.on_passed_group)
-        controller.was_acted.connect(self.on_was_acted)
-        controller.was_finished.connect(self.on_was_finished)
         controller.switch_toggleability.connect(self.change_toggleability)
-        # Discovery happens synchronously during reset, that's
-        # why it's important that this connection is triggered
-        # right away.
-        controller.was_reset.connect(
-            self.on_was_reset,
-            QtCore.Qt.DirectConnection
-        )
 
+        controller.was_reset.connect(self.on_was_reset)
         # This is called synchronously on each process
-        controller.was_processed.connect(
-            self.on_was_processed,
-            QtCore.Qt.DirectConnection
-        )
+        controller.was_processed.connect(self.on_was_processed)
+        controller.passed_group.connect(self.on_passed_group)
+        controller.was_stopped.connect(self.on_was_stopped)
+        controller.was_finished.connect(self.on_was_finished)
+
+        controller.was_skipped.connect(self.on_was_skipped)
+        controller.was_acted.connect(self.on_was_acted)
 
         # NOTE: Listeners to this signal are run in the main thread
         controller.about_to_process.connect(
@@ -529,7 +529,8 @@ class Window(QtWidgets.QDialog):
         self.overview_instance_view = overview_instance_view
         self.overview_plugin_view = overview_plugin_view
         self.plugin_model = plugin_model
-        self.instance_model = instance_model
+        self.instance_overview_model = instance_overview_model
+        self.instance_artist_model = instance_artist_model
 
         self.data = {
             "footer": footer_widget,
@@ -702,7 +703,9 @@ class Window(QtWidgets.QDialog):
         else:
             instance_id = instance.id
 
-        instance_item = self.instance_model.instance_items[instance_id]
+        instance_item = (
+            self.instance_overview_model.instance_items[instance_id]
+        )
         instance_item.setData(
             {InstanceStates.InProgress: True},
             Roles.PublishFlagsRole
@@ -748,34 +751,12 @@ class Window(QtWidgets.QDialog):
         menu.popup(self.overview_plugin_view.viewport().mapToGlobal(pos))
 
     def update_compatibility(self):
-        self.plugin_model.update_compatibility(
-            self.controller.context,
-            self.instance_model.instance_items.values()
-        )
-
-        right_view_model = self.overview_plugin_view.model()
-        # for child in right_view_model.root.children():
-        #     child_idx = right_view_model.createIndex(child.row(), 0, child)
-        #     self.overview_plugin_view.expand(child_idx)
-        #     any_failed = False
-        #     all_succeeded = True
-        #     for plugin_item in child.children():
-        #         if plugin_item.data(model.IsOptional):
-        #             if not plugin_item.data(model.IsChecked):
-        #                 continue
-        #         if plugin_item.data(model.HasFailed):
-        #             any_failed = True
-        #             break
-        #         if not plugin_item.data(model.HasSucceeded):
-        #             all_succeeded = False
-        #             break
-        #
-        #     if all_succeeded and not any_failed:
-        #         self.overview_plugin_view.collapse(child_idx)
+        self.plugin_model.update_compatibility()
 
     def on_was_reset(self):
         # Append context object to instances model
-        self.instance_model.append(self.controller.context)
+        self.instance_overview_model.append(self.controller.context)
+        self.instance_artist_model.append(self.controller.context)
 
         for plugin in self.controller.plugins:
             self.plugin_model.append(plugin)
@@ -797,7 +778,7 @@ class Window(QtWidgets.QDialog):
                     key, partial(self.set_presets, key)
                 )
 
-        self.instance_model.restore_checkstates()
+        self.instance_overview_model.restore_checkstates()
         self.plugin_model.restore_checkstates()
 
         # Append placeholder comment from Context
@@ -822,27 +803,41 @@ class Window(QtWidgets.QDialog):
         intent_box.setFocus()
         self.footer_button_play.setFocus()
 
-    def on_passed_group(self):
+    def on_passed_group(self, order):
         self.overview_instance_view.expandAll()
 
         failed = False
-        for plugin_item in self.plugin_model.plugin_items.values():
+        passed_groups = []
+        for group_item in self.plugin_model.group_items.values():
             # TODO check only plugins from the group
-            publish_states = plugin_item.data(Roles.PublishFlagsRole)
-            if not failed and publish_states & PluginStates.HasError:
-                failed = True
-                break
+            item = group_item.data(Roles.ItemRole)
+            if item.publish_states & GroupStates.HasFinished:
+                continue
 
-        # TODO collapse group is success
-        # if not failed:
-        #     self.overview_plugin_view.collapse()
+            if item.order >= order:
+                continue
 
-        self.footer_button_play.setEnabled(not failed)
+            if not item.publish_states & GroupStates.HasError:
+                item.setData(
+                    {GroupStates.HasFinished: True},
+                    Roles.PublishFlagsRole
+                )
+                self.overview_plugin_view.collapse(item.index())
+
+    def on_was_stopped(self):
+        self.footer_button_play.setEnabled(not self.controller.errored)
         self.footer_button_validate.setEnabled(
-            not failed and not self.controller.validated
+            not self.controller.validated
         )
         self.footer_button_reset.setEnabled(True)
         self.footer_button_stop.setEnabled(False)
+
+    def on_was_skipped(self, plugin):
+        plugin_item = self.plugin_model.plugin_items[plugin.id]
+        plugin_item.setData(
+            {PluginStates.WasSkipped: True},
+            Roles.PublishFlagsRole
+        )
 
     def on_was_finished(self):
         self.overview_instance_view.expandAll()
@@ -867,12 +862,22 @@ class Window(QtWidgets.QDialog):
         self.data["footer"].setProperty("success", success_val)
         self.data["footer"].style().polish(self.data["footer"])
 
+        for instance_item in (
+            self.instance_overview_model.instance_items.values()
+        ):
+            instance_item.setData(
+                {InstanceStates.HasFinished: True},
+                Roles.PublishFlagsRole
+            )
         self.update_compatibility()
 
     def on_was_processed(self, result):
         for instance in self.controller.context:
-            if instance.id not in self.instance_model.instance_items:
-                self.instance_model.append(instance)
+            if instance.id not in self.instance_overview_model.instance_items:
+                self.instance_overview_model.append(instance)
+
+            if instance.id not in self.instance_artist_model.instance_items:
+                self.instance_artist_model.append(instance)
 
         error = result.get("error")
         if error:
@@ -895,7 +900,7 @@ class Window(QtWidgets.QDialog):
                 self.data["tabs"]["overview"].toggle()
 
         self.plugin_model.update_with_result(result)
-        self.instance_model.update_with_result(result)
+        self.instance_overview_model.update_with_result(result)
 
         models = self.data["models"]
         models["terminal"].update_with_result(result)
@@ -955,14 +960,16 @@ class Window(QtWidgets.QDialog):
         self.data["footer"].setProperty("success", -1)
         self.data["footer"].style().polish(self.data["footer"])
 
-        self.instance_model.store_checkstates()
+        self.instance_overview_model.store_checkstates()
         self.plugin_model.store_checkstates()
 
         # Reset current ids to secure no previous instances get mixed in.
         models = self.data["models"]
         for model in models.values():
             model.reset()
-        self.instance_model.reset()
+
+        self.instance_overview_model.reset()
+        self.instance_artist_model.reset()
         self.plugin_model.reset()
 
         self.footer_button_stop.setEnabled(False)

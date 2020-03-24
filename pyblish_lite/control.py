@@ -42,7 +42,7 @@ class Controller(QtCore.QObject):
     was_reset = QtCore.Signal()
 
     # Emmited when previous group changed
-    passed_group = QtCore.Signal()
+    passed_group = QtCore.Signal(object)
 
     # Emmited when want to change state of instances
     switch_toggleability = QtCore.Signal(bool)
@@ -55,6 +55,9 @@ class Controller(QtCore.QObject):
 
     # Emitted when processing has finished
     was_finished = QtCore.Signal()
+
+    # Emitted when plugin was skipped
+    was_skipped = QtCore.Signal(object)
 
     # store OrderGroups - now it is a singleton
     order_groups = util.OrderGroups
@@ -252,10 +255,10 @@ class Controller(QtCore.QObject):
                 if self.collect_state == 0:
                     self.collect_state = 1
                     self.switch_toggleability.emit(True)
-                    self.passed_group.emit()
+                    self.passed_group.emit(new_current_group_order)
                     yield IterationBreak("Collected")
 
-                self.passed_group.emit()
+                self.passed_group.emit(new_current_group_order)
                 if self.errored:
                     yield IterationBreak("Last group errored")
 
@@ -270,6 +273,7 @@ class Controller(QtCore.QObject):
 
             # Stop if was stopped
             if self.stopped:
+                self.stopped = False
                 yield IterationBreak("Stopped")
 
             # check test if will stop
@@ -281,12 +285,17 @@ class Controller(QtCore.QObject):
             self.processing["last_plugin_order"] = plugin.order
             if not plugin.active:
                 pyblish.logic.log.debug("%s was inactive, skipping.." % plugin)
+                self.was_skipped.emit(plugin)
                 continue
 
             if plugin.__instanceEnabled__:
                 instances = pyblish.logic.instances_by_plugin(
                     self.context, plugin
                 )
+                if not instances:
+                    self.was_skipped.emit(plugin)
+                    continue
+
                 for instance in instances:
                     if instance.data.get("publish") is False:
                         pyblish.logic.log.debug(
@@ -302,9 +311,9 @@ class Controller(QtCore.QObject):
                     [plugin], families
                 )
                 if not plugins:
+                    self.was_skipped.emit(plugin)
                     continue
                 yield (plugin, None)
-        yield (None, None)
 
     def iterate_and_process(self, on_finished=lambda: None):
         """ Iterating inserted plugins with current context.
@@ -319,7 +328,8 @@ class Controller(QtCore.QObject):
 
             except IterationBreak:
                 self.is_running = False
-                return util.defer(500, on_finished)
+                self.was_stopped.emit()
+                return
 
             except StopIteration:
                 self.is_running = False
@@ -331,14 +341,10 @@ class Controller(QtCore.QObject):
                 exc_type, exc_msg, exc_tb = sys.exc_info()
                 traceback.print_exception(exc_type, exc_msg, exc_tb)
                 self.is_running = False
-                self.current_pair = (None, None)
-
+                self.was_stopped.emit()
                 return util.defer(
                     500, lambda: on_unexpected_error(error=exc_msg)
                 )
-
-            if self.current_pair == (None, None):
-                return util.defer(100, on_finished)
 
             self.about_to_process.emit(*self.current_pair)
             util.defer(100, on_process)

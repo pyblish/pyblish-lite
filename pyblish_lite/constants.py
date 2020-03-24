@@ -98,3 +98,10 @@ PluginStates = flags(
     "HasError",
     type_name="PluginState"
 )
+
+GroupStates = flags(
+    "HasWarning",
+    "HasError",
+    "HasFinished",
+    type_name="GroupStates"
+)

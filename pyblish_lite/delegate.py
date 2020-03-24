@@ -80,7 +80,10 @@ class PluginItem(QtWidgets.QStyledItemDelegate):
         )
 
         publish_states = index.data(Roles.PublishFlagsRole)
-        if publish_states & PluginStates.InProgress:
+        if not publish_states & PluginStates.IsCompatible:
+            check_color = colors["active"]
+
+        elif publish_states & PluginStates.InProgress:
             check_color = colors["active"]
 
         elif publish_states & PluginStates.HasError:
@@ -377,7 +380,7 @@ class InstanceDelegate(OverviewGroupSection):
     item_class = InstanceItem
 
 
-class Artist(QtWidgets.QStyledItemDelegate):
+class ArtistDelegate(QtWidgets.QStyledItemDelegate):
     """Delegate used on Artist page"""
 
     def paint(self, painter, option, index):
@@ -449,20 +452,11 @@ class Artist(QtWidgets.QStyledItemDelegate):
         elif not index.data(Roles.IsEnabledRole):
             check_color = colors["inactive"]
 
-        if index.data(Roles.HasWarning) is True:
-            if (
-                index.data(Roles.HasFailed) is False and
-                index.data(Roles.HasSucceeded) is True
-            ):
-                check_color = colors["warning"]
-
-        icon = index.data(QtCore.Qt.DecorationRole) or icons["file"]
+        icon = index.data(QtCore.Qt.DecorationRole)
         perspective_icon = icons["angle-right"]
         label = index.data(QtCore.Qt.DisplayRole)
 
         families = ", ".join(index.data(Roles.FamiliesRole))
-        if families == "__context__":
-            families = "Context"
 
         # Elide
         label = metrics.elidedText(
@@ -474,15 +468,15 @@ class Artist(QtWidgets.QStyledItemDelegate):
         )
 
         font_color = colors["idle"]
-        if not index.data(Roles.IsChecked):
+        if not index.data(QtCore.Qt.CheckStateRole):
             font_color = colors["inactive"]
 
         perspective_color = colors["inactive"]
         if (
-            option.state &
-            (
-                QtWidgets.QStyle.State_MouseOver or
-                QtWidgets.QStyle.State_Selected
+            option.state
+            & (
+                QtWidgets.QStyle.State_MouseOver
+                or QtWidgets.QStyle.State_Selected
             )
         ):
             perspective_color = colors["idle"]
@@ -513,14 +507,16 @@ class Artist(QtWidgets.QStyledItemDelegate):
         pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
 
-        if index.data(Roles.IsOptional):
+        if index.data(Roles.IsOptionalRole):
             painter.drawRect(toggle_rect)
 
-            if index.data(Roles.IsChecked):
+            if index.data(QtCore.Qt.CheckStateRole):
                 painter.fillRect(toggle_rect, check_color)
 
-        elif not index.data(Roles.IsIdle) and index.data(Roles.IsChecked):
-                painter.fillRect(toggle_rect, check_color)
+        elif (
+            index.data(QtCore.Qt.CheckStateRole)
+        ):
+            painter.fillRect(toggle_rect, check_color)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
             painter.fillRect(body_rect, colors["hover"])
@@ -549,12 +545,12 @@ class TerminalItem(QtWidgets.QStyledItemDelegate):
         icon_rect.setHeight(14)
         icon_color = colors["idle"]
 
-        icon = icons[index.data(Roles.Type)]
+        icon = icons[index.data(Roles.TypeRole)]
 
-        if index.data(Roles.Type) == "record":
+        if index.data(Roles.TypeRole) == "record":
             icon_color = record_colors[index.data(Roles.LogLevel)]
 
-        elif index.data(Roles.Type) == "error":
+        elif index.data(Roles.TypeRole) == "error":
             icon_color = colors["error"]
 
         metrics = painter.fontMetrics()

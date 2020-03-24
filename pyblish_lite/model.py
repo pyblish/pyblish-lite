@@ -31,7 +31,7 @@ from . import settings, util
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, QtGui, __binding__
 from .vendor.six import text_type
-from .constants import PluginStates, InstanceStates, Roles
+from .constants import PluginStates, InstanceStates, GroupStates, Roles
 
 try:
     from pypeapp import config
@@ -309,14 +309,35 @@ class PluginItem(QtGui.QStandardItem):
                         _value ^= flag
                 value = _value
 
+            if value & PluginStates.HasWarning:
+                if self.parent():
+                    self.parent().setData(
+                        {GroupStates.HasWarning: True},
+                        Roles.PublishFlagsRole
+                    )
+            if value & PluginStates.HasError:
+                if self.parent():
+                    self.parent().setData(
+                        {GroupStates.HasError: True},
+                        Roles.PublishFlagsRole
+                    )
+
         return super(PluginItem, self).setData(value, role)
 
 
 class GroupItem(QtGui.QStandardItem):
+    def __init__(self, *args, **kwargs):
+        self.order = kwargs.pop("order", None)
+        self.publish_states = 0
+        super(GroupItem, self).__init__(*args, **kwargs)
+
     def flags(self):
         return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
     def data(self, role=QtCore.Qt.DisplayRole):
+        if role == Roles.PublishFlagsRole:
+            return self.publish_states
+
         if role == Roles.ItemRole:
             return self
 
@@ -324,6 +345,28 @@ class GroupItem(QtGui.QStandardItem):
             return self.type()
 
         return super(GroupItem, self).data(role)
+
+    def setData(self, value, role=(QtCore.Qt.UserRole + 1)):
+        if role == Roles.PublishFlagsRole:
+            if isinstance(value, list):
+                _value = self.data(Roles.PublishFlagsRole)
+                for flag in value:
+                    _value |= flag
+                value = _value
+
+            elif isinstance(value, dict):
+                _value = self.data(Roles.PublishFlagsRole)
+                for flag, _bool in value.items():
+                    if _bool is True:
+                        _value |= flag
+                    elif _value & flag:
+                        _value ^= flag
+                value = _value
+            self.publish_states = value
+            self.emitDataChanged()
+            return True
+
+        return super(GroupItem, self).setData(value, role)
 
     def type(self):
         return GroupType
@@ -345,16 +388,24 @@ class PluginModel(QtGui.QStandardItemModel):
 
     def append(self, plugin):
         plugin_groups = self.controller.order_groups.groups()
-        label = "Other"
-        for order, _label in reversed(plugin_groups.items()):
-            if order is None or plugin.order < order:
+        label = None
+        order = None
+        for _order, _label in reversed(plugin_groups.items()):
+            if order is None or plugin.order < _order:
                 label = _label
+                order = _order
             else:
                 break
 
+        if label is None:
+            label = "Other"
+
+        if order is None:
+            order = 99999999999999
+
         group_item = self.group_items.get(label)
         if not group_item:
-            group_item = GroupItem(label)
+            group_item = GroupItem(label, order=order)
             self.appendRow(group_item)
             self.group_items[label] = group_item
 
@@ -424,48 +475,63 @@ class PluginModel(QtGui.QStandardItemModel):
 
         item.setData(new_records, Roles.LogRecordsRole)
 
-    def update_compatibility(self, context, instances):
-        # TODO redo
-        pass
-        # families = util.collect_families_from_instances(context, True)
-        # for plugin_item in self.plugin_items.values():
-        #     publish_states = plugin_item.data(Roles.PublishFlagsRole)
-        #     if (
-        #         publish_states & PluginStates.WasProcessed
-        #         or publish_states & PluginStates.WasSkipped
-        #     ):
-        #         continue
-        #
-        #     is_compatible = False
-        #     # A plugin should always show if it has processed.
-        #     if plugin_item.plugin.__instanceEnabled__:
-        #         compatibleInstances = pyblish.logic.instances_by_plugin(
-        #             context, plugin_item.plugin
-        #         )
-        #         for instance in instances:
-        #             print(instances)
-        #             if not instance.data.get("publish"):
-        #                 continue
-        #
-        #             if instance in compatibleInstances:
-        #                 is_compatible = True
-        #                 break
-        #     else:
-        #         plugins = pyblish.logic.plugins_by_families(
-        #             [plugin_item.plugin], families
-        #         )
-        #         if plugins:
-        #             is_compatible = True
-        #
-        #     current_is_compatible = publish_states & PluginStates.IsCompatible
-        #     if (
-        #         (is_compatible and not current_is_compatible)
-        #         or (not is_compatible and current_is_compatible)
-        #     ):
-        #         new_flag = {
-        #             PluginStates.IsCompatible: is_compatible
-        #         }
-        #         plugin_item.setData(new_flag, Roles.PublishFlagsRole)
+    def update_compatibility(self):
+        context = self.controller.context
+
+        families = util.collect_families_from_instances(context, True)
+        for plugin_item in self.plugin_items.values():
+            publish_states = plugin_item.data(Roles.PublishFlagsRole)
+            if (
+                publish_states & PluginStates.WasProcessed
+                or publish_states & PluginStates.WasSkipped
+            ):
+                continue
+
+            is_compatible = False
+            # A plugin should always show if it has processed.
+            if plugin_item.plugin.__instanceEnabled__:
+                compatible_instances = pyblish.logic.instances_by_plugin(
+                    context, plugin_item.plugin
+                )
+                for instance in context:
+                    if not instance.data.get("publish"):
+                        continue
+
+                    if instance in compatible_instances:
+                        is_compatible = True
+                        break
+            else:
+                plugins = pyblish.logic.plugins_by_families(
+                    [plugin_item.plugin], families
+                )
+                if plugins:
+                    is_compatible = True
+
+            current_is_compatible = publish_states & PluginStates.IsCompatible
+            if (
+                (is_compatible and not current_is_compatible)
+                or (not is_compatible and current_is_compatible)
+            ):
+                new_flag = {
+                    PluginStates.IsCompatible: is_compatible
+                }
+                plugin_item.setData(new_flag, Roles.PublishFlagsRole)
+
+
+class PluginFilterProxy(QtCore.QSortFilterProxyModel):
+    def filterAcceptsRow(self, source_row, source_parent):
+        item = source_parent.child(source_row, 0)
+        item_type = item.data(Roles.TypeRole)
+        if item_type != ItemType:
+            return True
+
+        publish_states = item.data(Roles.PublishFlagsRole)
+        if (
+            publish_states & PluginStates.WasSkipped
+            or not publish_states & PluginStates.IsCompatible
+        ):
+            return False
+        return True
 
 
 class InstanceItem(QtGui.QStandardItem):
@@ -475,25 +541,22 @@ class InstanceItem(QtGui.QStandardItem):
         super(InstanceItem, self).__init__()
 
         self.is_context = False
-        publish_states = getattr(instance, "_publish_states", 0) or 0
+        publish_states = getattr(instance, "_publish_states", 0)
         if publish_states & InstanceStates.ContextType:
             self.is_context = True
 
         instance._publish_states = publish_states
         instance.optional = getattr(instance, "optional", True)
         instance.data["publish"] = instance.data.get("publish", True)
-
         instance.data["label"] = (
-            getattr(instance, "label", None)
-            or instance.data.get("label")
+            instance.data.get("label")
+            or getattr(instance, "label", None)
             or instance.data["name"]
         )
-
         self.instance = instance
 
-        self.setFlags(
-            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        )
+    def flags(self):
+        return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
     def type(self):
         return ItemType
@@ -508,7 +571,7 @@ class InstanceItem(QtGui.QStandardItem):
             return self.instance.data["name"]
 
         if role == QtCore.Qt.DecorationRole:
-            icon_name = self.instance.data.get("icon", "")
+            icon_name = self.instance.data.get("icon") or "file"
             return QAwesomeIconFactory.icon(icon_name)
 
         if role == Roles.TypeRole:
@@ -527,9 +590,9 @@ class InstanceItem(QtGui.QStandardItem):
                 families.append(family)
 
             _families = self.instance.data.get("families") or []
-            for fam in _families:
-                if fam not in families:
-                    families.append(fam)
+            for _family in _families:
+                if _family not in families:
+                    families.append(_family)
 
             return families
 
@@ -581,9 +644,9 @@ class InstanceItem(QtGui.QStandardItem):
         return super(InstanceItem, self).setData(value, role)
 
 
-class InstanceModel(QtGui.QStandardItemModel):
+class InstanceOverviewModel(QtGui.QStandardItemModel):
     def __init__(self, controller, *args, **kwargs):
-        super(InstanceModel, self).__init__(*args, **kwargs)
+        super(InstanceOverviewModel, self).__init__(*args, **kwargs)
 
         self.controller = controller
         self.checkstates = {}
@@ -612,11 +675,11 @@ class InstanceModel(QtGui.QStandardItemModel):
         self.checkstates.clear()
 
         for instance_item in self.instance_items.values():
-            if not instance_item.plugin.optional:
+            if not instance_item.instance.optional:
                 continue
-            mod = instance_item.plugin.__module__
-            class_name = instance_item.plugin.__class__.__name__
-            uid = "{}.{}".format(mod, class_name)
+            family = instance_item.data(Roles.FamiliesRole)[0]
+            name = instance_item.instance.data["name"]
+            uid = "{}.{}".format(family, name)
 
             self.checkstates[uid] = instance_item.data(
                 QtCore.Qt.CheckStateRole
@@ -626,9 +689,9 @@ class InstanceModel(QtGui.QStandardItemModel):
         for instance_item in self.instance_items.values():
             if not instance_item.instance.optional:
                 continue
-            mod = instance_item.instance.__module__
-            class_name = instance_item.instance.__class__.__name__
-            uid = "{}.{}".format(mod, class_name)
+            family = instance_item.data(Roles.FamiliesRole)[0]
+            name = instance_item.instance.data["name"]
+            uid = "{}.{}".format(family, name)
 
             state = self.checkstates.get(uid)
             if state is not None:
@@ -643,38 +706,36 @@ class InstanceModel(QtGui.QStandardItemModel):
 
         item = self.instance_items[instance_id]
 
-        # new_flag_states = {
-        #     PluginStates.InProgress: False,
-        #     PluginStates.WasProcessed: True
-        # }
-        #
-        # publish_states = item.data(Roles.PublishFlagsRole)
-        #
-        # has_warning = publish_states & PluginStates.HasWarning
-        # new_records = result.get("records") or []
-        # if not has_warning:
-        #     for record in new_records:
-        #         if not hasattr(record, "levelname"):
-        #             continue
-        #
-        #         if str(record.levelname).lower() in [
-        #             "warning", "critical", "error"
-        #         ]:
-        #             new_flag_states[PluginStates.HasWarning] = True
-        #             break
-        #
-        # if (
-        #     not publish_states & PluginStates.HasError
-        #     and not result["success"]
-        # ):
-        #     new_flag_states[PluginStates.HasError] = True
-        #
-        # item.setData(new_flag_states, Roles.PublishFlagsRole)
-        #
-        # records = item.data(Roles.LogRecordsRole) or []
-        # records.extend(new_records)
-        #
-        # item.setData(new_records, Roles.LogRecordsRole)
+        new_flag_states = {
+            InstanceStates.InProgress: False
+        }
+
+        publish_states = item.data(Roles.PublishFlagsRole)
+        has_warning = publish_states & InstanceStates.HasWarning
+        new_records = result.get("records") or []
+        if not has_warning:
+            for record in new_records:
+                if not hasattr(record, "levelname"):
+                    continue
+
+                if str(record.levelname).lower() in [
+                    "warning", "critical", "error"
+                ]:
+                    new_flag_states[InstanceStates.HasWarning] = True
+                    break
+
+        if (
+            not publish_states & InstanceStates.HasError
+            and not result["success"]
+        ):
+            new_flag_states[InstanceStates.HasError] = True
+
+        item.setData(new_flag_states, Roles.PublishFlagsRole)
+
+        records = item.data(Roles.LogRecordsRole) or []
+        records.extend(new_records)
+
+        item.setData(new_records, Roles.LogRecordsRole)
 
     def update_compatibility(self, context, instances):
         families = util.collect_families_from_instances(context, True)
@@ -711,67 +772,29 @@ class InstanceModel(QtGui.QStandardItemModel):
                 (is_compatible and not current_is_compatible)
                 or (not is_compatible and current_is_compatible)
             ):
-                new_flag = {
-                    PluginStates.IsCompatible: is_compatible
-                }
-                plugin_item.setData(new_flag, Roles.PublishFlagsRole)
+                plugin_item.setData(
+                    {PluginStates.IsCompatible: is_compatible},
+                    Roles.PublishFlagsRole
+                )
 
 
-class FlatProxyModel(QtCore.QAbstractProxyModel):
-    def __init__(self, parent=None):
-        super(FlatProxyModel, self).__init__(parent)
+class InstanceArtistModel(QtGui.QStandardItemModel):
+    def __init__(self, *args, **kwargs):
+        super(InstanceArtistModel, self).__init__(*args, **kwargs)
+        self.instance_items = {}
 
-    @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
-    def sourceDataChanged(self, topLeft, bottomRight):
-        self.dataChanged.emit(
-            self.mapFromSource(topLeft),
-            self.mapFromSource(bottomRight)
-        )
+    def on_item_changed(self, item):
+        my_item = self.instance_items[item.instance.id]
+        my_item.emitDataChanged()
 
-    def buildMap(self, model, parent=QtCore.QModelIndex(), row=0):
-        if row == 0:
-            self.m_rowMap = {}
-            self.m_indexMap = {}
-        rows = model.rowCount(parent)
-        for _row in range(rows):
-            index = model.index(_row, 0, parent)
-            self.m_rowMap[index] = row
-            self.m_indexMap[row] = index
-            row = row + 1
-            if model.hasChildren(index):
-                row = self.buildMap(model, index, row)
-        return row
+    def reset(self):
+        self.instance_items = {}
+        self.clear()
 
-    def setSourceModel(self, model):
-        super(FlatProxyModel, self).setSourceModel(model)
-        self.buildMap(model)
-        model.dataChanged.connect(self.sourceDataChanged)
-
-    def mapFromSource(self, index):
-        if index not in self.m_rowMap:
-            return QtCore.QModelIndex()
-        return self.createIndex(self.m_rowMap[index], index.column())
-
-    def mapToSource(self, index):
-        if not index.isValid() or index.row() not in self.m_indexMap:
-            return QtCore.QModelIndex()
-        return self.m_indexMap[index.row()]
-
-    def columnCount(self, parent):
-        return self.sourceModel().columnCount(self.mapToSource(parent))
-
-    def rowCount(self, parent):
-        return len(self.m_rowMap) if not parent.isValid() else 0
-
-    def index(self, row, column, parent):
-        if parent.isValid():
-            return QtCore.QModelIndex()
-        return self.createIndex(row, column)
-
-    # def parent(self, index=None):
-    #     if index is None:
-    #
-    #     return QtCore.QModelIndex()
+    def append(self, instance):
+        new_item = InstanceItem(instance)
+        self.appendRow(new_item)
+        self.instance_items[instance.id] = new_item
 
 
 class Abstract(QtCore.QAbstractListModel):
@@ -1112,7 +1135,7 @@ class ProxyTerminalItem(TreeItem):
         if role == QtCore.Qt.DisplayRole:
             role = Roles.Label
 
-        elif role == Roles.GroupObject:
+        elif role == Roles.GroupObjectRole:
             return self
 
         return self.model_index.data(role)
