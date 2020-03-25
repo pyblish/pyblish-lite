@@ -143,8 +143,8 @@ class Window(QtWidgets.QDialog):
 
         artist_view = view.Item()
         artist_view.show_perspective.connect(self.toggle_perspective_widget)
-        instance_artist_model = model.InstanceArtistModel()
-        artist_view.setModel(instance_artist_model)
+        artist_model = model.InstanceArtistModel()
+        artist_view.setModel(artist_model)
 
         artist_delegate = delegate.ArtistDelegate()
         artist_view.setItemDelegate(artist_delegate)
@@ -176,10 +176,10 @@ class Window(QtWidgets.QDialog):
             parent=overview_instance_view
         )
         overview_instance_view.setItemDelegate(overview_instance_delegate)
-        instance_overview_model = model.InstanceOverviewModel(controller)
-        overview_instance_view.setModel(instance_overview_model)
-        instance_overview_model.itemChanged.connect(
-            instance_artist_model.on_item_changed
+        overview_instance_model = model.InstanceOverviewModel(controller)
+        overview_instance_view.setModel(overview_instance_model)
+        overview_instance_model.itemChanged.connect(
+            artist_model.on_item_changed
         )
 
         overview_plugin_view = view.OverviewView(parent=overview_page)
@@ -319,15 +319,14 @@ class Window(QtWidgets.QDialog):
         )
         closing_placeholder.hide()
 
-        self.last_persp_index = None
-        self.perspective_widget = view.PerspectiveWidget(self)
-        self.perspective_widget.hide()
+        perspective_widget = view.PerspectiveWidget(self)
+        perspective_widget.hide()
 
         # Main layout
         layout = QtWidgets.QVBoxLayout(main_widget)
         layout.addWidget(header_widget, 0)
         layout.addWidget(body_widget, 3)
-        layout.addWidget(self.perspective_widget, 3)
+        layout.addWidget(perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
         layout.addWidget(footer_widget, 0)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -370,16 +369,14 @@ class Window(QtWidgets.QDialog):
         fade.setStartValue(1.0)
         fade.setEndValue(0.0)
 
-        timeline = QtCore.QSequentialAnimationGroup()
-        timeline.addAnimation(on)
-        timeline.addPause(50)
-        timeline.addAnimation(off)
-        timeline.addPause(50)
-        timeline.addAnimation(on)
-        timeline.addPause(2000)
-        timeline.addAnimation(fade)
-
-        info_animation = timeline
+        animation_info_msg = QtCore.QSequentialAnimationGroup()
+        animation_info_msg.addAnimation(on)
+        animation_info_msg.addPause(50)
+        animation_info_msg.addAnimation(off)
+        animation_info_msg.addPause(50)
+        animation_info_msg.addAnimation(on)
+        animation_info_msg.addPause(2000)
+        animation_info_msg.addAnimation(fade)
 
         """Setup
 
@@ -518,7 +515,7 @@ class Window(QtWidgets.QDialog):
             self.on_plugin_action_menu_requested
         )
 
-        instance_overview_model.group_created.connect(
+        overview_instance_model.group_created.connect(
             overview_instance_view.expand
         )
 
@@ -527,6 +524,7 @@ class Window(QtWidgets.QDialog):
         self.header_widget = header_widget
         self.body_widget = body_widget
 
+        self.footer_widget = footer_widget
         self.footer_button_reset = footer_button_reset
         self.footer_button_validate = footer_button_validate
         self.footer_button_play = footer_button_play
@@ -536,50 +534,44 @@ class Window(QtWidgets.QDialog):
         self.overview_plugin_view = overview_plugin_view
         self.plugin_model = plugin_model
         self.plugin_proxy = plugin_proxy
-        self.instance_overview_model = instance_overview_model
-        self.instance_artist_model = instance_artist_model
+        self.overview_instance_model = overview_instance_model
 
-        self.data = {
-            "footer": footer_widget,
-            "views": {
-                "artist": artist_view,
-                "terminal": terminal_view,
-            },
-            "proxies": {
-                "terminal": terminal_proxy
-            },
-            "models": {
-                "terminal": terminal_model,
-                "intent_model": intent_model
-            },
-            "tabs": {
-                "artist": header_tab_artist,
-                "overview": header_tab_overview,
-                "terminal": header_tab_terminal,
-                "current": "artist"
-            },
-            "pages": {
-                "artist": artist_page,
-                "overview": overview_page,
-                "terminal": terminal_page,
-            },
-            "comment_intent": {
-                "comment_intent": comment_intent_widget,
-                "comment": comment_box,
-                "intent": intent_box
-            },
-            "aditional_btns": {
-                "presets_button": presets_button
-            },
-            "animation": {
-                "display_info": info_animation,
-            },
-            "state": {
-                "is_closing": False,
-            }
+        self.artist_model = artist_model
+        self.artist_view = artist_view
+
+        self.presets_button = presets_button
+
+        self.animation_info_msg = animation_info_msg
+
+        self.terminal_model = terminal_model
+        self.terminal_proxy = terminal_proxy
+        self.terminal_view = terminal_view
+
+        self.comment_main_widget = comment_intent_widget
+        self.comment_box = comment_box
+        self.intent_box = intent_box
+        self.intent_model = intent_model
+
+        self.perspective_widget = perspective_widget
+
+        self.tabs = {
+            "artist": header_tab_artist,
+            "overview": header_tab_overview,
+            "terminal": header_tab_terminal
+        }
+        self.pages = {
+            "artist": artist_page,
+            "overview": overview_page,
+            "terminal": terminal_page
         }
 
-        self.data["tabs"][settings.InitialTab].setChecked(True)
+        current_page = settings.InitialTab or "artist"
+        self.state = {
+            "is_closing": False,
+            "current_page": current_page
+        }
+
+        self.tabs[current_page].setChecked(True)
 
     # -------------------------------------------------------------------------
     #
@@ -609,11 +601,10 @@ class Window(QtWidgets.QDialog):
 
     def toggle_perspective_widget(self, index=None):
         show = False
-        self.last_persp_index = None
         if index:
             show = True
-            self.last_persp_index = index
-            self.perspective_widget.set_context(index)
+            item = index.data(Roles.ItemRole)
+            self.perspective_widget.set_context(item)
 
         self.body_widget.setVisible(not show)
         self.header_widget.setVisible(not show)
@@ -625,7 +616,7 @@ class Window(QtWidgets.QDialog):
             plugin_item.setData(enable_value, Roles.IsEnabledRole)
 
         for instance_item in (
-            self.instance_overview_model.instance_items.values()
+            self.overview_instance_model.instance_items.values()
         ):
             instance_item.setData(enable_value, Roles.IsEnabledRole)
 
@@ -644,36 +635,25 @@ class Window(QtWidgets.QDialog):
         item.setData(state, QtCore.Qt.CheckStateRole)
 
     def on_tab_changed(self, target):
-        for page in self.data["pages"].values():
-            page.hide()
+        self.comment_main_widget.setVisible(not target == "terminal")
 
-        page = self.data["pages"][target]
+        for name, page in self.pages.items():
+            if name != target:
+                page.hide()
 
-        comment_intent = self.data["comment_intent"]["comment_intent"]
-        if target == "terminal":
-            comment_intent.setVisible(False)
-        else:
-            comment_intent.setVisible(True)
+        self.pages[target].show()
 
-        page.show()
-
-        self.data["tabs"]["current"] = target
+        self.state["current_page"] = target
 
     def on_validate_clicked(self):
-        comment_box = self.data["comment_intent"]["comment"]
-        intent_box = self.data["comment_intent"]["intent"]
-
-        comment_box.setEnabled(False)
-        intent_box.setEnabled(False)
+        self.comment_box.setEnabled(False)
+        self.intent_box.setEnabled(False)
 
         self.validate()
 
     def on_play_clicked(self):
-        comment_box = self.data["comment_intent"]["comment"]
-        intent_box = self.data["comment_intent"]["intent"]
-
-        comment_box.setEnabled(False)
-        intent_box.setEnabled(False)
+        self.comment_box.setEnabled(False)
+        self.intent_box.setEnabled(False)
 
         self.publish()
 
@@ -690,16 +670,13 @@ class Window(QtWidgets.QDialog):
         self.footer_button_stop.setEnabled(False)
 
     def on_comment_entered(self):
-        """The user has typed a comment"""
-        text_edit = self.data["comment_intent"]["comment"]
-        # Store within context
-        self.controller.context.data["comment"] = text_edit.text()
+        """The user has typed a comment."""
+        self.controller.context.data["comment"] = self.comment_box.text()
 
     def on_intent_changed(self):
-        intent_box = self.data["comment_intent"]["intent"]
-        idx = intent_box.model().index(intent_box.currentIndex(), 0)
-        intent_value = intent_box.model().data(idx, Roles.IntentItemValue)
-        intent_label = intent_box.model().data(idx, QtCore.Qt.DisplayRole)
+        idx = self.intent_model.index(self.intent_box.currentIndex(), 0)
+        intent_value = self.intent_model.data(idx, Roles.IntentItemValue)
+        intent_label = self.intent_model.data(idx, QtCore.Qt.DisplayRole)
 
         # TODO move to play
         if self.controller.context:
@@ -716,7 +693,7 @@ class Window(QtWidgets.QDialog):
             instance_id = instance.id
 
         instance_item = (
-            self.instance_overview_model.instance_items[instance_id]
+            self.overview_instance_model.instance_items[instance_id]
         )
         instance_item.setData(
             {InstanceStates.InProgress: True},
@@ -767,8 +744,8 @@ class Window(QtWidgets.QDialog):
 
     def on_was_reset(self):
         # Append context object to instances model
-        self.instance_overview_model.append(self.controller.context)
-        self.instance_artist_model.append(self.controller.context)
+        self.overview_instance_model.append(self.controller.context)
+        self.artist_model.append(self.controller.context)
 
         for plugin in self.controller.plugins:
             self.plugin_model.append(plugin)
@@ -776,47 +753,43 @@ class Window(QtWidgets.QDialog):
         self.overview_instance_view.expandAll()
         self.overview_plugin_view.expandAll()
 
-        self.footer_button_play.setEnabled(True)
-        self.footer_button_validate.setEnabled(True)
-        self.footer_button_reset.setEnabled(True)
-        self.footer_button_stop.setEnabled(False)
-
-        aditional_btns = self.data["aditional_btns"]
-        aditional_btns["presets_button"].clearMenu()
+        self.presets_button.clearMenu()
         if self.controller.possible_presets:
-            aditional_btns["presets_button"].setEnabled(True)
+            self.presets_button.setEnabled(True)
             for key in self.controller.possible_presets:
-                aditional_btns["presets_button"].addItem(
+                self.presets_button.addItem(
                     key, partial(self.set_presets, key)
                 )
 
-        self.instance_overview_model.restore_checkstates()
+        self.overview_instance_model.restore_checkstates()
         self.plugin_model.restore_checkstates()
+
+        self.perspective_widget.reset()
 
         # Append placeholder comment from Context
         # This allows users to inject a comment from elsewhere,
         # or to perhaps provide a placeholder comment/template
         # for artists to fill in.
         comment = self.controller.context.data.get("comment")
-        comment_box = self.data["comment_intent"]["comment"]
-        comment_box.setText(comment or None)
-        comment_box.setEnabled(True)
+        self.comment_box.setText(comment or None)
+        self.comment_box.setEnabled(True)
 
-        intent_box = self.data["comment_intent"]["intent"]
-        intent_model = intent_box.model()
-        if intent_model.has_items:
+        if self.intent_model.has_items:
             self.on_intent_changed()
-        intent_box.setEnabled(True)
+        self.intent_box.setEnabled(True)
 
         # Refresh tab
-        self.on_tab_changed(self.data["tabs"]["current"])
+        self.on_tab_changed(self.state["current_page"])
         self.update_compatibility()
 
-        intent_box.setFocus()
+        self.footer_button_validate.setEnabled(True)
+        self.footer_button_reset.setEnabled(True)
+        self.footer_button_stop.setEnabled(False)
+        self.footer_button_play.setEnabled(True)
         self.footer_button_play.setFocus()
 
     def on_passed_group(self, order):
-        for group_item in self.instance_overview_model.group_items.values():
+        for group_item in self.overview_instance_model.group_items.values():
             if self.overview_instance_view.isExpanded(group_item.index()):
                 continue
 
@@ -875,20 +848,18 @@ class Window(QtWidgets.QDialog):
         success_val = 0
         if self.controller.errored:
             self.info(self.tr("Stopped due to error(s), see Terminal."))
-            comment_box = self.data["comment_intent"]["comment"]
-            comment_box.setEnabled(False)
-            intent_box = self.data["comment_intent"]["intent"]
-            intent_box.setEnabled(False)
+            self.comment_box.setEnabled(False)
+            self.intent_box.setEnabled(False)
 
         else:
             success_val = 1
             self.info(self.tr("Finished successfully!"))
 
-        self.data["footer"].setProperty("success", success_val)
-        self.data["footer"].style().polish(self.data["footer"])
+        self.footer_widget.setProperty("success", success_val)
+        self.footer_widget.style().polish(self.footer_widget)
 
         for instance_item in (
-            self.instance_overview_model.instance_items.values()
+            self.overview_instance_model.instance_items.values()
         ):
             instance_item.setData(
                 {InstanceStates.HasFinished: True},
@@ -898,11 +869,11 @@ class Window(QtWidgets.QDialog):
 
     def on_was_processed(self, result):
         for instance in self.controller.context:
-            if instance.id not in self.instance_overview_model.instance_items:
-                self.instance_overview_model.append(instance)
+            if instance.id not in self.overview_instance_model.instance_items:
+                self.overview_instance_model.append(instance)
 
-            if instance.id not in self.instance_artist_model.instance_items:
-                self.instance_artist_model.append(instance)
+            if instance.id not in self.artist_model.instance_items:
+                self.artist_model.append(instance)
 
         error = result.get("error")
         if error:
@@ -921,20 +892,21 @@ class Window(QtWidgets.QDialog):
             result["records"] = records
 
             # Toggle from artist to overview tab on error
-            if self.data["tabs"]["artist"].isChecked():
-                self.data["tabs"]["overview"].toggle()
+            if self.tabs["artist"].isChecked():
+                self.tabs["overview"].toggle()
 
-        self.plugin_model.update_with_result(result)
-        self.instance_overview_model.update_with_result(result)
+        plugin_item = self.plugin_model.update_with_result(result)
+        instance_item = self.overview_instance_model.update_with_result(result)
 
-        models = self.data["models"]
-        models["terminal"].update_with_result(result)
-        self.data["proxies"]["terminal"].rebuild()
+        self.terminal_model.update_with_result(result)
+        self.terminal_proxy.rebuild()
 
         self.update_compatibility()
 
-        if self.last_persp_index:
-            self.perspective_widget.set_context(self.last_persp_index)
+        if self.perspective_widget.isVisible():
+            self.perspective_widget.update_context(
+                plugin_item, instance_item
+            )
 
     # -------------------------------------------------------------------------
     #
@@ -946,33 +918,30 @@ class Window(QtWidgets.QDialog):
         """Prepare GUI for reset"""
         self.info(self.tr("About to reset.."))
 
-        self.data["aditional_btns"]["presets_button"].setEnabled(False)
-        self.data["footer"].setProperty("success", -1)
-        self.data["footer"].style().polish(self.data["footer"])
+        self.presets_button.setEnabled(False)
+        self.footer_widget.setProperty("success", -1)
+        self.footer_widget.style().polish(self.footer_widget)
 
-        self.instance_overview_model.store_checkstates()
+        self.overview_instance_model.store_checkstates()
         self.plugin_model.store_checkstates()
 
         # Reset current ids to secure no previous instances get mixed in.
-        models = self.data["models"]
-        for model in models.values():
-            model.reset()
-
-        self.instance_overview_model.reset()
-        self.instance_artist_model.reset()
+        self.overview_instance_model.reset()
+        self.artist_model.reset()
         self.plugin_model.reset()
+        self.intent_model.reset()
 
         self.footer_button_stop.setEnabled(False)
         self.footer_button_reset.setEnabled(False)
         self.footer_button_validate.setEnabled(False)
         self.footer_button_play.setEnabled(False)
 
-        intent_box = self.data["comment_intent"]["intent"]
-        intent_model = intent_box.model()
-        intent_box.setVisible(intent_model.has_items)
-        if intent_model.has_items:
-            intent_box.setCurrentIndex(intent_model.default_index)
+        self.intent_box.setVisible(self.intent_model.has_items)
+        if self.intent_model.has_items:
+            self.intent_box.setCurrentIndex(self.intent_model.default_index)
 
+        self.comment_box.placeholder.setVisible(False)
+        self.comment_box.placeholder.setVisible(True)
         # Launch controller reset
         util.defer(500, self.controller.reset)
 
@@ -1044,10 +1013,11 @@ class Window(QtWidgets.QDialog):
             result["records"] = records
 
         plugin_item.setData(action_state, Roles.PluginActionProgressRole)
-
+        for key, val in result.items():
+            print("{}: {}".format(key, val))
         self.plugin_model.update_with_result(result)
-        self.instance_overview_model.update_with_result(result)
-        self.data["models"]["terminal"].update_with_result(result)
+        self.overview_instance_model.update_with_result(result)
+        self.terminal_model.update_with_result(result)
 
     def closeEvent(self, event):
         """Perform post-flight checks before closing
@@ -1062,16 +1032,24 @@ class Window(QtWidgets.QDialog):
         # given there are things currently running.
         self.hide()
 
-        if self.data["state"]["is_closing"]:
+        if self.state["is_closing"]:
 
             # Explicitly clear potentially referenced data
             self.info(self.tr("Cleaning up models.."))
-            for view in self.data["views"].values():
-                view.model().deleteLater()
-                view.setModel(None)
+            self.artist_model.deleteLater()
+            self.intent_model.deleteLater()
+            self.plugin_model.deleteLater()
+            self.terminal_proxy.deleteLater()
+            self.terminal_model.deleteLater()
+            self.plugin_proxy.deleteLater()
+
+            self.artist_view.setModel(None)
+            self.overview_instance_view.setModel(None)
+            self.overview_plugin_view.setModel(None)
+            self.terminal_view.setModel(None)
 
             self.info(self.tr("Cleaning up terminal.."))
-            for item in self.data["models"]["terminal"].items:
+            for item in self.terminal_model.items:
                 del(item)
 
             self.info(self.tr("Cleaning up controller.."))
@@ -1084,8 +1062,10 @@ class Window(QtWidgets.QDialog):
         self.info(self.tr("Closing.."))
 
         def on_problem():
-            self.heads_up("Warning", "Had trouble closing down. "
-                          "Please tell someone and try again.")
+            self.heads_up(
+                "Warning", "Had trouble closing down. "
+                "Please tell someone and try again."
+            )
             self.show()
 
         if self.controller.is_running:
@@ -1095,7 +1075,7 @@ class Window(QtWidgets.QDialog):
             util.defer(2000, on_problem)
             return event.ignore()
 
-        self.data["state"]["is_closing"] = True
+        self.state["is_closing"] = True
 
         util.defer(200, self.close)
         return event.ignore()
@@ -1125,14 +1105,13 @@ class Window(QtWidgets.QDialog):
         info.setText(message)
 
         # Include message in terminal
-        self.data["models"]["terminal"].append({
+        self.terminal_model.append({
             "label": message,
             "type": "info"
         })
 
-        animation = self.data["animation"]["display_info"]
-        animation.stop()
-        animation.start()
+        self.animation_info_msg.stop()
+        self.animation_info_msg.start()
 
         # TODO(marcus): Should this be configurable? Do we want
         # the shell to fill up with these messages?

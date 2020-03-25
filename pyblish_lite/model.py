@@ -437,7 +437,7 @@ class PluginModel(QtGui.QStandardItemModel):
             if not plugin_item.plugin.optional:
                 continue
             mod = plugin_item.plugin.__module__
-            class_name = plugin_item.plugin.__class__.__name__
+            class_name = plugin_item.plugin.__name__
             uid = "{}.{}".format(mod, class_name)
 
             self.checkstates[uid] = plugin_item.data(QtCore.Qt.CheckStateRole)
@@ -454,7 +454,7 @@ class PluginModel(QtGui.QStandardItemModel):
             if state is not None:
                 plugin_item.setData(state, QtCore.Qt.CheckStateRole)
 
-    def update_with_result(self, result, action=False):
+    def update_with_result(self, result):
         plugin = result["plugin"]
         item = self.plugin_items[plugin._id]
 
@@ -490,6 +490,8 @@ class PluginModel(QtGui.QStandardItemModel):
         records.extend(new_records)
 
         item.setData(new_records, Roles.LogRecordsRole)
+
+        return item
 
     def update_compatibility(self):
         context = self.controller.context
@@ -739,7 +741,7 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
             if state is not None:
                 instance_item.setData(state, QtCore.Qt.CheckStateRole)
 
-    def update_with_result(self, result, action=False):
+    def update_with_result(self, result):
         instance = result["instance"]
         if instance is None:
             instance_id = self.controller.context.id
@@ -778,6 +780,8 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
         records.extend(new_records)
 
         item.setData(records, Roles.LogRecordsRole)
+
+        return item
 
     def update_compatibility(self, context, instances):
         families = util.collect_families_from_instances(context, True)

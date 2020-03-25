@@ -296,7 +296,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
         toggle_button.setMinimumHeight(50)
         toggle_button.setFixedWidth(40)
 
-        indicator = QtWidgets.QLabel('', parent=header_widget)
+        indicator = QtWidgets.QLabel("", parent=header_widget)
         indicator.setFixedWidth(30)
         indicator.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -336,8 +336,8 @@ class PerspectiveWidget(QtWidgets.QWidget):
         contents_widget = QtWidgets.QWidget(scroll_widget)
         contents_widget.setLayout(layout)
         contents_widget.setStyleSheet(
-            'padding: 0px;'
-            'background: "#444";'
+            "padding: 0px;"
+            "background: #444;"
         )
         contents_widget.setSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
@@ -360,6 +360,10 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.setLayout(main_layout)
 
         self.toggle_button.clicked.connect(self.toggle_me)
+
+        self.last_type = None
+        self.last_item_id = None
+        self.last_id = None
 
     def trim(self, docstring):
         if not docstring:
@@ -392,9 +396,66 @@ class PerspectiveWidget(QtWidgets.QWidget):
         # Return a single string:
         return '\n'.join(trimmed)
 
-    def set_context(self, index):
-        item = index.data(Roles.ItemRole)
-        if item.type() == model.InstanceType:
+    def reset(self):
+        self.last_id = None
+        # TODO remove when terminal is resetable
+        self.records.setVisible(False)
+        check_color = self.indicator_colors["idle"]
+        self.indicator.setStyleSheet((
+            "font-size: 16pt;"
+            "font-style: bold;"
+            "font-weight: 50;"
+            "padding: 5px;"
+            "background: {};color: {}"
+        ).format(check_color["bg"], check_color["font"]))
+
+    def update_context(self, plugin_item, instance_item):
+        if not self.last_item_id or not self.last_type:
+            return
+
+        if self.last_type == model.PluginType:
+            if not self.last_id:
+                _item_id = self.calculate_item_id(plugin_item)
+                if _item_id != self.last_item_id:
+                    return
+                self.last_id = plugin_item.plugin.id
+
+            elif self.last_id != plugin_item.plugin.id:
+                return
+
+            self.set_context(plugin_item)
+            return
+
+        if self.last_type == model.InstanceType:
+            if not self.last_id:
+                _item_id = self.calculate_item_id(instance_item)
+                if _item_id != self.last_item_id:
+                    return
+                self.last_id = instance_item.instance.id
+
+            elif self.last_id != instance_item.instance.id:
+                return
+
+            self.set_context(instance_item)
+            return
+
+    def calculate_item_id(self, item):
+        item_id = None
+        if item and item.type() == model.InstanceType:
+            family = item.data(Roles.FamiliesRole)[0]
+            name = item.instance.data["name"]
+            item_id = "{}.{}".format(family, name)
+
+        elif item and item.type() == model.PluginType:
+            mod = item.plugin.__module__
+            class_name = item.plugin.__name__
+            item_id = "{}.{}".format(mod, class_name)
+
+        return item_id
+
+    def set_context(self, item):
+        if item and item.type() == model.InstanceType:
+            item_id = item.instance.id
             is_plugin = False
             if item.is_context:
                 type_indicator = "C"
@@ -402,7 +463,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
                 type_indicator = "I"
 
             check_color_name = "idle"
-            publish_states = index.data(Roles.PublishFlagsRole)
+            publish_states = item.data(Roles.PublishFlagsRole)
             if publish_states & InstanceStates.InProgress:
                 check_color_name = "active"
 
@@ -415,19 +476,18 @@ class PerspectiveWidget(QtWidgets.QWidget):
             elif publish_states & InstanceStates.HasFinished:
                 check_color_name = "ok"
 
-        elif index.data(Roles.TypeRole) == model.PluginType:
+        elif item and item.type() == model.PluginType:
+            item_id = item.plugin.id
             type_indicator = "P"
 
             is_plugin = True
-            doc = index.data(Roles.DocstringRole)
+            doc = item.data(Roles.DocstringRole)
             doc_str = ""
-            have_doc = False
             if doc:
-                have_doc = True
                 doc_str = self.trim(doc)
 
             check_color_name = "idle"
-            publish_states = index.data(Roles.PublishFlagsRole)
+            publish_states = item.data(Roles.PublishFlagsRole)
             if publish_states & PluginStates.InProgress:
                 check_color_name = "active"
 
@@ -440,24 +500,39 @@ class PerspectiveWidget(QtWidgets.QWidget):
             elif publish_states & PluginStates.WasProcessed:
                 check_color_name = "ok"
 
-            self.documentation.toggle_content(have_doc)
+            self.documentation.toggle_content(bool(doc_str))
             doc_label = QtWidgets.QLabel(doc_str)
             doc_label.setWordWrap(True)
             doc_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.documentation.set_content(doc_label)
-            path = index.data(Roles.PathModuleRole) or ''
+            path = item.data(Roles.PathModuleRole) or ""
 
-            self.path.toggle_content(path.strip() != '')
+            self.path.toggle_content(path.strip() != "")
             path_label = QtWidgets.QLabel(path)
             path_label.setWordWrap(True)
             path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             self.path.set_content(path_label)
+
         else:
+            self.last_type = None
+            self.last_id = None
             self.indicator.setText("?")
             self.path.setVisible(False)
             self.documentation.setVisible(False)
             self.records.setVisible(False)
+            check_color = self.indicator_colors["idle"]
+            self.indicator.setStyleSheet((
+                "font-size: 16pt;"
+                "font-style: bold;"
+                "font-weight: 50;"
+                "padding: 5px;"
+                "background: {};color: {}"
+            ).format(check_color["bg"], check_color["font"]))
             return
+
+        self.last_type = item.type()
+        self.last_id = item_id
+        self.last_item_id = self.calculate_item_id(item)
 
         self.indicator.setText(type_indicator)
         check_color = self.indicator_colors[check_color_name]
@@ -470,14 +545,14 @@ class PerspectiveWidget(QtWidgets.QWidget):
             "background: {};color: {}"
         ).format(check_color["bg"], check_color["font"]))
 
-        label = index.data(QtCore.Qt.DisplayRole)
+        label = item.data(QtCore.Qt.DisplayRole)
         self.name_widget.setText(label)
 
         self.path.setVisible(is_plugin)
         self.documentation.setVisible(is_plugin)
         self.records.setVisible(True)
 
-        records = index.data(Roles.LogRecordsRole) or []
+        records = item.data(Roles.LogRecordsRole) or []
 
         len_records = 0
         if records:
