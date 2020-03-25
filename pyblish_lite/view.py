@@ -4,13 +4,13 @@ from . import model, delegate
 from .constants import PluginStates, InstanceStates, Roles
 
 
-class Item(QtWidgets.QListView):
+class ArtistView(QtWidgets.QListView):
     # An item is requesting to be toggled, with optional forced-state
     toggled = QtCore.Signal(QtCore.QModelIndex, object)
     show_perspective = QtCore.Signal(QtCore.QModelIndex)
 
     def __init__(self, parent=None):
-        super(Item, self).__init__(parent)
+        super(ArtistView, self).__init__(parent)
 
         self.horizontalScrollBar().hide()
         self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
@@ -21,7 +21,7 @@ class Item(QtWidgets.QListView):
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
-            return super(Item, self).event(event)
+            return super(ArtistView, self).event(event)
 
         elif event.key() == QtCore.Qt.Key_Space:
             for index in self.selectionModel().selectedIndexes():
@@ -41,7 +41,7 @@ class Item(QtWidgets.QListView):
 
             return True
 
-        return super(Item, self).event(event)
+        return super(ArtistView, self).event(event)
 
     def focusOutEvent(self, event):
         self.selectionModel().clear()
@@ -56,7 +56,7 @@ class Item(QtWidgets.QListView):
                 for index in indexes:
                     self.show_perspective.emit(index)
 
-        return super(Item, self).mouseReleaseEvent(event)
+        return super(ArtistView, self).mouseReleaseEvent(event)
 
 
 class OverviewView(QtWidgets.QTreeView):
@@ -140,8 +140,6 @@ class OverviewView(QtWidgets.QTreeView):
 
 class TerminalView(QtWidgets.QTreeView):
     # An item is requesting to be toggled, with optional forced-state
-    toggled = QtCore.Signal(QtCore.QModelIndex, object)
-
     def __init__(self, parent=None):
         super(TerminalView, self).__init__(parent)
 
@@ -153,16 +151,6 @@ class TerminalView(QtWidgets.QTreeView):
         self.setHeaderHidden(True)
         self.setRootIsDecorated(False)
         self.setIndentation(0)
-
-        self.expanded.connect(self.change_expanded)
-        self.collapsed.connect(self.change_expanded)
-
-    def change_expanded(self, index):
-        group = index.data(Roles.GroupObjectRole)
-        if group:
-            group.setIsExpanded(self.isExpanded(index))
-        self.model().layoutChanged.emit()
-        self.updateGeometry()
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
@@ -205,43 +193,18 @@ class TerminalView(QtWidgets.QTreeView):
                     else:
                         self.expand(index)
 
-            # Deselect all group labels
-            if len(indexes) > 0:
-                for index in indexes:
-                    if index.data(Roles.GroupObjectRole):
-                        self.selectionModel().select(
-                            index, QtCore.QItemSelectionModel.Deselect
-                        )
+            for index in indexes:
+                if index.data(Roles.GroupObjectRole):
+                    self.selectionModel().select(
+                        index, QtCore.QItemSelectionModel.Deselect
+                    )
 
         return super(TerminalView, self).mouseReleaseEvent(event)
 
-    def sizeHint(self):
-        size = super(TerminalView, self).sizeHint()
-        height = 0
-        for idx in range(self.model().rowCount()):
-            index = self.model().index(idx, 0)
-            height += self.rowHeight(index)
-            item = index.data(Roles.GroupObjectRole)
-            if item.expanded:
-                index = self.model().index(0, 1, index)
-                height += self.rowHeight(index)
-        size.setHeight(height)
-        return size
 
     def rowsInserted(self, parent, start, end):
-        """Automatically scroll to bottom on each new item added
-
-        Arguments:
-            parent (QtCore.QModelIndex): The model itself, since this is a list
-            start (int): Start index of item
-            end (int): End index of item
-
-        """
-
+        """Automatically scroll to bottom on each new item added."""
         super(TerminalView, self).rowsInserted(parent, start, end)
-
-        # IMPORTANT: This must be done *after* the superclass to get
-        # an accurate value of the delegate's height.
         self.scrollToBottom()
 
 
@@ -257,9 +220,9 @@ class EllidableLabel(QtWidgets.QLabel):
 
 
 class PerspectiveWidget(QtWidgets.QWidget):
-    l_doc = '   Documentation'
-    l_rec = '   Records'
-    l_path = '   Path'
+    l_doc = "Documentation"
+    l_rec = "Records"
+    l_path = "Path"
     indicator_colors = {
         "idle": {
             "bg": "#ffffff",
@@ -573,7 +536,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
         rec_model.update_with_result(data)
         rec_proxy.rebuild()
 
-        self.records.button_toggle.setText(
+        self.records.button_toggle_text.setText(
             "{} ({})".format(self.l_rec, len_records)
         )
         self.records.set_content(rec_view)
@@ -583,22 +546,39 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.parent_widget.toggle_perspective_widget()
 
 
+class ClickableWidget(QtWidgets.QLabel):
+    clicked = QtCore.Signal()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self.clicked.emit()
+        super(ClickableWidget, self).mouseReleaseEvent(event)
+
+
 class ExpandableWidget(QtWidgets.QWidget):
 
     content = None
 
     def __init__(self, parent, title):
         super(ExpandableWidget, self).__init__(parent)
-        button_size = QtCore.QSize(5, 5)
-        button_toggle = QtWidgets.QToolButton()
 
+        top_part = ClickableWidget(parent=self)
+
+        button_size = QtCore.QSize(5, 5)
+        button_toggle = QtWidgets.QToolButton(parent=top_part)
         button_toggle.setIconSize(button_size)
-        button_toggle.setStyleSheet("border: none; background: none;")
-        button_toggle.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
         button_toggle.setArrowType(QtCore.Qt.RightArrow)
-        button_toggle.setText(str(title))
         button_toggle.setCheckable(True)
         button_toggle.setChecked(False)
+
+        button_toggle_text = QtWidgets.QLabel(title, parent=top_part)
+
+        layout = QtWidgets.QHBoxLayout(top_part)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+        layout.addWidget(button_toggle)
+        layout.addWidget(button_toggle_text)
+        top_part.setLayout(layout)
 
         main_layout = QtWidgets.QVBoxLayout(self)
         main_layout.setContentsMargins(9, 9, 9, 0)
@@ -611,14 +591,22 @@ class ExpandableWidget(QtWidgets.QWidget):
 
         content_layout = QtWidgets.QVBoxLayout(content)
 
-        main_layout.addWidget(button_toggle)
+        main_layout.addWidget(top_part)
         main_layout.addWidget(content)
         self.setLayout(main_layout)
 
+        self.top_part = top_part
         self.button_toggle = button_toggle
+        self.button_toggle_text = button_toggle_text
+
         self.content_widget = content
         self.content_layout = content_layout
+
+        self.top_part.clicked.connect(self.top_part_clicked)
         self.button_toggle.clicked.connect(self.toggle_content)
+
+    def top_part_clicked(self):
+        self.toggle_content(not self.button_toggle.isChecked())
 
     def toggle_content(self, *args):
         if len(args) > 0:
@@ -652,6 +640,7 @@ class ButtonWithMenu(QtWidgets.QWidget):
         self.layout.setSpacing(0)
 
         self.menu = QtWidgets.QMenu()
+        # TODO move to stylesheets
         self.menu.setStyleSheet("""
             *{color: #fff; background-color: #555; border: 1px solid #222;}
             ::item {background-color: transparent;padding: 5px;

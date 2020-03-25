@@ -141,7 +141,7 @@ class Window(QtWidgets.QDialog):
 
         artist_page = QtWidgets.QWidget()
 
-        artist_view = view.Item()
+        artist_view = view.ArtistView()
         artist_view.show_perspective.connect(self.toggle_perspective_widget)
         artist_model = model.InstanceArtistModel()
         artist_view.setModel(artist_model)
