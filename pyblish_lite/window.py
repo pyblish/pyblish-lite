@@ -786,6 +786,7 @@ class Window(QtWidgets.QDialog):
         self.footer_button_play.setFocus()
 
     def on_passed_group(self, order):
+
         for group_item in self.overview_instance_model.group_items.values():
             if self.overview_instance_view.isExpanded(group_item.index()):
                 continue
@@ -800,7 +801,7 @@ class Window(QtWidgets.QDialog):
             # TODO check only plugins from the group
             if (
                 group_item.publish_states & GroupStates.HasFinished
-                or group_item.order >= order
+                or (order is not None and group_item.order >= order)
             ):
                 continue
 
@@ -822,12 +823,16 @@ class Window(QtWidgets.QDialog):
             )
 
     def on_was_stopped(self):
-        self.footer_button_play.setEnabled(not self.controller.errored)
+        errored = self.controller.errored
+        self.footer_button_play.setEnabled(not errored)
         self.footer_button_validate.setEnabled(
-            not self.controller.validated
+            not errored and not self.controller.validated
         )
         self.footer_button_reset.setEnabled(True)
         self.footer_button_stop.setEnabled(False)
+        if errored:
+            self.footer_widget.setProperty("success", 0)
+            self.footer_widget.style().polish(self.footer_widget)
 
     def on_was_skipped(self, plugin):
         plugin_item = self.plugin_model.plugin_items[plugin.id]
@@ -842,8 +847,8 @@ class Window(QtWidgets.QDialog):
         self.footer_button_reset.setEnabled(True)
         self.footer_button_stop.setEnabled(False)
 
-        success_val = 0
         if self.controller.errored:
+            success_val = 0
             self.info(self.tr("Stopped due to error(s), see Terminal."))
             self.comment_box.setEnabled(False)
             self.intent_box.setEnabled(False)

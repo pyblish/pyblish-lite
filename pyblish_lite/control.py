@@ -317,6 +317,8 @@ class Controller(QtCore.QObject):
                     continue
                 yield (plugin, None)
 
+        self.passed_group.emit(self.processing["next_group_order"])
+
     def iterate_and_process(self, on_finished=lambda: None):
         """ Iterating inserted plugins with current context.
         Collectors do not contain instances, they are None when collecting!
