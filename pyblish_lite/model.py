@@ -931,6 +931,8 @@ class TerminalModel(QtGui.QStandardItemModel):
             }
 
         top_item = QtGui.QStandardItem()
+        top_item.setData(top_item, Roles.ItemRole)
+        top_item.setData(TerminalLabelType, Roles.TypeRole)
         top_item.setData(record_item["label"], QtCore.Qt.DisplayRole)
         top_item.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
@@ -963,13 +965,11 @@ class TerminalModel(QtGui.QStandardItemModel):
 
         detail_text = self.prepare_detail_text(record_item)
         detail_item = QtGui.QStandardItem(detail_text)
+        detail_item.setData(detail_item, Roles.ItemRole)
+        detail_item.setData(TerminalDetailType, Roles.TypeRole)
         top_item.appendRow(detail_item)
         self.items_to_set_widget.put(detail_item)
 
-        top_item.setData(TerminalLabelType, Roles.TypeRole)
-        top_item.setData(top_item, Roles.ItemRole)
-        detail_item.setData(TerminalDetailType, Roles.TypeRole)
-        detail_item.setData(detail_item, Roles.ItemRole)
 
     def update_with_result(self, result):
         for record in result["records"]:

@@ -290,9 +290,9 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
         self.item_delegate = self.item_class(parent)
 
     def paint(self, painter, option, index):
-
-        item = index.data(Roles.ItemRole)
-        if item.type() in (model.InstanceType, model.PluginType):
+        if index.data(Roles.TypeRole) in (
+            model.InstanceType, model.PluginType
+        ):
             self.item_delegate.paint(painter, option, index)
             return
 
