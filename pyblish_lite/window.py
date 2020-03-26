@@ -791,10 +791,7 @@ class Window(QtWidgets.QDialog):
             if self.overview_instance_view.isExpanded(group_item.index()):
                 continue
 
-            if (
-                group_item.publish_states & GroupStates.HasError
-                or group_item.publish_states & GroupStates.HasWarning
-            ):
+            if group_item.publish_states & GroupStates.HasError:
                 self.overview_instance_view.expand(group_item.index())
 
         for group_item in self.plugin_model.group_items.values():
@@ -805,10 +802,7 @@ class Window(QtWidgets.QDialog):
             ):
                 continue
 
-            if (
-                group_item.publish_states & GroupStates.HasError
-                or group_item.publish_states & GroupStates.HasWarning
-            ):
+            if group_item.publish_states & GroupStates.HasError:
                 self.overview_plugin_view.expand(
                     self.plugin_proxy.mapFromSource(group_item.index())
                 )
@@ -867,6 +861,13 @@ class Window(QtWidgets.QDialog):
                 {InstanceStates.HasFinished: True},
                 Roles.PublishFlagsRole
             )
+
+        for group_item in self.overview_instance_model.group_items.values():
+            group_item.setData(
+                {GroupStates.HasFinished: True},
+                Roles.PublishFlagsRole
+            )
+
         self.update_compatibility()
 
     def on_was_processed(self, result):

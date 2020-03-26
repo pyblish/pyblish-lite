@@ -4,7 +4,9 @@ from .vendor.Qt import QtWidgets, QtGui, QtCore
 
 from . import model
 from .awesome import tags as awesome
-from .constants import PluginStates, InstanceStates, PluginActionStates, Roles
+from .constants import (
+    PluginStates, InstanceStates, PluginActionStates, GroupStates, Roles
+)
 
 colors = {
     "error": QtGui.QColor("#ff4a4a"),
@@ -17,15 +19,14 @@ colors = {
     "hover": QtGui.QColor(255, 255, 255, 10),
     "selected": QtGui.QColor(255, 255, 255, 20),
     "outline": QtGui.QColor("#333"),
-    "group_bg": QtGui.QColor("#333")
+    "group": QtGui.QColor("#333")
 }
 
-record_colors = {
-    "DEBUG": QtGui.QColor("#ff66e8"),
-    "INFO": QtGui.QColor("#66abff"),
-    "WARNING": QtGui.QColor("#ffba66"),
-    "ERROR": QtGui.QColor("#ff4d58"),
-    "CRITICAL": QtGui.QColor("#ff4f75"),
+group_fg_colors = {
+    "error": QtGui.QColor("#aa5050"),
+    "warning": QtGui.QColor("#b36b00"),
+    "ok": QtGui.QColor("#458056"),
+    "group": QtGui.QColor("#ffffff")
 }
 
 scale_factors = {"darwin": 1.5}
@@ -41,10 +42,6 @@ fonts = {
 }
 
 icons = {
-    "info": awesome["info"],
-    "record": awesome["circle"],
-    "file": awesome["file"],
-    "error": awesome["exclamation-triangle"],
     "action": awesome["adn"],
     "angle-right": awesome["angle-right"],
     "angle-left": awesome["angle-left"],
@@ -301,6 +298,17 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
 
         self.group_item_paint(painter, option, index)
 
+    def pick_fg_colors(self, index):
+        key = "group"
+        publish_states = index.data(Roles.PublishFlagsRole)
+        if publish_states & GroupStates.HasWarning:
+            key = "warning"
+        elif publish_states & GroupStates.HasError:
+            key = "error"
+        elif publish_states & GroupStates.HasFinished:
+            key = "ok"
+        return group_fg_colors[key]
+
     def group_item_paint(self, painter, option, index):
         """Paint text
          _
@@ -311,18 +319,17 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
             body_rect.left(), body_rect.top()+1,
             body_rect.width()-5, body_rect.height()-2
         )
+        fg_color = self.pick_fg_colors(index)
         radius = 7.0
         bg_path = QtGui.QPainterPath()
         bg_path.addRoundedRect(bg_rect, radius, radius)
-        painter.fillPath(bg_path, colors["group_bg"])
+        painter.fillPath(bg_path, colors["group"])
 
         metrics = painter.fontMetrics()
 
         expander_rect = QtCore.QRectF(body_rect)
         expander_rect.setWidth(expander_rect.height())
         expander_rect.adjust(6, 6, -8, -2)
-
-        expander_color = colors["idle"]
 
         label_rect = QtCore.QRectF(option.rect.adjusted(
             expander_rect.width() + 12, 2, 0, -2
@@ -340,18 +347,15 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
             label, QtCore.Qt.ElideRight, label_rect.width()
         )
 
-        font_color = colors["idle"]
-
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
 
         painter.setFont(fonts["awesome6"])
-        painter.setPen(QtGui.QPen(expander_color))
+        painter.setPen(QtGui.QPen(fg_color))
         painter.drawText(expander_rect, expander_icon)
 
         # Draw label
-        painter.setFont(fonts["h4"])
-        painter.setPen(QtGui.QPen(font_color))
+        painter.setFont(fonts["h5"])
         painter.drawText(label_rect, label)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
