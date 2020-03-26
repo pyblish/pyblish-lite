@@ -76,6 +76,8 @@ class OverviewView(QtWidgets.QTreeView):
         self.setRootIsDecorated(False)
         self.setIndentation(0)
 
+        self.clicked.connect(self.item_expand)
+
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
             return super(OverviewView, self).event(event)
@@ -103,32 +105,30 @@ class OverviewView(QtWidgets.QTreeView):
     def focusOutEvent(self, event):
         self.selectionModel().clear()
 
+    def item_expand(self, index):
+        if index.data(Roles.TypeRole) == model.GroupType:
+            if self.isExpanded(index):
+                self.collapse(index)
+            else:
+                self.expand(index)
+
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             indexes = self.selectionModel().selectedIndexes()
             if len(indexes) == 1:
                 index = indexes[0]
                 # If instance or Plugin
-                item = index.data(Roles.ItemRole)
-                if item.type() in (model.InstanceType, model.PluginType):
+                if index.data(Roles.TypeRole) in (
+                    model.InstanceType, model.PluginType
+                ):
                     if event.pos().x() < 20:
                         self.toggled.emit(index, None)
                     elif event.pos().x() > self.width() - 20:
                         self.show_perspective.emit(index)
-                else:
-                    if self.isExpanded(index):
-                        self.collapse(index)
-                    else:
-                        self.expand(index)
-
-                    self.selectionModel().select(
-                        index, QtCore.QItemSelectionModel.Deselect
-                    )
 
             # Deselect all group labels
             for index in indexes:
-                item = index.data(Roles.ItemRole)
-                if item.type() == model.GroupType:
+                if index.data(Roles.TypeRole) == model.GroupType:
                     self.selectionModel().select(
                         index, QtCore.QItemSelectionModel.Deselect
                     )
