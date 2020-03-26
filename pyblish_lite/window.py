@@ -41,7 +41,7 @@ Todo:
 """
 from functools import partial
 
-from . import delegate, model, settings, util, view
+from . import delegate, model, settings, util, view, widgets
 from .awesome import tags as awesome
 
 from .vendor.Qt import QtCore, QtGui, QtWidgets
@@ -105,7 +105,7 @@ class Window(QtWidgets.QDialog):
 
         aditional_btns_layout = QtWidgets.QHBoxLayout(header_aditional_btns)
 
-        presets_button = view.ButtonWithMenu(awesome["filter"])
+        presets_button = widgets.ButtonWithMenu(awesome["filter"])
         presets_button.setEnabled(False)
         aditional_btns_layout.addWidget(presets_button)
 
@@ -254,7 +254,7 @@ class Window(QtWidgets.QDialog):
 
         """
 
-        comment_box = view.CommentBox("Comment...", self)
+        comment_box = widgets.CommentBox("Comment...", self)
 
         intent_box = QtWidgets.QComboBox()
 
@@ -319,7 +319,7 @@ class Window(QtWidgets.QDialog):
         )
         closing_placeholder.hide()
 
-        perspective_widget = view.PerspectiveWidget(self)
+        perspective_widget = widgets.PerspectiveWidget(self)
         perspective_widget.hide()
 
         # Main layout
