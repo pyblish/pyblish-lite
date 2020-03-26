@@ -5,6 +5,10 @@ from .constants import PluginStates, InstanceStates, Roles
 
 
 class EllidableLabel(QtWidgets.QLabel):
+    def __init__(self, *args, **kwargs):
+        super(EllidableLabel, self).__init__(*args, **kwargs)
+        self.setObjectName("EllidableLabel")
+
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
 
@@ -19,32 +23,10 @@ class PerspectiveWidget(QtWidgets.QWidget):
     l_doc = "Documentation"
     l_rec = "Records"
     l_path = "Path"
-    indicator_colors = {
-        "idle": {
-            "bg": "#ffffff",
-            "font": "#333333"
-        },
-        "active": {
-            "bg": "#99CEEE",
-            "font": "#ffffff"
-        },
-        "error": {
-            "bg": "#cc4a4a",
-            "font": "#ffffff"
-        },
-        "ok": {
-            "bg": "#69a567",
-            "font": "#ffffff"
-        },
-        "warning": {
-            "bg": "#ff9900",
-            "font": "#ffffff"
-        }
-    }
 
     def __init__(self, parent):
         super(PerspectiveWidget, self).__init__(parent)
-        # self.setStyleSheet("border:1px solid rgb(0, 255, 0); ")
+
         self.parent_widget = parent
         main_layout = QtWidgets.QVBoxLayout(self)
 
@@ -58,13 +40,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
         indicator = QtWidgets.QLabel("", parent=header_widget)
         indicator.setFixedWidth(30)
         indicator.setAlignment(QtCore.Qt.AlignCenter)
+        indicator.setObjectName("PerspectiveIndicator")
 
         name = EllidableLabel('*Name of inspected', parent=header_widget)
-        name.setStyleSheet(
-            "font-size: 16pt;"
-            "font-style: bold;"
-            "font-weight: 50;"
-        )
 
         header_layout = QtWidgets.QHBoxLayout(header_widget)
         header_layout.setAlignment(QtCore.Qt.AlignLeft)
@@ -78,37 +56,54 @@ class PerspectiveWidget(QtWidgets.QWidget):
         main_layout.setAlignment(QtCore.Qt.AlignTop)
         main_layout.addWidget(header_widget)
 
+        scroll_widget = QtWidgets.QScrollArea(self)
+        contents_widget = QtWidgets.QWidget(scroll_widget)
+        contents_widget.setObjectName("PerspectiveWidgetContent")
+
         layout = QtWidgets.QVBoxLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
         layout.setContentsMargins(0, 0, 0, 0)
 
         documentation = ExpandableWidget(self, self.l_doc)
+        doc_label = QtWidgets.QLabel()
+        doc_label.setWordWrap(True)
+        doc_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        documentation.set_content(doc_label)
         layout.addWidget(documentation)
 
         path = ExpandableWidget(self, self.l_path)
+        path_label = QtWidgets.QLabel()
+        path_label.setWordWrap(True)
+        path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        path.set_content(path_label)
         layout.addWidget(path)
+        for widget in [path_label, doc_label]:
+            widget.setObjectName("PerspectiveLabel")
 
         records = ExpandableWidget(self, self.l_rec)
         layout.addWidget(records)
 
-        scroll_widget = QtWidgets.QScrollArea(self)
-        contents_widget = QtWidgets.QWidget(scroll_widget)
         contents_widget.setLayout(layout)
-        contents_widget.setStyleSheet(
-            "padding: 0px;"
-            "background: #444;"
-        )
         contents_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+            QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Minimum
         )
 
         terminal_view = view.TerminalView()
+        terminal_view.setObjectName("TerminalView")
         terminal_model = model.TerminalModel()
         terminal_view.setModel(terminal_model)
+        terminal_delegate = delegate.TerminalItem()
+        terminal_view.setItemDelegate(terminal_delegate)
         records.set_content(terminal_view)
 
         scroll_widget.setWidgetResizable(True)
         scroll_widget.setWidget(contents_widget)
+
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        main_layout.addWidget(scroll_widget)
+        self.setLayout(main_layout)
 
         self.terminal_view = terminal_view
         self.terminal_model = terminal_model
@@ -122,11 +117,6 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.path = path
         self.records = records
 
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
-        main_layout.addWidget(scroll_widget)
-        self.setLayout(main_layout)
-
         self.toggle_button.clicked.connect(self.toggle_me)
 
         self.last_type = None
@@ -135,7 +125,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
     def trim(self, docstring):
         if not docstring:
-            return ''
+            return ""
         # Convert tabs to spaces (following the normal Python rules)
         # and split into a list of lines:
         lines = docstring.expandtabs().splitlines()
@@ -162,20 +152,16 @@ class PerspectiveWidget(QtWidgets.QWidget):
         while trimmed and not trimmed[0]:
             trimmed.pop(0)
         # Return a single string:
-        return '\n'.join(trimmed)
+        return "\n".join(trimmed)
+
+    def set_indicator_state(self, state):
+        self.indicator.setProperty("state", state)
+        self.indicator.style().polish(self.indicator)
 
     def reset(self):
         self.last_id = None
-        # TODO remove when terminal is resetable
-        self.records.setVisible(False)
-        check_color = self.indicator_colors["idle"]
-        self.indicator.setStyleSheet((
-            "font-size: 16pt;"
-            "font-style: bold;"
-            "font-weight: 50;"
-            "padding: 5px;"
-            "background: {};color: {}"
-        ).format(check_color["bg"], check_color["font"]))
+        self.terminal_model.reset()
+        self.set_indicator_state(None)
 
     def update_context(self, plugin_item, instance_item):
         if not self.last_item_id or not self.last_type:
@@ -224,78 +210,72 @@ class PerspectiveWidget(QtWidgets.QWidget):
     def set_context(self, item):
         if item and item.type() == model.InstanceType:
             item_id = item.instance.id
-            is_plugin = False
             if item.is_context:
                 type_indicator = "C"
             else:
                 type_indicator = "I"
 
-            check_color_name = "idle"
             publish_states = item.data(Roles.PublishFlagsRole)
             if publish_states & InstanceStates.InProgress:
-                check_color_name = "active"
+                self.set_indicator_state("active")
 
             elif publish_states & InstanceStates.HasError:
-                check_color_name = "error"
+                self.set_indicator_state("error")
 
             elif publish_states & InstanceStates.HasWarning:
-                check_color_name = "warning"
+                self.set_indicator_state("warning")
 
             elif publish_states & InstanceStates.HasFinished:
-                check_color_name = "ok"
+                self.set_indicator_state("ok")
+            else:
+                self.set_indicator_state(None)
+
+            self.documentation.setVisible(False)
+            self.path.setVisible(False)
 
         elif item and item.type() == model.PluginType:
             item_id = item.plugin.id
             type_indicator = "P"
 
-            is_plugin = True
             doc = item.data(Roles.DocstringRole)
             doc_str = ""
             if doc:
                 doc_str = self.trim(doc)
 
-            check_color_name = "idle"
             publish_states = item.data(Roles.PublishFlagsRole)
             if publish_states & PluginStates.InProgress:
-                check_color_name = "active"
+                self.set_indicator_state("active")
 
             elif publish_states & PluginStates.HasError:
-                check_color_name = "error"
+                self.set_indicator_state("error")
 
             elif publish_states & PluginStates.HasWarning:
-                check_color_name = "warning"
+                self.set_indicator_state("warning")
 
             elif publish_states & PluginStates.WasProcessed:
-                check_color_name = "ok"
+                self.set_indicator_state("ok")
+
+            else:
+                self.set_indicator_state(None)
 
             self.documentation.toggle_content(bool(doc_str))
-            doc_label = QtWidgets.QLabel(doc_str)
-            doc_label.setWordWrap(True)
-            doc_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-            self.documentation.set_content(doc_label)
-            path = item.data(Roles.PathModuleRole) or ""
+            self.documentation.content.setText(doc_str)
 
+            path = item.data(Roles.PathModuleRole) or ""
             self.path.toggle_content(path.strip() != "")
-            path_label = QtWidgets.QLabel(path)
-            path_label.setWordWrap(True)
-            path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-            self.path.set_content(path_label)
+            self.path.content.setText(path)
+
+            self.documentation.setVisible(True)
+            self.path.setVisible(True)
 
         else:
             self.last_type = None
             self.last_id = None
             self.indicator.setText("?")
-            self.path.setVisible(False)
+            self.set_indicator_state(None)
             self.documentation.setVisible(False)
+            self.path.setVisible(False)
             self.records.setVisible(False)
-            check_color = self.indicator_colors["idle"]
-            self.indicator.setStyleSheet((
-                "font-size: 16pt;"
-                "font-style: bold;"
-                "font-weight: 50;"
-                "padding: 5px;"
-                "background: {};color: {}"
-            ).format(check_color["bg"], check_color["font"]))
             return
 
         self.last_type = item.type()
@@ -303,21 +283,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.last_item_id = self.calculate_item_id(item)
 
         self.indicator.setText(type_indicator)
-        check_color = self.indicator_colors[check_color_name]
-        # TODO do through stylesheets
-        self.indicator.setStyleSheet((
-            "font-size: 16pt;"
-            "font-style: bold;"
-            "font-weight: 50;"
-            "padding: 5px;"
-            "background: {};color: {}"
-        ).format(check_color["bg"], check_color["font"]))
 
         label = item.data(QtCore.Qt.DisplayRole)
         self.name_widget.setText(label)
-
-        self.path.setVisible(is_plugin)
-        self.documentation.setVisible(is_plugin)
         self.records.setVisible(True)
 
         records = item.data(Roles.LogRecordsRole) or []
@@ -385,9 +353,7 @@ class ExpandableWidget(QtWidgets.QWidget):
         main_layout.setContentsMargins(9, 9, 9, 0)
 
         content = QtWidgets.QFrame(self)
-        content.setStyleSheet(
-            'border: none; background-color: #232323; color:#eeeeee;'
-        )
+        content.setObjectName("ExpandableWidgetContent")
         content.setVisible(False)
 
         content_layout = QtWidgets.QVBoxLayout(content)
@@ -395,6 +361,8 @@ class ExpandableWidget(QtWidgets.QWidget):
         main_layout.addWidget(top_part)
         main_layout.addWidget(content)
         self.setLayout(main_layout)
+
+        self.setAttribute(QtCore.Qt.WA_StyledBackground)
 
         self.top_part = top_part
         self.button_toggle = button_toggle

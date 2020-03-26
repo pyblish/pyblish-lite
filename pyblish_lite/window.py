@@ -217,6 +217,8 @@ class Window(QtWidgets.QDialog):
         terminal_view = view.TerminalView()
         terminal_model = model.TerminalModel()
         terminal_view.setModel(terminal_model)
+        terminal_delegate = delegate.TerminalItem()
+        terminal_view.setItemDelegate(terminal_delegate)
 
         layout = QtWidgets.QVBoxLayout(terminal_container)
         layout.addWidget(terminal_view)
@@ -409,6 +411,9 @@ class Window(QtWidgets.QDialog):
             "ArtistTab": header_tab_artist,
             "OverviewTab": header_tab_overview,
             "TerminalTab": header_tab_terminal,
+
+            # Views
+            "TerminalView": terminal_view,
 
             # Buttons
             "Play": footer_button_play,

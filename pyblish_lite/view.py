@@ -141,17 +141,11 @@ class TerminalView(QtWidgets.QTreeView):
     def __init__(self, parent=None):
         super(TerminalView, self).__init__(parent)
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.setHeaderHidden(True)
         self.setIndentation(0)
-        # self.setRootIsDecorated(False)
 
         self.clicked.connect(self.item_expand)
-
-        # self.horizontalScrollBar().hide()
-        # self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
-        # self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
@@ -183,8 +177,25 @@ class TerminalView(QtWidgets.QTreeView):
                 self.collapse(index)
             else:
                 self.expand(index)
+            self.updateGeometry()
 
     def rowsInserted(self, parent, start, end):
         """Automatically scroll to bottom on each new item added."""
         super(TerminalView, self).rowsInserted(parent, start, end)
+        self.updateGeometry()
         self.scrollToBottom()
+
+    def sizeHint(self):
+        size = super(TerminalView, self).sizeHint()
+        height = 0
+        for idx_i in range(self.model().rowCount()):
+            index = self.model().index(idx_i, 0)
+            height += self.rowHeight(index)
+            if self.isExpanded(index):
+                item = index.data(Roles.ItemRole)
+                for idx_j in range(item.rowCount()):
+                    child_item = item.child(idx_j, 0)
+                    height += self.rowHeight(child_item.index())
+
+        size.setHeight(height)
+        return size
