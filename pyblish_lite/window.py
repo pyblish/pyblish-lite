@@ -214,16 +214,9 @@ class Window(QtWidgets.QDialog):
 
         terminal_container = QtWidgets.QWidget()
 
-        terminal_delegate = delegate.LogsAndDetails()
         terminal_view = view.TerminalView()
-        terminal_view.setItemDelegate(terminal_delegate)
-
-        terminal_model = model.Terminal()
-
-        terminal_proxy = model.TerminalProxy()
-        terminal_proxy.setSourceModel(terminal_model)
-
-        terminal_view.setModel(terminal_proxy)
+        terminal_model = model.TerminalModel()
+        terminal_view.setModel(terminal_model)
 
         layout = QtWidgets.QVBoxLayout(terminal_container)
         layout.addWidget(terminal_view)
@@ -544,7 +537,6 @@ class Window(QtWidgets.QDialog):
         self.animation_info_msg = animation_info_msg
 
         self.terminal_model = terminal_model
-        self.terminal_proxy = terminal_proxy
         self.terminal_view = terminal_view
 
         self.comment_main_widget = comment_intent_widget
@@ -899,7 +891,14 @@ class Window(QtWidgets.QDialog):
         instance_item = self.overview_instance_model.update_with_result(result)
 
         self.terminal_model.update_with_result(result)
-        self.terminal_proxy.rebuild()
+        while not self.terminal_model.items_to_set_widget.empty():
+            item = self.terminal_model.items_to_set_widget.get()
+            widget = QtWidgets.QLabel()
+            widget.setText(item.data(QtCore.Qt.DisplayRole))
+            widget.setTextInteractionFlags(
+                QtCore.Qt.TextBrowserInteraction
+            )
+            self.terminal_view.setIndexWidget(item.index(), widget)
 
         self.update_compatibility()
 
@@ -1013,8 +1012,7 @@ class Window(QtWidgets.QDialog):
             result["records"] = records
 
         plugin_item.setData(action_state, Roles.PluginActionProgressRole)
-        for key, val in result.items():
-            print("{}: {}".format(key, val))
+
         self.plugin_model.update_with_result(result)
         self.overview_instance_model.update_with_result(result)
         self.terminal_model.update_with_result(result)
@@ -1039,7 +1037,6 @@ class Window(QtWidgets.QDialog):
             self.artist_model.deleteLater()
             self.intent_model.deleteLater()
             self.plugin_model.deleteLater()
-            self.terminal_proxy.deleteLater()
             self.terminal_model.deleteLater()
             self.plugin_proxy.deleteLater()
 
@@ -1047,10 +1044,6 @@ class Window(QtWidgets.QDialog):
             self.overview_instance_view.setModel(None)
             self.overview_plugin_view.setModel(None)
             self.terminal_view.setModel(None)
-
-            self.info(self.tr("Cleaning up terminal.."))
-            for item in self.terminal_model.items:
-                del(item)
 
             self.info(self.tr("Cleaning up controller.."))
             self.controller.cleanup()

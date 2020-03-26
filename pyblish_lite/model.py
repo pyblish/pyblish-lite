@@ -29,8 +29,10 @@ import pyblish
 
 from . import settings, util
 from .awesome import tags as awesome
-from .vendor.Qt import QtCore, QtGui, __binding__
+from .vendor.Qt import QtCore, QtGui
 from .vendor.six import text_type
+from .vendor.six.moves import queue
+from .vendor import qtawesome
 from .constants import PluginStates, InstanceStates, GroupStates, Roles
 
 try:
@@ -43,15 +45,32 @@ except Exception:
 InstanceType = QtGui.QStandardItem.UserType
 PluginType = QtGui.QStandardItem.UserType + 1
 GroupType = QtGui.QStandardItem.UserType + 2
+TerminalLabelType = QtGui.QStandardItem.UserType + 3
+TerminalDetailType = QtGui.QStandardItem.UserType + 4
 
 
-class QAwesomeIconFactory:
+class QAwesomeTextIconFactory:
     icons = {}
     @classmethod
     def icon(cls, icon_name):
         if icon_name not in cls.icons:
             cls.icons[icon_name] = awesome.get(icon_name)
         return cls.icons[icon_name]
+
+
+class QAwesomeIconFactory:
+    icons = {}
+    @classmethod
+    def icon(cls, icon_name, icon_color):
+        if icon_name not in cls.icons:
+            cls.icons[icon_name] = {}
+
+        if icon_color not in cls.icons[icon_name]:
+            cls.icons[icon_name][icon_color] = qtawesome.icon(
+                icon_name,
+                color=icon_color
+            )
+        return cls.icons[icon_name][icon_color]
 
 
 class IntentModel(QtGui.QStandardItemModel):
@@ -134,7 +153,7 @@ class PluginItem(QtGui.QStandardItem):
         icon_name = ""
         if hasattr(plugin, "icon") and plugin.icon:
             icon_name = plugin.icon
-        icon = QAwesomeIconFactory.icon(icon_name)
+        icon = QAwesomeTextIconFactory.icon(icon_name)
         self.setData(icon, QtCore.Qt.DecorationRole)
 
         actions = []
@@ -591,7 +610,7 @@ class InstanceItem(QtGui.QStandardItem):
 
         if role == QtCore.Qt.DecorationRole:
             icon_name = self.instance.data.get("icon") or "file"
-            return QAwesomeIconFactory.icon(icon_name)
+            return QAwesomeTextIconFactory.icon(icon_name)
 
         if role == Roles.TypeRole:
             return self.type()
@@ -845,113 +864,62 @@ class InstanceArtistModel(QtGui.QStandardItemModel):
         self.instance_items[instance.id] = new_item
 
 
-class Abstract(QtCore.QAbstractListModel):
-    def __iter__(self):
-        """Yield each row of model"""
-        for index in range(len(self.items)):
-            yield self.createIndex(index, 0)
+class TerminalModel(QtGui.QStandardItemModel):
+    key_label_record_map = {
+        "msg": "Message",
+        "name": "Plugin",
+        "pathname": "Path",
+        "lineno": "Line",
+        "traceback": "Traceback",
+        "levelname": "Level",
+        "threadName": "Thread",
+        "msecs": "Millis"
+    }
 
-    def data(self, index, role):
-        if role == Roles.ObjectRole:
-            return self.items[index.row()]
+    item_icon_name = {
+        "info": "fa.info",
+        "record": "fa.circle",
+        "error": "fa.exclamation-triangle",
+    }
 
-    def append(self, item):
-        """Append item to end of model"""
-        self.beginInsertRows(
-            QtCore.QModelIndex(),
-            self.rowCount(),
-            self.rowCount()
-        )
-        self.items.append(item)
+    item_icon_colors = {
+        "info": "#ffffff",
+        "error": "#ff4a4a",
+        "record": {
+            None: "#333333",
+            "DEBUG": "#ff66e8",
+            "INFO": "#66abff",
+            "WARNING": "#ffba66",
+            "ERROR": "#ff4d58",
+            "CRITICAL": "#ff4f75"
+        }
+    }
 
-        self.endInsertRows()
+    level_to_record = (
+        (10, "DEBUG"),
+        (20, "INFO"),
+        (30, "WARNING"),
+        (40, "ERROR"),
+        (50, "CRITICAL")
 
-    def rowCount(self, parent=None):
-        return len(self.items)
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(TerminalModel, self).__init__(*args, **kwargs)
+        self.reset()
 
     def reset(self):
-        self.beginResetModel()
-        self.items[:] = []
-        self.endResetModel()
+        self.items_to_set_widget = queue.Queue()
+        self.clear()
 
-    def update_with_result(self, result):
-        pass
-
-
-class Terminal(Abstract):
-    def __init__(self, parent=None):
-        super(Terminal, self).__init__(parent)
-        self.items = list()
-
-        # Common schema
-        self.schema = {
-            Roles.TypeRole: "type",
-            Roles.Label: "label",
-
-            Roles.LogSize: 'size',
-
-            # Records
-            Roles.LogThreadName: "threadName",
-            Roles.LogName: "name",
-            Roles.LogFilename: "filename",
-            Roles.LogPath: "pathname",
-            Roles.LogLineNumber: "lineno",
-            Roles.LogMessage: "msg",
-            Roles.LogMilliseconds: "msecs",
-            Roles.LogLevel: "levelname",
-
-            # Exceptions
-            Roles.ExcFunc: "func",
-            Roles.ExcTraceback: "traceback",
-        }
-
-    def data(self, index, role):
-        if role == QtCore.Qt.DisplayRole:
-            role = Roles.Label
-
-        if role not in self.schema:
-            return super(Terminal, self).data(index, role)
-
-        item = self.items[index.row()]
-        if role == Roles.ItemRole:
-            return item
-
-        key = self.schema[role]
-        value = item.get(key)
-
-        if value is None:
-            value = super(Terminal, self).data(index, role)
-
-        return value
-
-    def setData(self, index, value, role):
-        item = self.items[index.row()]
-        if role not in self.schema:
-            return super(Terminal, self).setData(index, value, role)
-
-        key = self.schema[role]
-        item[key] = value
-
-        args = [index, index]
-        if __binding__ not in ("PyQt4", "PySide"):
-            args.append([role])
-        self.dataChanged.emit(*args)
-        return True
-
-    def update_with_result(self, result):
-        for record in result["records"]:
-            ## Filtering should be in view
-            # if record.levelno < settings.TerminalLoglevel:
-            #     continue
-            if isinstance(record, dict):
-                self.append(record)
-                continue
-
-            self.append({
+    def append(self, record):
+        if isinstance(record, dict):
+            record_item = record
+        else:
+            record_item = {
                 "label": text_type(record.msg),
                 "type": "record",
                 "levelno": record.levelno,
-                # Native
                 "threadName": record.threadName,
                 "name": record.name,
                 "filename": record.filename,
@@ -960,385 +928,80 @@ class Terminal(Abstract):
                 "msg": text_type(record.msg),
                 "msecs": record.msecs,
                 "levelname": record.levelname
-            })
-
-
-class ProxyModel(QtCore.QSortFilterProxyModel):
-    """A QSortFilterProxyModel with custom exclude and include rules
-
-    Role may be either an integer or string, and each
-    role may include multiple values.
-
-    Example:
-        >>> # Exclude any item whose role 123 equals "Abc"
-        >>> model = ProxyModel(None)
-        >>> model.add_exclusion(role=123, value="Abc")
-
-        >>> # Exclude multiple values
-        >>> model.add_exclusion(role="name", value="Pontus")
-        >>> model.add_exclusion(role="name", value="Richard")
-
-        >>> # Exclude amongst includes
-        >>> model.add_inclusion(role="type", value="PluginItem")
-        >>> model.add_exclusion(role="name", value="Richard")
-
-    """
-
-    def __init__(self, source, parent=None):
-        super(ProxyModel, self).__init__(parent)
-        self.setSourceModel(source)
-
-        self.excludes = dict()
-        self.includes = {'families': ['*']}
-
-    def item(self, index):
-        index = self.index(index, 0, QtCore.QModelIndex())
-        index = self.mapToSource(index)
-        model = self.sourceModel()
-        return model.items[index.row()]
-
-    def reset(self):
-        self.beginResetModel()
-        self.includes = {'families': ['*']}
-        self.endResetModel()
-
-    def add_exclusion(self, role, value):
-        """Exclude item if `role` equals `value`
-
-        Attributes:
-            role (int, string): Qt role or name to compare `value` to
-            value (object): Value to exclude
-
-        """
-
-        self._add_rule(self.excludes, role, value)
-
-    def remove_exclusion(self, role, value=None):
-        """Remove exclusion rule
-
-        Arguments:
-            role (int, string): Qt role or name to remove
-            value (object, optional): Value to remove. If none
-                is supplied, the entire role will be removed.
-
-        """
-
-        self._remove_rule(self.excludes, role, value)
-
-    def set_exclusion(self, rules):
-        """Set excludes
-
-        Replaces existing excludes with those in `rules`
-
-        Arguments:
-            rules (list): Tuples of (role, value)
-
-        """
-
-        self._set_rules(self.excludes, rules)
-
-    def clear_exclusion(self):
-        self._clear_group(self.excludes)
-
-    def add_inclusion(self, role, value):
-        """Include item if `role` equals `value`
-
-        Attributes:
-            role (int): Qt role to compare `value` to
-            value (object): Value to exclude
-
-        """
-
-        self._add_rule(self.includes, role, value)
-
-    def remove_inclusion(self, role, value=None):
-        """Remove exclusion rule"""
-        self._remove_rule(self.includes, role, value)
-
-    def set_inclusion(self, rules):
-        self._set_rules(self.includes, rules)
-
-    def clear_inclusion(self):
-        self._clear_group(self.includes)
-
-    def _add_rule(self, group, role, value):
-        """Implementation detail"""
-        if role not in group:
-            group[role] = list()
-
-        group[role].append(value)
-
-        self.invalidate()
-
-    def _remove_rule(self, group, role, value=None):
-        """Implementation detail"""
-        if role not in group:
-            return
-
-        if value is None:
-            group.pop(role, None)
-        else:
-            group[role].remove(value)
-
-        self.invalidate()
-
-    def _set_rules(self, group, rules):
-        """Implementation detail"""
-        group.clear()
-
-        for rule in rules:
-            self._add_rule(group, *rule)
-
-        self.invalidate()
-
-    def _clear_group(self, group):
-        group.clear()
-
-        self.invalidate()
-
-    # Overridden methods
-
-    def filterAcceptsRow(self, source_row, source_parent):
-        """Exclude items in `self.excludes`"""
-        model = self.sourceModel()
-        item = model.items[source_row]
-        key = getattr(item, "filter", None)
-        if key is not None:
-            regex = self.filterRegExp()
-            if regex.pattern():
-                match = regex.indexIn(key)
-                return False if match == -1 else True
-
-        # --- Check if any family assigned to the plugin is in allowed families
-        for role, values in self.includes.items():
-            includes_list = [([x] if isinstance(x, (list, tuple)) else x)
-                             for x in getattr(item, role, None)]
-            return any(include in values for include in includes_list)
-
-        for role, values in self.excludes.items():
-            data = getattr(item, role, None)
-            if data in values:
-                return False
-
-        return super(ProxyModel, self).filterAcceptsRow(
-            source_row, source_parent)
-
-    def rowCount(self, parent=QtCore.QModelIndex()):
-        return super(ProxyModel, self).rowCount(parent)
-
-
-class TreeItem(object):
-    """Base class for an Item in the Group By Proxy"""
-    def __init__(self):
-        self._parent = None
-        self._children = list()
-
-    def parent(self):
-        return self._parent
-
-    def addChild(self, node):
-        node._parent = self
-        self._children.append(node)
-
-    def rowCount(self):
-        return len(self._children)
-
-    def row(self):
-
-        parent = self.parent()
-        if not parent:
-            return 0
-        else:
-            return self.parent().children().index(self)
-
-    def columnCount(self):
-        return 1
-
-    def child(self, row):
-        return self._children[row]
-
-    def children(self):
-        return self._children
-
-    def data(self, role=QtCore.Qt.DisplayRole):
-        return None
-
-
-class ProxyTerminalItem(TreeItem):
-    def __init__(self, source_index):
-        self._expanded = False
-        self.model_index = source_index
-        super(ProxyTerminalItem, self).__init__()
-
-    def setIsExpanded(self, in_bool):
-        if self.model_index.data(Roles.ObjectRole).get("type") == "info":
-            return
-        self._expanded = in_bool
-
-    @property
-    def expanded(self):
-        return self._expanded
-
-    def data(self, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.DisplayRole:
-            role = Roles.Label
-
-        elif role == Roles.GroupObjectRole:
-            return self
-
-        return self.model_index.data(role)
-
-
-class ProxyTerminalDetail(TreeItem):
-    def __init__(self, source_index):
-        self.source_index = source_index
-        super(ProxyTerminalDetail, self).__init__()
-
-    def data(self, role=QtCore.Qt.DisplayRole):
-        return self.source_index.data(role)
-
-
-class TerminalProxy(QtCore.QAbstractProxyModel):
-    """Proxy that groups by based on a specific role
-    This assumes the source data is a flat list and not a tree.
-    """
-
-    def __init__(self):
-        super(TerminalProxy, self).__init__()
-        self.root = TreeItem()
-
-    def flags(self, index):
-        return (
-            QtCore.Qt.ItemIsEnabled |
-            QtCore.Qt.ItemIsSelectable
+            }
+
+        top_item = QtGui.QStandardItem()
+        top_item.setData(record_item["label"], QtCore.Qt.DisplayRole)
+        top_item.setFlags(
+            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
         )
+        self.appendRow(top_item)
 
-    def rebuild(self):
-        """Update proxy sections and items
-        This should be called after changes in the source model that require
-        changes in this list (for example new indices, less indices or update
-        sections)
-        """
-        self.beginResetModel()
-        # Start with new root node
-        self.root = TreeItem()
+        icon_color = None
+        icon_name = None
+        record_type = record_item["type"]
+        if record_type == "record":
+            color_name = None
+            for level, _color_name in self.level_to_record:
+                if level > record.levelno:
+                    break
+                color_name = _color_name
 
-        # Get indices from source model
-        source = self.sourceModel()
-        source_rows = source.rowCount()
-        source_indexes = [source.index(i, 0) for i in range(source_rows)]
+            icon_color = self.item_icon_colors[record_type][color_name]
+            icon_name = self.item_icon_name[record_type]
 
-        for index in source_indexes:
-            log_label = ProxyTerminalItem(index)
-            if (
-                index.data(Roles.LogMessage)
-                or index.data(Roles.TypeRole) == 'error'
-            ):
-                log_item = ProxyTerminalDetail(index)
-                log_label.addChild(log_item)
-            self.root.addChild(log_label)
+        elif record_type in ("info", "error"):
+            icon_color = self.item_icon_colors[record_type]
+            icon_name = self.item_icon_name[record_type]
 
-        self.endResetModel()
+        top_item_icon = None
+        if icon_color and icon_name:
+            top_item_icon = QAwesomeIconFactory.icon(icon_name, icon_color)
 
-    def data(self, index, role=QtCore.Qt.DisplayRole):
-        if not index.isValid():
-            return
+        if top_item_icon:
+            top_item.setData(top_item_icon, QtCore.Qt.DecorationRole)
 
-        node = index.internalPointer()
+        detail_text = self.prepare_detail_text(record_item)
+        detail_item = QtGui.QStandardItem(detail_text)
+        top_item.appendRow(detail_item)
+        self.items_to_set_widget.put(detail_item)
 
-        if not node:
-            return
+        top_item.setData(TerminalLabelType, Roles.TypeRole)
+        detail_item.setData(TerminalDetailType, Roles.TypeRole)
 
-        return node.data(role)
+    def update_with_result(self, result):
+        for record in result["records"]:
+            self.append(record)
 
-    def setData(self, in_index, data, role):
-        source_idx = self.mapToSource(in_index)
-        if not source_idx.isValid():
-            return
+    def prepare_detail_text(self, item_data):
+        if item_data["type"] == "info":
+            return item_data["label"]
 
-        source_model = source_idx.model()
-        node = in_index.internalPointer()
+        html_text = ""
+        for key, title in self.key_label_record_map.items():
+            if key not in item_data:
+                continue
+            value = item_data[key]
+            text = (
+                str(value)
+                .replace("<", "&#60;")
+                .replace(">", "&#62;")
+                .replace('\n', '<br/>')
+                .replace(' ', '&nbsp;')
+            )
 
-        if not node:
-            return
+            title_tag = (
+                '<span style=\" font-size:8pt; font-weight:600;'
+                # ' background-color:#bbb; color:#333;\" >{}:</span> '
+                ' color:#fff;\" >{}:</span> '
+            ).format(title)
 
-        index = node.source_index
-        source_model.setData(index, data, role)
+            html_text += (
+                '<tr><td width="100%" align=left>{}</td></tr>'
+                '<tr><td width="100%">{}</td></tr>'
+            ).format(title_tag, text)
 
-        if __binding__ in ("PyQt4", "PySide"):
-            self.dataChanged.emit(index, index)
-        else:
-            self.dataChanged.emit(index, index, [role])
-        self.layoutChanged.emit()
-        return True
-
-    def is_header(self, index):
-        """Return whether index is a header"""
-        if index.isValid() and index.data(Roles.GroupObjectRole):
-            return True
-        else:
-            return False
-
-    def mapFromSource(self, index):
-        for section_item in self.root.children():
-            for item in section_item.children():
-                if item.source_index == index:
-                    return self.createIndex(
-                        item.row(), index.column(), item
-                    )
-
-        return QtCore.QModelIndex()
-
-    def mapToSource(self, index):
-        if not index.isValid():
-            return QtCore.QModelIndex()
-
-        node = index.internalPointer()
-        if not node:
-            return QtCore.QModelIndex()
-
-        if not hasattr(node, "source_index"):
-            return QtCore.QModelIndex()
-        return node.source_index
-
-    def columnCount(self, parent=QtCore.QModelIndex()):
-        return 1
-
-    def rowCount(self, parent=None):
-
-        if not parent or not parent.isValid():
-            node = self.root
-        else:
-            node = parent.internalPointer()
-
-        if not node:
-            return 0
-
-        return node.rowCount()
-
-    def index(self, row, column, parent=None):
-        if parent and parent.isValid():
-            parent_node = parent.internalPointer()
-        else:
-            parent_node = self.root
-
-        item = parent_node.child(row)
-        if item:
-            return self.createIndex(row, column, item)
-        else:
-            return QtCore.QModelIndex()
-
-    def parent(self, index):
-        if not index.isValid():
-            return QtCore.QModelIndex()
-
-        node = index.internalPointer()
-        if not node:
-            return QtCore.QModelIndex()
-        else:
-            parent = node.parent()
-            if not parent:
-                return QtCore.QModelIndex()
-
-            row = parent.row()
-            return self.createIndex(row, 0, parent)
+        html_text = '<table width="100%" cellspacing="3">{}</table>'.format(
+            html_text
+        )
+        return html_text

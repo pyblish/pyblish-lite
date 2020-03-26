@@ -161,9 +161,8 @@ QLabel {
 QToolButton {
 	background-color: transparent;
 	margin: 0px;
-	padding: 3px;
+	padding: 0px;
 	border-radius: 0px;
-	min-width: 20px;
 }
 
 QToolButton:hover {

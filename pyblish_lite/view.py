@@ -140,15 +140,18 @@ class TerminalView(QtWidgets.QTreeView):
     # An item is requesting to be toggled, with optional forced-state
     def __init__(self, parent=None):
         super(TerminalView, self).__init__(parent)
-
-        self.horizontalScrollBar().hide()
-        self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollPerPixel)
         self.setHeaderHidden(True)
-        self.setRootIsDecorated(False)
         self.setIndentation(0)
+        # self.setRootIsDecorated(False)
+
+        self.clicked.connect(self.item_expand)
+
+        # self.horizontalScrollBar().hide()
+        # self.viewport().setAttribute(QtCore.Qt.WA_Hover, True)
+        # self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
     def event(self, event):
         if not event.type() == QtCore.QEvent.KeyPress:
@@ -161,44 +164,25 @@ class TerminalView(QtWidgets.QTreeView):
                 else:
                     self.expand(index)
 
-            return True
-
         elif event.key() == QtCore.Qt.Key_Backspace:
             for index in self.selectionModel().selectedIndexes():
                 self.collapse(index)
 
-            return True
-
         elif event.key() == QtCore.Qt.Key_Return:
             for index in self.selectionModel().selectedIndexes():
                 self.expand(index)
-
-            return True
 
         return super(TerminalView, self).event(event)
 
     def focusOutEvent(self, event):
         self.selectionModel().clear()
 
-    def mouseReleaseEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            indexes = self.selectionModel().selectedIndexes()
-            if len(indexes) == 1:
-                index = indexes[0]
-                if index.data(Roles.GroupObjectRole):
-                    if self.isExpanded(index):
-                        self.collapse(index)
-                    else:
-                        self.expand(index)
-
-            for index in indexes:
-                if index.data(Roles.GroupObjectRole):
-                    self.selectionModel().select(
-                        index, QtCore.QItemSelectionModel.Deselect
-                    )
-
-        return super(TerminalView, self).mouseReleaseEvent(event)
-
+    def item_expand(self, index):
+        if index.data(Roles.TypeRole) == model.TerminalLabelType:
+            if self.isExpanded(index):
+                self.collapse(index)
+            else:
+                self.expand(index)
 
     def rowsInserted(self, parent, start, end):
         """Automatically scroll to bottom on each new item added."""
