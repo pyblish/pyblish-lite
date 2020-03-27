@@ -633,6 +633,7 @@ class Window(QtWidgets.QDialog):
             state = not index.data(QtCore.Qt.CheckStateRole)
 
         index.model().setData(index, state, QtCore.Qt.CheckStateRole)
+        self.update_compatibility()
 
     def on_tab_changed(self, target):
         self.comment_main_widget.setVisible(not target == "terminal")
@@ -742,6 +743,7 @@ class Window(QtWidgets.QDialog):
 
     def update_compatibility(self):
         self.plugin_model.update_compatibility()
+        self.plugin_proxy.invalidateFilter()
 
     def on_was_reset(self):
         # Append context object to instances model
