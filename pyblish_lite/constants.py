@@ -38,6 +38,8 @@ def roles(*args, **kwargs):
 
 Roles = roles(
     "ObjectRole",
+    "ObjectIdRole",
+    "ObjectUIdRole",
     "TypeRole",
     "PublishFlagsRole",
     "DocstringRole",
@@ -51,29 +53,11 @@ Roles = roles(
     "PluginValidActionsRole",
     "PluginActionProgressRole",
 
-    "ItemRole",
     "IsOptionalRole",
     "IsEnabledRole",
 
     "IntentItemValue",
 
-
-    # Terminal Roles
-    "Label",
-    "GroupObjectRole",
-
-    "LogRecord",
-    "LogThreadName",
-    "LogName",
-    "LogFilename",
-    "LogPath",
-    "LogLineNumber",
-    "LogMessage",
-    "LogMilliseconds",
-    "LogLevel",
-    "LogSize",
-    "ExcFunc",
-    "ExcTraceback",
     type_name="ModelRoles"
 )
 

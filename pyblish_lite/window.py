@@ -600,8 +600,7 @@ class Window(QtWidgets.QDialog):
         show = False
         if index:
             show = True
-            item = index.data(Roles.ItemRole)
-            self.perspective_widget.set_context(item)
+            self.perspective_widget.set_context(index)
 
         self.body_widget.setVisible(not show)
         self.header_widget.setVisible(not show)
@@ -628,8 +627,7 @@ class Window(QtWidgets.QDialog):
         if state is None:
             state = not index.data(QtCore.Qt.CheckStateRole)
 
-        item = index.data(Roles.ItemRole)
-        item.setData(state, QtCore.Qt.CheckStateRole)
+        index.model().setData(index, state, QtCore.Qt.CheckStateRole)
 
     def on_tab_changed(self, target):
         self.comment_main_widget.setVisible(not target == "terminal")

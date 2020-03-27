@@ -177,14 +177,19 @@ class PluginItem(QtGui.QStandardItem):
         return PluginType
 
     def data(self, role=QtCore.Qt.DisplayRole):
-        if role == Roles.ItemRole:
-            return self
-
         if role == Roles.IsOptionalRole:
             return self.plugin.optional
 
         if role == Roles.ObjectRole:
             return self.plugin
+
+        if role == Roles.ObjectIdRole:
+            return self.plugin.id
+
+        if role == Roles.ObjectUIdRole:
+            mod = self.plugin.__module__
+            class_name = self.plugin.__name__
+            return "{}.{}".format(mod, class_name)
 
         if role == Roles.TypeRole:
             return self.type()
@@ -372,9 +377,6 @@ class GroupItem(QtGui.QStandardItem):
     def data(self, role=QtCore.Qt.DisplayRole):
         if role == Roles.PublishFlagsRole:
             return self.publish_states
-
-        if role == Roles.ItemRole:
-            return self
 
         if role == Roles.TypeRole:
             return self.type()
@@ -600,9 +602,6 @@ class InstanceItem(QtGui.QStandardItem):
         return InstanceType
 
     def data(self, role=QtCore.Qt.DisplayRole):
-        if role == Roles.TypeRole:
-            return self.type()
-
         if role == QtCore.Qt.DisplayRole:
             if settings.UseLabel:
                 return self.instance.data["label"]
@@ -614,6 +613,16 @@ class InstanceItem(QtGui.QStandardItem):
 
         if role == Roles.TypeRole:
             return self.type()
+
+        if role == Roles.ObjectRole:
+            return self.instance
+
+        if role == Roles.ObjectIdRole:
+            return self.instance.id
+
+        if role == Roles.ObjectUIdRole:
+            family = self.data(Roles.FamiliesRole)[0]
+            return "{}.{}".format(family, self.instance.data["name"])
 
         if role == Roles.IsEnabledRole:
             return self.instance.optional
@@ -634,14 +643,8 @@ class InstanceItem(QtGui.QStandardItem):
 
             return families
 
-        if role == Roles.ItemRole:
-            return self
-
         if role == Roles.IsOptionalRole:
             return self.instance.optional
-
-        if role == Roles.ObjectRole:
-            return self.instance
 
         if role == QtCore.Qt.CheckStateRole:
             return self.instance.data["publish"]
@@ -722,6 +725,7 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
 
     def append(self, instance):
         new_item = InstanceItem(instance)
+        new_item.setData(instance, Roles.ObjectRole)
         families = new_item.data(Roles.FamiliesRole)
         group_item = self.group_items.get(families[0])
         if not group_item:
@@ -931,7 +935,6 @@ class TerminalModel(QtGui.QStandardItemModel):
             }
 
         top_item = QtGui.QStandardItem()
-        top_item.setData(top_item, Roles.ItemRole)
         top_item.setData(TerminalLabelType, Roles.TypeRole)
         top_item.setData(record_item["label"], QtCore.Qt.DisplayRole)
         top_item.setFlags(
@@ -965,7 +968,6 @@ class TerminalModel(QtGui.QStandardItemModel):
 
         detail_text = self.prepare_detail_text(record_item)
         detail_item = QtGui.QStandardItem(detail_text)
-        detail_item.setData(detail_item, Roles.ItemRole)
         detail_item.setData(TerminalDetailType, Roles.TypeRole)
         top_item.appendRow(detail_item)
         self.items_to_set_widget.put(detail_item)

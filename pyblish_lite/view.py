@@ -192,10 +192,9 @@ class TerminalView(QtWidgets.QTreeView):
             index = self.model().index(idx_i, 0)
             height += self.rowHeight(index)
             if self.isExpanded(index):
-                item = index.data(Roles.ItemRole)
-                for idx_j in range(item.rowCount()):
-                    child_item = item.child(idx_j, 0)
-                    height += self.rowHeight(child_item.index())
+                for idx_j in range(index.model().rowCount(index)):
+                    child_index = index.child(idx_j, 0)
+                    height += self.rowHeight(child_index)
 
         size.setHeight(height)
         return size

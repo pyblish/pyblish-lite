@@ -169,7 +169,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
         if self.last_type == model.PluginType:
             if not self.last_id:
-                _item_id = self.calculate_item_id(plugin_item)
+                _item_id = plugin_item.data(Roles.ObjectUIdRole)
                 if _item_id != self.last_item_id:
                     return
                 self.last_id = plugin_item.plugin.id
@@ -182,7 +182,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
         if self.last_type == model.InstanceType:
             if not self.last_id:
-                _item_id = self.calculate_item_id(instance_item)
+                _item_id = instance_item.data(Roles.ObjectUIdRole)
                 if _item_id != self.last_item_id:
                     return
                 self.last_id = instance_item.instance.id
@@ -193,29 +193,20 @@ class PerspectiveWidget(QtWidgets.QWidget):
             self.set_context(instance_item)
             return
 
-    def calculate_item_id(self, item):
-        item_id = None
-        if item and item.type() == model.InstanceType:
-            family = item.data(Roles.FamiliesRole)[0]
-            name = item.instance.data["name"]
-            item_id = "{}.{}".format(family, name)
+    def set_context(self, index):
+        if not index or not index.isValid():
+            index_type = None
+        else:
+            index_type = index.data(Roles.TypeRole)
 
-        elif item and item.type() == model.PluginType:
-            mod = item.plugin.__module__
-            class_name = item.plugin.__name__
-            item_id = "{}.{}".format(mod, class_name)
-
-        return item_id
-
-    def set_context(self, item):
-        if item and item.type() == model.InstanceType:
-            item_id = item.instance.id
-            if item.is_context:
+        if index_type == model.InstanceType:
+            item_id = index.data(Roles.ObjectIdRole)
+            publish_states = index.data(Roles.PublishFlagsRole)
+            if publish_states & InstanceStates.ContextType:
                 type_indicator = "C"
             else:
                 type_indicator = "I"
 
-            publish_states = item.data(Roles.PublishFlagsRole)
             if publish_states & InstanceStates.InProgress:
                 self.set_indicator_state("active")
 
@@ -233,16 +224,16 @@ class PerspectiveWidget(QtWidgets.QWidget):
             self.documentation.setVisible(False)
             self.path.setVisible(False)
 
-        elif item and item.type() == model.PluginType:
-            item_id = item.plugin.id
+        elif index_type == model.PluginType:
+            item_id = index.data(Roles.ObjectIdRole)
             type_indicator = "P"
 
-            doc = item.data(Roles.DocstringRole)
+            doc = index.data(Roles.DocstringRole)
             doc_str = ""
             if doc:
                 doc_str = self.trim(doc)
 
-            publish_states = item.data(Roles.PublishFlagsRole)
+            publish_states = index.data(Roles.PublishFlagsRole)
             if publish_states & PluginStates.InProgress:
                 self.set_indicator_state("active")
 
@@ -261,7 +252,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
             self.documentation.toggle_content(bool(doc_str))
             self.documentation.content.setText(doc_str)
 
-            path = item.data(Roles.PathModuleRole) or ""
+            path = index.data(Roles.PathModuleRole) or ""
             self.path.toggle_content(path.strip() != "")
             self.path.content.setText(path)
 
@@ -278,17 +269,17 @@ class PerspectiveWidget(QtWidgets.QWidget):
             self.records.setVisible(False)
             return
 
-        self.last_type = item.type()
+        self.last_type = index_type
         self.last_id = item_id
-        self.last_item_id = self.calculate_item_id(item)
+        self.last_item_id = index.data(Roles.ObjectUIdRole)
 
         self.indicator.setText(type_indicator)
 
-        label = item.data(QtCore.Qt.DisplayRole)
+        label = index.data(QtCore.Qt.DisplayRole)
         self.name_widget.setText(label)
         self.records.setVisible(True)
 
-        records = item.data(Roles.LogRecordsRole) or []
+        records = index.data(Roles.LogRecordsRole) or []
 
         len_records = 0
         if records:
