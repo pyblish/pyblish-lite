@@ -84,10 +84,6 @@ class PerspectiveWidget(QtWidgets.QWidget):
         layout.addWidget(records)
 
         contents_widget.setLayout(layout)
-        contents_widget.setSizePolicy(
-            QtWidgets.QSizePolicy.Minimum,
-            QtWidgets.QSizePolicy.Minimum
-        )
 
         terminal_view = view.TerminalView()
         terminal_view.setObjectName("TerminalView")
@@ -295,6 +291,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
             widget.setTextInteractionFlags(
                 QtCore.Qt.TextBrowserInteraction
             )
+            widget.setWordWrap(True)
             self.terminal_view.setIndexWidget(item.index(), widget)
 
         self.records.button_toggle_text.setText(
