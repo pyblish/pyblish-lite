@@ -559,18 +559,21 @@ class PluginModel(QtGui.QStandardItemModel):
 
 class PluginFilterProxy(QtCore.QSortFilterProxyModel):
     def filterAcceptsRow(self, source_row, source_parent):
-        item = source_parent.child(source_row, 0)
-        item_type = item.data(Roles.TypeRole)
+        index = source_parent.child(source_row, 0)
+        item_type = index.data(Roles.TypeRole)
+        result = None
         if item_type != PluginType:
-            return True
+            result = True
 
-        publish_states = item.data(Roles.PublishFlagsRole)
-        if (
-            publish_states & PluginStates.WasSkipped
-            or not publish_states & PluginStates.IsCompatible
-        ):
-            return False
-        return True
+        if result is None:
+            publish_states = index.data(Roles.PublishFlagsRole)
+            if (
+                publish_states & PluginStates.WasSkipped
+                or not publish_states & PluginStates.IsCompatible
+            ):
+                result = False
+            result = True
+        return result
 
 
 class InstanceItem(QtGui.QStandardItem):
