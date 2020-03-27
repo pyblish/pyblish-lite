@@ -412,8 +412,8 @@ QToolButton:hover {
 }
 
 #PerspectiveIndicator[state="warning"] {
-	background-color: #ffffff;
-	color: #333333;
+	background-color: #ff9900;
+	color: #ffffff;
 }
 
 #PerspectiveIndicator[state="active"] {

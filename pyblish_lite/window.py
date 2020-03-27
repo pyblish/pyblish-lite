@@ -724,12 +724,13 @@ class Window(QtWidgets.QDialog):
             return
 
         menu = QtWidgets.QMenu(self)
-        plugin = index.data(Roles.ObjectRole)
-        print("plugin is: %s" % plugin)
+        plugin_id = index.data(Roles.ObjectIdRole)
+        plugin_item = self.plugin_model.plugin_items[plugin_id]
+        print("plugin is: %s" % plugin_item.plugin)
 
         for action in actions:
             qaction = QtWidgets.QAction(action.label or action.__name__, self)
-            qaction.triggered.connect(partial(self.act, plugin, action))
+            qaction.triggered.connect(partial(self.act, plugin_item, action))
             menu.addAction(qaction)
 
         menu.popup(self.overview_plugin_view.viewport().mapToGlobal(pos))
@@ -904,9 +905,9 @@ class Window(QtWidgets.QDialog):
             item = self.terminal_model.items_to_set_widget.get()
             widget = QtWidgets.QLabel()
             widget.setText(item.data(QtCore.Qt.DisplayRole))
-            widget.setTextInteractionFlags(
-                QtCore.Qt.TextBrowserInteraction
-            )
+            widget.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+            widget.setWordWrap(True)
+
             self.terminal_view.setIndexWidget(item.index(), widget)
 
         self.update_compatibility()
@@ -972,7 +973,7 @@ class Window(QtWidgets.QDialog):
 
         util.defer(5, self.controller.publish)
 
-    def act(self, plugin, action):
+    def act(self, plugin_item, action):
         self.info("%s %s.." % (self.tr("Preparing"), action))
 
         self.footer_button_stop.setEnabled(True)
@@ -982,7 +983,6 @@ class Window(QtWidgets.QDialog):
 
         # Cause view to update, but it won't visually
         # happen until Qt is given time to idle..
-        plugin_item = self.plugin_model.plugin_items[plugin._id]
         plugin_item.setData(
             PluginActionStates.InProgress, Roles.PluginActionProgressRole
         )
@@ -1005,8 +1005,8 @@ class Window(QtWidgets.QDialog):
 
         error = result.get("error")
         if error:
-            action_state |= PluginActionStates.HasFailed
             records = result.get("records") or []
+            action_state |= PluginActionStates.HasFailed
             fname, line_no, func, exc = error.traceback
 
             records.append({

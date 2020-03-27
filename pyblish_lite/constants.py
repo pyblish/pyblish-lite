@@ -37,24 +37,22 @@ def roles(*args, **kwargs):
 
 
 Roles = roles(
-    "ObjectRole",
     "ObjectIdRole",
     "ObjectUIdRole",
     "TypeRole",
     "PublishFlagsRole",
-    "DocstringRole",
+    "LogRecordsRole",
+    
+    "IsOptionalRole",
+    "IsEnabledRole",
+
     "FamiliesRole",
+
     "DocstringRole",
     "PathModuleRole",
-
-    "LogRecordsRole",
-
     "PluginActionsVisibleRole",
     "PluginValidActionsRole",
     "PluginActionProgressRole",
-
-    "IsOptionalRole",
-    "IsEnabledRole",
 
     "IntentItemValue",
 

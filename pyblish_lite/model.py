@@ -169,6 +169,11 @@ class PluginItem(QtGui.QStandardItem):
         plugin.active = is_checked
         plugin.optional = is_optional
 
+        self.setData(
+            "{}.{}".format(plugin.__module__, plugin.__name__),
+            Roles.ObjectUIdRole
+        )
+
         self.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
         )
@@ -180,16 +185,8 @@ class PluginItem(QtGui.QStandardItem):
         if role == Roles.IsOptionalRole:
             return self.plugin.optional
 
-        if role == Roles.ObjectRole:
-            return self.plugin
-
         if role == Roles.ObjectIdRole:
             return self.plugin.id
-
-        if role == Roles.ObjectUIdRole:
-            mod = self.plugin.__module__
-            class_name = self.plugin.__name__
-            return "{}.{}".format(mod, class_name)
 
         if role == Roles.TypeRole:
             return self.type()
@@ -457,27 +454,23 @@ class PluginModel(QtGui.QStandardItemModel):
         for plugin_item in self.plugin_items.values():
             if not plugin_item.plugin.optional:
                 continue
-            mod = plugin_item.plugin.__module__
-            class_name = plugin_item.plugin.__name__
-            uid = "{}.{}".format(mod, class_name)
 
+            uid = plugin_item.data(Roles.ObjectUIdRole)
             self.checkstates[uid] = plugin_item.data(QtCore.Qt.CheckStateRole)
 
     def restore_checkstates(self):
         for plugin_item in self.plugin_items.values():
             if not plugin_item.plugin.optional:
                 continue
-            mod = plugin_item.plugin.__module__
-            class_name = plugin_item.plugin.__class__.__name__
-            uid = "{}.{}".format(mod, class_name)
 
+            uid = plugin_item.data(Roles.ObjectUIdRole)
             state = self.checkstates.get(uid)
             if state is not None:
                 plugin_item.setData(state, QtCore.Qt.CheckStateRole)
 
     def update_with_result(self, result):
         plugin = result["plugin"]
-        item = self.plugin_items[plugin._id]
+        item = self.plugin_items[plugin.id]
 
         new_flag_states = {
             PluginStates.InProgress: False,
@@ -510,7 +503,7 @@ class PluginModel(QtGui.QStandardItemModel):
         records = item.data(Roles.LogRecordsRole) or []
         records.extend(new_records)
 
-        item.setData(new_records, Roles.LogRecordsRole)
+        item.setData(records, Roles.LogRecordsRole)
 
         return item
 
@@ -582,6 +575,7 @@ class InstanceItem(QtGui.QStandardItem):
     def __init__(self, instance):
         super(InstanceItem, self).__init__()
 
+        self.instance = instance
         self.is_context = False
         publish_states = getattr(instance, "_publish_states", 0)
         if publish_states & InstanceStates.ContextType:
@@ -596,7 +590,12 @@ class InstanceItem(QtGui.QStandardItem):
             or getattr(instance, "label", None)
             or instance.data["name"]
         )
-        self.instance = instance
+
+        family = self.data(Roles.FamiliesRole)[0]
+        self.setData(
+            "{}.{}".format(family, self.instance.data["name"]),
+            Roles.ObjectUIdRole
+        )
 
     def flags(self):
         return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
@@ -617,18 +616,8 @@ class InstanceItem(QtGui.QStandardItem):
         if role == Roles.TypeRole:
             return self.type()
 
-        if role == Roles.ObjectRole:
-            return self.instance
-
         if role == Roles.ObjectIdRole:
             return self.instance.id
-
-        if role == Roles.ObjectUIdRole:
-            family = self.data(Roles.FamiliesRole)[0]
-            return "{}.{}".format(family, self.instance.data["name"])
-
-        if role == Roles.IsEnabledRole:
-            return self.instance.optional
 
         if role == Roles.FamiliesRole:
             if self.is_context:
@@ -667,6 +656,10 @@ class InstanceItem(QtGui.QStandardItem):
             self.instance.data["publish"] = value
             self.emitDataChanged()
             return True
+
+        if role == Roles.IsEnabledRole:
+            if not self.instance.optional:
+                return False
 
         if role == Roles.PublishFlagsRole:
             if isinstance(value, list):
@@ -728,7 +721,6 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
 
     def append(self, instance):
         new_item = InstanceItem(instance)
-        new_item.setData(instance, Roles.ObjectRole)
         families = new_item.data(Roles.FamiliesRole)
         group_item = self.group_items.get(families[0])
         if not group_item:
@@ -747,10 +739,8 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
         for instance_item in self.instance_items.values():
             if not instance_item.instance.optional:
                 continue
-            family = instance_item.data(Roles.FamiliesRole)[0]
-            name = instance_item.instance.data["name"]
-            uid = "{}.{}".format(family, name)
 
+            uid = instance_item.data(Roles.ObjectUIdRole)
             self.checkstates[uid] = instance_item.data(
                 QtCore.Qt.CheckStateRole
             )
@@ -759,10 +749,8 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
         for instance_item in self.instance_items.values():
             if not instance_item.instance.optional:
                 continue
-            family = instance_item.data(Roles.FamiliesRole)[0]
-            name = instance_item.instance.data["name"]
-            uid = "{}.{}".format(family, name)
 
+            uid = instance_item.data(Roles.ObjectUIdRole)
             state = self.checkstates.get(uid)
             if state is not None:
                 instance_item.setData(state, QtCore.Qt.CheckStateRole)

@@ -177,7 +177,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
             elif self.last_id != plugin_item.plugin.id:
                 return
 
-            self.set_context(plugin_item)
+            self.set_context(plugin_item.index())
             return
 
         if self.last_type == model.InstanceType:
@@ -190,7 +190,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
             elif self.last_id != instance_item.instance.id:
                 return
 
-            self.set_context(instance_item)
+            self.set_context(instance_item.index())
             return
 
     def set_context(self, index):
