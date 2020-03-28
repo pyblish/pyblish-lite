@@ -29,6 +29,7 @@ import pyblish
 
 from . import settings, util
 from .awesome import tags as awesome
+from .vendor import Qt
 from .vendor.Qt import QtCore, QtGui
 from .vendor.six import text_type
 from .vendor.six.moves import queue
@@ -699,12 +700,12 @@ class InstanceItem(QtGui.QStandardItem):
         return super(InstanceItem, self).setData(value, role)
 
 
-class InstanceOverviewModel(QtGui.QStandardItemModel):
+class InstanceModel(QtGui.QStandardItemModel):
 
     group_created = QtCore.Signal(QtCore.QModelIndex)
 
     def __init__(self, controller, *args, **kwargs):
-        super(InstanceOverviewModel, self).__init__(*args, **kwargs)
+        super(InstanceModel, self).__init__(*args, **kwargs)
 
         self.controller = controller
         self.checkstates = {}
@@ -729,6 +730,16 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
         group_item.appendRow(new_item)
         instance_id = instance.id
         self.instance_items[instance_id] = new_item
+
+    def remove(self, instance_id):
+        instance_item = self.instance_items.pop(instance_id)
+        parent_item = instance_item.parent()
+        parent_item.removeRow(instance_item.row())
+        if parent_item.rowCount():
+            return
+
+        self.group_items.pop(parent_item.data(QtCore.Qt.DisplayRole))
+        self.removeRow(parent_item.row())
 
     def store_checkstates(self):
         self.checkstates.clear()
@@ -759,7 +770,9 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
         else:
             instance_id = instance.id
 
-        item = self.instance_items[instance_id]
+        item = self.instance_items.get(instance_id)
+        if not item:
+            return
 
         new_flag_states = {
             InstanceStates.InProgress: False
@@ -835,25 +848,162 @@ class InstanceOverviewModel(QtGui.QStandardItemModel):
                 )
 
 
-class InstanceArtistModel(QtGui.QStandardItemModel):
+class ArtistProxy(QtCore.QAbstractProxyModel):
     def __init__(self, *args, **kwargs):
-        super(InstanceArtistModel, self).__init__(*args, **kwargs)
-        self.instance_items = {}
+        self.mapping_from = []
+        self.mapping_to = []
+        super(ArtistProxy, self).__init__(*args, **kwargs)
 
-    def on_item_changed(self, item):
-        if item.data(Roles.TypeRole) == GroupType:
+    def on_rows_inserted(self, parent_index, from_row, to_row):
+        if not parent_index.isValid():
             return
-        my_item = self.instance_items[item.instance.id]
-        my_item.emitDataChanged()
 
-    def reset(self):
-        self.instance_items = {}
-        self.clear()
+        parent_row = parent_index.row()
+        if parent_row >= len(self.mapping_from):
+            self.mapping_from.append(list())
 
-    def append(self, instance):
-        new_item = InstanceItem(instance)
-        self.appendRow(new_item)
-        self.instance_items[instance.id] = new_item
+        new_from = None
+        new_to = None
+        for row_num in range(from_row, to_row + 1):
+            new_row = len(self.mapping_to)
+            new_to = new_row
+            if new_from is None:
+                new_from = new_row
+
+            self.mapping_from[parent_row].insert(row_num, new_row)
+            self.mapping_to.insert(new_row, [parent_row, row_num])
+
+        self.rowsInserted.emit(self.parent(), new_from, new_to + 1)
+
+    def _remove_rows(self, parent_row, from_row, to_row):
+        removed_rows = []
+        increment_num = None
+        _emit_last = None
+        for row_num in reversed(range(from_row, to_row + 1)):
+            row = self.mapping_from[parent_row].pop(row_num)
+            if increment_num is None:
+                increment_num = row
+            _emit_last = row
+            removed_rows.append(row)
+
+        _emit_first = int(increment_num)
+        mapping_from_len = len(self.mapping_from)
+        mapping_from_parent_len = len(self.mapping_from[parent_row])
+        if parent_row < mapping_from_len:
+            for idx in range(from_row, mapping_from_parent_len):
+                self.mapping_from[parent_row][idx] = increment_num
+                increment_num += 1
+
+        if parent_row < mapping_from_len - 1:
+            for idx_i in range(parent_row + 1, mapping_from_len):
+                sub_values = self.mapping_from[idx_i]
+                if not sub_values:
+                    continue
+
+                for idx_j in range(0, len(sub_values)):
+                    self.mapping_from[idx_i][idx_j] = increment_num
+                    increment_num += 1
+
+        first_to_row = None
+        for row in removed_rows:
+            if first_to_row is None:
+                first_to_row = row
+            self.mapping_to.pop(row)
+
+        return (_emit_first, _emit_last)
+
+    def on_rows_removed(self, parent_index, from_row, to_row):
+        if parent_index.isValid():
+            parent_row = parent_index.row()
+            _emit_first, _emit_last = self._remove_rows(
+                parent_row, from_row, to_row
+            )
+            self.rowsRemoved.emit(self.parent(), _emit_first, _emit_last)
+
+        else:
+            removed_rows = False
+            emit_first = None
+            emit_last = None
+            for row_num in reversed(range(from_row, to_row + 1)):
+                remaining_rows = self.mapping_from[row_num]
+                if remaining_rows:
+                    removed_rows = True
+                    _emit_first, _emit_last = self._remove_rows(
+                        row_num, 0, len(remaining_rows) - 1
+                    )
+                    if emit_first is None:
+                        emit_first = _emit_first
+                    emit_last = _emit_last
+
+                self.mapping_from.pop(row_num)
+
+            diff = to_row - from_row + 1
+            mapping_to_len = len(self.mapping_to)
+            if from_row < mapping_to_len:
+                for idx in range(from_row, mapping_to_len):
+                    self.mapping_to[idx][0] -= diff
+
+            if removed_rows:
+                self.rowsRemoved.emit(self.parent(), emit_first, emit_last)
+
+    def on_reset(self):
+        self.modelReset.emit()
+        self.mapping_from = []
+        self.mapping_to = []
+
+    def setSourceModel(self, source_model):
+        super(ArtistProxy, self).setSourceModel(source_model)
+        source_model.rowsInserted.connect(self.on_rows_inserted)
+        source_model.rowsRemoved.connect(self.on_rows_removed)
+        source_model.modelReset.connect(self.on_reset)
+        source_model.dataChanged.connect(self.on_data_changed)
+
+    def on_data_changed(self, from_index, to_index, role=[]):
+        proxy_from_index = self.mapFromSource(from_index)
+        if from_index == to_index:
+            proxy_to_index = proxy_from_index
+        else:
+            proxy_to_index = self.mapFromSource(to_index)
+
+        args = [proxy_from_index, proxy_to_index]
+        if Qt.__binding__ not in ("PyQt4", "PySide"):
+            args.append(role)
+        self.dataChanged.emit(*args)
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        # This is not right for global proxy, but in this case it is enough
+        return self.sourceModel().columnCount()
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        if parent.isValid():
+            return 0
+        return len(self.mapping_to)
+
+    def mapFromSource(self, index):
+        if not index.isValid():
+            return QtCore.QModelIndex()
+
+        parent_index = index.parent()
+        if not parent_index.isValid():
+            return QtCore.QModelIndex()
+
+        parent_idx = self.mapping_from[parent_index.row()]
+        my_row = parent_idx[index.row()]
+        return self.index(my_row, index.column())
+
+    def mapToSource(self, index):
+        if not index.isValid() or index.row() > len(self.mapping_to):
+            return self.sourceModel().index(index.row(), index.column())
+
+        parent_row, item_row = self.mapping_to[index.row()]
+        parent_index = self.sourceModel().index(parent_row, 0)
+        return self.sourceModel().index(item_row, 0, parent_index)
+
+    def index(self, row, column, parent=QtCore.QModelIndex()):
+        return self.createIndex(row, column, QtCore.QModelIndex())
+
+    def parent(self, index=None):
+        return QtCore.QModelIndex()
 
 
 class TerminalModel(QtGui.QStandardItemModel):

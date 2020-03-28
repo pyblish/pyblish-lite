@@ -138,13 +138,15 @@ class Window(QtWidgets.QDialog):
         |__________________|
 
         """
+        instance_model = model.InstanceModel(controller)
 
         artist_page = QtWidgets.QWidget()
 
         artist_view = view.ArtistView()
         artist_view.show_perspective.connect(self.toggle_perspective_widget)
-        artist_model = model.InstanceArtistModel()
-        artist_view.setModel(artist_model)
+        artist_proxy = model.ArtistProxy()
+        artist_proxy.setSourceModel(instance_model)
+        artist_view.setModel(artist_proxy)
 
         artist_delegate = delegate.ArtistDelegate()
         artist_view.setItemDelegate(artist_delegate)
@@ -176,11 +178,7 @@ class Window(QtWidgets.QDialog):
             parent=overview_instance_view
         )
         overview_instance_view.setItemDelegate(overview_instance_delegate)
-        overview_instance_model = model.InstanceOverviewModel(controller)
-        overview_instance_view.setModel(overview_instance_model)
-        overview_instance_model.itemChanged.connect(
-            artist_model.on_item_changed
-        )
+        overview_instance_view.setModel(instance_model)
 
         overview_plugin_view = view.OverviewView(parent=overview_page)
         overview_plugin_delegate = delegate.PluginDelegate(
@@ -513,7 +511,7 @@ class Window(QtWidgets.QDialog):
             self.on_plugin_action_menu_requested
         )
 
-        overview_instance_model.group_created.connect(
+        instance_model.group_created.connect(
             overview_instance_view.expand
         )
 
@@ -532,9 +530,9 @@ class Window(QtWidgets.QDialog):
         self.overview_plugin_view = overview_plugin_view
         self.plugin_model = plugin_model
         self.plugin_proxy = plugin_proxy
-        self.overview_instance_model = overview_instance_model
+        self.instance_model = instance_model
 
-        self.artist_model = artist_model
+        self.artist_proxy = artist_proxy
         self.artist_view = artist_view
 
         self.presets_button = presets_button
@@ -612,12 +610,7 @@ class Window(QtWidgets.QDialog):
             plugin_item.setData(enable_value, Roles.IsEnabledRole)
 
         for instance_item in (
-            self.overview_instance_model.instance_items.values()
-        ):
-            instance_item.setData(enable_value, Roles.IsEnabledRole)
-
-        for instance_item in (
-            self.artist_model.instance_items.values()
+            self.instance_model.instance_items.values()
         ):
             instance_item.setData(enable_value, Roles.IsEnabledRole)
 
@@ -694,7 +687,7 @@ class Window(QtWidgets.QDialog):
             instance_id = instance.id
 
         instance_item = (
-            self.overview_instance_model.instance_items[instance_id]
+            self.instance_model.instance_items[instance_id]
         )
         instance_item.setData(
             {InstanceStates.InProgress: True},
@@ -747,8 +740,7 @@ class Window(QtWidgets.QDialog):
 
     def on_was_reset(self):
         # Append context object to instances model
-        self.overview_instance_model.append(self.controller.context)
-        self.artist_model.append(self.controller.context)
+        self.instance_model.append(self.controller.context)
 
         for plugin in self.controller.plugins:
             self.plugin_model.append(plugin)
@@ -764,7 +756,7 @@ class Window(QtWidgets.QDialog):
                     key, partial(self.set_presets, key)
                 )
 
-        self.overview_instance_model.restore_checkstates()
+        self.instance_model.restore_checkstates()
         self.plugin_model.restore_checkstates()
 
         self.perspective_widget.reset()
@@ -793,7 +785,7 @@ class Window(QtWidgets.QDialog):
 
     def on_passed_group(self, order):
 
-        for group_item in self.overview_instance_model.group_items.values():
+        for group_item in self.instance_model.group_items.values():
             if self.overview_instance_view.isExpanded(group_item.index()):
                 continue
 
@@ -861,14 +853,14 @@ class Window(QtWidgets.QDialog):
         self.footer_widget.style().polish(self.footer_widget)
 
         for instance_item in (
-            self.overview_instance_model.instance_items.values()
+            self.instance_model.instance_items.values()
         ):
             instance_item.setData(
                 {InstanceStates.HasFinished: True},
                 Roles.PublishFlagsRole
             )
 
-        for group_item in self.overview_instance_model.group_items.values():
+        for group_item in self.instance_model.group_items.values():
             group_item.setData(
                 {GroupStates.HasFinished: True},
                 Roles.PublishFlagsRole
@@ -877,12 +869,16 @@ class Window(QtWidgets.QDialog):
         self.update_compatibility()
 
     def on_was_processed(self, result):
+        existing_ids = set(self.instance_model.instance_items.keys())
+        existing_ids.remove(self.controller.context.id)
         for instance in self.controller.context:
-            if instance.id not in self.overview_instance_model.instance_items:
-                self.overview_instance_model.append(instance)
+            if instance.id not in existing_ids:
+                self.instance_model.append(instance)
+            else:
+                existing_ids.remove(instance.id)
 
-            if instance.id not in self.artist_model.instance_items:
-                self.artist_model.append(instance)
+        for instance_id in existing_ids:
+            self.instance_model.remove(instance_id)
 
         error = result.get("error")
         if error:
@@ -905,7 +901,7 @@ class Window(QtWidgets.QDialog):
                 self.tabs["overview"].toggle()
 
         plugin_item = self.plugin_model.update_with_result(result)
-        instance_item = self.overview_instance_model.update_with_result(result)
+        instance_item = self.instance_model.update_with_result(result)
 
         self.terminal_model.update_with_result(result)
         while not self.terminal_model.items_to_set_widget.empty():
@@ -938,12 +934,11 @@ class Window(QtWidgets.QDialog):
         self.footer_widget.setProperty("success", -1)
         self.footer_widget.style().polish(self.footer_widget)
 
-        self.overview_instance_model.store_checkstates()
+        self.instance_model.store_checkstates()
         self.plugin_model.store_checkstates()
 
         # Reset current ids to secure no previous instances get mixed in.
-        self.overview_instance_model.reset()
-        self.artist_model.reset()
+        self.instance_model.reset()
         self.plugin_model.reset()
         self.intent_model.reset()
 
@@ -1030,7 +1025,7 @@ class Window(QtWidgets.QDialog):
         plugin_item.setData(action_state, Roles.PluginActionProgressRole)
 
         self.plugin_model.update_with_result(result)
-        self.overview_instance_model.update_with_result(result)
+        self.instance_model.update_with_result(result)
         self.terminal_model.update_with_result(result)
 
     def closeEvent(self, event):
@@ -1050,7 +1045,6 @@ class Window(QtWidgets.QDialog):
 
             # Explicitly clear potentially referenced data
             self.info(self.tr("Cleaning up models.."))
-            self.artist_model.deleteLater()
             self.intent_model.deleteLater()
             self.plugin_model.deleteLater()
             self.terminal_model.deleteLater()
