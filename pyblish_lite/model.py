@@ -1074,7 +1074,8 @@ class TerminalModel(QtGui.QStandardItemModel):
 
         top_item = QtGui.QStandardItem()
         top_item.setData(TerminalLabelType, Roles.TypeRole)
-        top_item.setData(record_item["label"], QtCore.Qt.DisplayRole)
+        label = record_item["label"].split("\n")[0]
+        top_item.setData(label, QtCore.Qt.DisplayRole)
         top_item.setFlags(
             QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
         )
