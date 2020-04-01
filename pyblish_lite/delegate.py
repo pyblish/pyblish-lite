@@ -40,7 +40,11 @@ fonts = {
     "smallAwesome": QtGui.QFont("FontAwesome", 8 * scale_factor),
     "largeAwesome": QtGui.QFont("FontAwesome", 16 * scale_factor),
 }
-
+font_metrics = {
+    "awesome6": QtGui.QFontMetrics(fonts["awesome6"]),
+    "h4": QtGui.QFontMetrics(fonts["h4"]),
+    "h5": QtGui.QFontMetrics(fonts["h5"])
+}
 icons = {
     "action": awesome["adn"],
     "angle-right": awesome["angle-right"],
@@ -63,7 +67,10 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
 
         check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
-        check_rect.adjust(6, 6, -6, -6)
+        check_offset = (check_rect.height() / 4) + 1
+        check_rect.adjust(
+            check_offset, check_offset, -check_offset, -check_offset
+        )
 
         check_color = colors["idle"]
 
@@ -92,15 +99,15 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
         elif not index.data(Roles.IsEnabledRole):
             check_color = colors["inactive"]
 
-        metrics = painter.fontMetrics()
-
-        label_rect = QtCore.QRectF(option.rect.adjusted(
-            check_rect.width() + 12, 2, 0, -2))
+        offset = (body_rect.height() - font_metrics["h4"].height()) / 2
+        label_rect = QtCore.QRectF(body_rect.adjusted(
+            check_rect.width() + 12, offset - 1, 0, 0
+        ))
 
         assert label_rect.width() > 0
 
         label = index.data(QtCore.Qt.DisplayRole)
-        label = metrics.elidedText(
+        label = font_metrics["h4"].elidedText(
             label,
             QtCore.Qt.ElideRight,
             label_rect.width() - 20
@@ -153,13 +160,12 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
         pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
 
-        optional_check_rect = QtCore.QRectF(check_rect)
-        optional_check_rect.adjust(2, 2, -1, -1)
-
         if index.data(Roles.IsOptionalRole):
             painter.drawRect(check_rect)
 
             if index.data(QtCore.Qt.CheckStateRole):
+                optional_check_rect = QtCore.QRectF(check_rect)
+                optional_check_rect.adjust(2, 2, -1, -1)
                 painter.fillRect(optional_check_rect, check_color)
 
         else:
@@ -191,7 +197,8 @@ class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
 
         check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
-        check_rect.adjust(6, 6, -6, -6)
+        offset = (check_rect.height() / 4) + 1
+        check_rect.adjust(offset, offset, -(offset), -(offset))
 
         check_color = colors["idle"]
 
@@ -220,15 +227,15 @@ class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
         elif not index.data(Roles.IsEnabledRole):
             check_color = colors["inactive"]
 
-        metrics = painter.fontMetrics()
-
-        label_rect = QtCore.QRectF(option.rect.adjusted(
-            check_rect.width() + 12, 2, 0, -2))
+        offset = (body_rect.height() - font_metrics["h4"].height()) / 2
+        label_rect = QtCore.QRectF(body_rect.adjusted(
+            check_rect.width() + 12, offset - 1, 0, 0
+        ))
 
         assert label_rect.width() > 0
 
         label = index.data(QtCore.Qt.DisplayRole)
-        label = metrics.elidedText(
+        label = font_metrics["h4"].elidedText(
             label,
             QtCore.Qt.ElideRight,
             label_rect.width() - 20
@@ -255,13 +262,12 @@ class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
         pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
 
-        optional_check_rect = QtCore.QRectF(check_rect)
-        optional_check_rect.adjust(2, 2, -1, -1)
-
         if index.data(Roles.IsOptionalRole):
             painter.drawRect(check_rect)
 
             if index.data(QtCore.Qt.CheckStateRole):
+                optional_check_rect = QtCore.QRectF(check_rect)
+                optional_check_rect.adjust(2, 2, -1, -1)
                 painter.fillRect(optional_check_rect, check_color)
 
         else:
@@ -316,23 +322,27 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
         """
         body_rect = QtCore.QRectF(option.rect)
         bg_rect = QtCore.QRectF(
-            body_rect.left(), body_rect.top()+1,
-            body_rect.width()-5, body_rect.height()-2
+            body_rect.left(), body_rect.top() + 1,
+            body_rect.width() - 5, body_rect.height() - 2
         )
         fg_color = self.pick_fg_colors(index)
-        radius = 7.0
+        radius = 8.0
         bg_path = QtGui.QPainterPath()
         bg_path.addRoundedRect(bg_rect, radius, radius)
         painter.fillPath(bg_path, colors["group"])
 
-        metrics = painter.fontMetrics()
-
-        expander_rect = QtCore.QRectF(body_rect)
+        expander_rect = QtCore.QRectF(bg_rect)
         expander_rect.setWidth(expander_rect.height())
-        expander_rect.adjust(6, 6, -8, -2)
+        text_height = font_metrics["awesome6"].height()
+        adjust_value = (expander_rect.height() - text_height) / 2
+        expander_rect.adjust(
+            adjust_value + 1.5, adjust_value - 0.5,
+            -adjust_value + 1.5, -adjust_value - 0.5
+        )
 
-        label_rect = QtCore.QRectF(option.rect.adjusted(
-            expander_rect.width() + 12, 2, 0, -2
+        offset = (bg_rect.height() - font_metrics["h5"].height()) / 2
+        label_rect = QtCore.QRectF(bg_rect.adjusted(
+            expander_rect.width() + 12, offset - 1, 0, 0
         ))
 
         assert label_rect.width() > 0
@@ -343,7 +353,7 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
         if expanded:
             expander_icon = icons["minus-sign"]
         label = index.data(QtCore.Qt.DisplayRole)
-        label = metrics.elidedText(
+        label = font_metrics["h5"].elidedText(
             label, QtCore.Qt.ElideRight, label_rect.width()
         )
 
@@ -428,8 +438,8 @@ class ArtistDelegate(QtWidgets.QStyledItemDelegate):
         perspective_rect.setWidth(35)
         perspective_rect.setHeight(35)
         perspective_rect.translate(
-            content_rect.width()-(perspective_rect.width()/2)+10,
-            (content_rect.height()/2)-(perspective_rect.height()/2)
+            content_rect.width() - (perspective_rect.width() / 2) + 10,
+            (content_rect.height() / 2) - (perspective_rect.height() / 2)
         )
 
         # Colors
