@@ -22,13 +22,6 @@ colors = {
     "group": QtGui.QColor("#333")
 }
 
-group_fg_colors = {
-    "error": QtGui.QColor("#aa5050"),
-    "warning": QtGui.QColor("#b36b00"),
-    "ok": QtGui.QColor("#458056"),
-    "group": QtGui.QColor("#ffffff")
-}
-
 scale_factors = {"darwin": 1.5}
 scale_factor = scale_factors.get(platform.system().lower(), 1.0)
 fonts = {
@@ -304,17 +297,6 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
 
         self.group_item_paint(painter, option, index)
 
-    def pick_fg_colors(self, index):
-        key = "group"
-        publish_states = index.data(Roles.PublishFlagsRole)
-        if publish_states & GroupStates.HasWarning:
-            key = "warning"
-        elif publish_states & GroupStates.HasError:
-            key = "error"
-        elif publish_states & GroupStates.HasFinished:
-            key = "ok"
-        return group_fg_colors[key]
-
     def group_item_paint(self, painter, option, index):
         """Paint text
          _
@@ -325,7 +307,6 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
             body_rect.left(), body_rect.top() + 1,
             body_rect.width() - 5, body_rect.height() - 2
         )
-        fg_color = self.pick_fg_colors(index)
         radius = 8.0
         bg_path = QtGui.QPainterPath()
         bg_path.addRoundedRect(bg_rect, radius, radius)
@@ -361,7 +342,7 @@ class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
         painter.save()
 
         painter.setFont(fonts["awesome6"])
-        painter.setPen(QtGui.QPen(fg_color))
+        painter.setPen(QtGui.QPen(colors["idle"]))
         painter.drawText(expander_rect, expander_icon)
 
         # Draw label
