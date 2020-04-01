@@ -99,10 +99,10 @@ class OrderGroups:
 
     # Group string can be set with environment "PYBLISH_GROUP_SETTING"
     default_groups = {
-        pyblish.api.CollectorOrder + 0.5: "Collector",
-        pyblish.api.ValidatorOrder + 0.5: "Validator",
-        pyblish.api.ExtractorOrder + 0.5: "Extractor",
-        pyblish.api.IntegratorOrder + 0.5: "Integrator",
+        pyblish.api.CollectorOrder + 0.5: "Collect",
+        pyblish.api.ValidatorOrder + 0.5: "Validate",
+        pyblish.api.ExtractorOrder + 0.5: "Extract",
+        pyblish.api.IntegratorOrder + 0.5: "Integrate",
         None: "Other"
     }
 
@@ -110,13 +110,13 @@ class OrderGroups:
     # `group_range` is set to "1"
     __groups_str_example__ = (
         # half of `group_range` is added to 0 because number means it is Order
-        "0=Collector"
+        "0=Collect"
         # if `<` is before than it means group range is not used
         # but is expected that number is already max
-        ",<1.5=Validator"
+        ",<1.5=Validate"
         # "Extractor" will be used in range `<1.5; 2.5)`
-        ",<2.5=Extractor"
-        ",<3.5=Integrator"
+        ",<2.5=Extract"
+        ",<3.5=Integrate"
         # "Other" if number is not set than all remaining plugins are in
         # - in this case Other's range is <3.5; infinity)
         ",Other"
