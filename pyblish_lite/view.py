@@ -144,6 +144,8 @@ class TerminalView(QtWidgets.QTreeView):
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.setHeaderHidden(True)
         self.setIndentation(0)
+        self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollPerPixel)
+        self.verticalScrollBar().setSingleStep(10)
         self.setRootIsDecorated(False)
 
         self.clicked.connect(self.item_expand)
