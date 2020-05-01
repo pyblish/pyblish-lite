@@ -307,7 +307,10 @@ class PluginItem(QtGui.QStandardItem):
 
         return super(PluginItem, self).data(role)
 
-    def setData(self, value, role=(QtCore.Qt.UserRole + 1)):
+    def setData(self, value, role=None):
+        if role is None:
+            role = QtCore.Qt.UserRole + 1
+
         if role == QtCore.Qt.CheckStateRole:
             if not self.data(Roles.IsEnabledRole):
                 return False
@@ -315,7 +318,7 @@ class PluginItem(QtGui.QStandardItem):
             self.emitDataChanged()
             return True
 
-        if role == Roles.PluginActionProgressRole:
+        elif role == Roles.PluginActionProgressRole:
             if isinstance(value, list):
                 _value = self.data(Roles.PluginActionProgressRole)
                 for flag in value:
@@ -331,7 +334,7 @@ class PluginItem(QtGui.QStandardItem):
                         _value ^= flag
                 value = _value
 
-        if role == Roles.PublishFlagsRole:
+        elif role == Roles.PublishFlagsRole:
             if isinstance(value, list):
                 _value = self.data(Roles.PublishFlagsRole)
                 for flag in value:
@@ -1007,16 +1010,16 @@ class ArtistProxy(QtCore.QAbstractProxyModel):
 
 
 class TerminalModel(QtGui.QStandardItemModel):
-    key_label_record_map = {
-        "msg": "Message",
-        "name": "Plugin",
-        "pathname": "Path",
-        "lineno": "Line",
-        "traceback": "Traceback",
-        "levelname": "Level",
-        "threadName": "Thread",
-        "msecs": "Millis"
-    }
+    key_label_record_map = (
+        ("msg", "Message"),
+        ("name", "Plugin"),
+        ("pathname", "Path"),
+        ("lineno", "Line"),
+        ("traceback", "Traceback"),
+        ("levelname", "Level"),
+        ("threadName", "Thread"),
+        ("msecs", "Millis")
+    )
 
     item_icon_name = {
         "info": "fa.info",
@@ -1111,7 +1114,6 @@ class TerminalModel(QtGui.QStandardItemModel):
         top_item.appendRow(detail_item)
         self.items_to_set_widget.put(detail_item)
 
-
     def update_with_result(self, result):
         for record in result["records"]:
             self.append(record)
@@ -1121,7 +1123,7 @@ class TerminalModel(QtGui.QStandardItemModel):
             return item_data["label"]
 
         html_text = ""
-        for key, title in self.key_label_record_map.items():
+        for key, title in self.key_label_record_map:
             if key not in item_data:
                 continue
             value = item_data[key]
