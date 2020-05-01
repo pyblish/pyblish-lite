@@ -429,7 +429,7 @@ class PluginModel(QtGui.QStandardItemModel):
         label = None
         order = None
         for _order, _label in reversed(plugin_groups.items()):
-            if order is None or plugin.order < _order:
+            if _order is None or plugin.order < _order:
                 label = _label
                 order = _order
             else:
