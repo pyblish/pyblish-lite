@@ -195,7 +195,10 @@ class TerminalView(QtWidgets.QTreeView):
 
     def sizeHint(self):
         size = super(TerminalView, self).sizeHint()
-        height = 0
+        height = (
+            self.contentsMargins().top()
+            + self.contentsMargins().bottom()
+        )
         for idx_i in range(self.model().rowCount()):
             index = self.model().index(idx_i, 0)
             height += self.rowHeight(index)

@@ -906,15 +906,7 @@ class Window(QtWidgets.QDialog):
         self.terminal_model.update_with_result(result)
         while not self.terminal_model.items_to_set_widget.empty():
             item = self.terminal_model.items_to_set_widget.get()
-
-            widget = widgets.TerminalDetail()
-            widget.setReadOnly(True)
-            widget.setHtml(item.data(QtCore.Qt.DisplayRole))
-            widget.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
-            widget.setWordWrapMode(
-                QtGui.QTextOption.WrapAtWordBoundaryOrAnywhere
-            )
-
+            widget = widgets.TerminalDetail(item.data(QtCore.Qt.DisplayRole))
             self.terminal_view.setIndexWidget(item.index(), widget)
 
         self.update_compatibility()
