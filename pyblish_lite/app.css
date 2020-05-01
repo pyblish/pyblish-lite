@@ -163,10 +163,11 @@ QToolButton {
 	margin: 0px;
 	padding: 0px;
 	border-radius: 0px;
+	border: none;
 }
 
 QToolButton:hover {
-	background-color: #666;
+	color: #fff;
 }
 
 /* Specific CSS */
