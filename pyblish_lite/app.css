@@ -365,6 +365,14 @@ QToolButton:hover {
 	background-color: transparent;
 }
 
+#TerminalView:item:hover {
+	color: #ffffff;
+}
+
+#TerminalView:item:selected {
+	color: #eeeeee;
+}
+
 #TerminalView QLabel {
 	padding:3px;
 	color: #aaa;
