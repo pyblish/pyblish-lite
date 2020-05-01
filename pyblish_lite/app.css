@@ -166,10 +166,6 @@ QToolButton {
 	border: none;
 }
 
-QToolButton:hover {
-	color: #fff;
-}
-
 /* Specific CSS */
 #PerspectiveToggleBtn {
 	border-bottom: 3px solid lightblue;
@@ -444,4 +440,20 @@ QToolButton:hover {
 #PerspectiveIndicator[state="ok"] {
 	background-color: #69a567;
 	color: #ffffff;
+}
+
+#ExpandableHeader {
+	background-color: transparent;
+	margin: 0px;
+	padding: 0px;
+	border-radius: 0px;
+	border: none;
+}
+
+#ExpandableHeader QWidget {
+	color: #ddd;
+}
+
+#ExpandableHeader QWidget:hover {
+	color: #fff;
 }

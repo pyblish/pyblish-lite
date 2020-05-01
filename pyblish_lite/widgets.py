@@ -322,6 +322,7 @@ class ExpandableWidget(QtWidgets.QWidget):
         super(ExpandableWidget, self).__init__(parent)
 
         top_part = ClickableWidget(parent=self)
+        top_part.setObjectName("ExpandableHeader")
 
         button_size = QtCore.QSize(5, 5)
         button_toggle = QtWidgets.QToolButton(parent=top_part)
