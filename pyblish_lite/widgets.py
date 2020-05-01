@@ -288,12 +288,15 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.terminal_model.update_with_result(data)
         while not self.terminal_model.items_to_set_widget.empty():
             item = self.terminal_model.items_to_set_widget.get()
-            widget = QtWidgets.QLabel()
-            widget.setText(item.data(QtCore.Qt.DisplayRole))
-            widget.setTextInteractionFlags(
-                QtCore.Qt.TextBrowserInteraction
+
+            widget = TerminalDetail()
+            widget.setReadOnly(True)
+            widget.setHtml(item.data(QtCore.Qt.DisplayRole))
+            widget.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+            widget.setWordWrapMode(
+                QtGui.QTextOption.WrapAtWordBoundaryOrAnywhere
             )
-            widget.setWordWrap(True)
+
             self.terminal_view.setIndexWidget(item.index(), widget)
 
         self.records.button_toggle_text.setText(
@@ -447,3 +450,14 @@ class CommentBox(QtWidgets.QLineEdit):
         if not self.text():
             self.placeholder.setVisible(True)
         return super(CommentBox, self).focusOutEvent(event)
+
+
+class TerminalDetail(QtWidgets.QTextEdit):
+    def sizeHint(self):
+        content_margins = (
+            self.contentsMargins().top()
+            + self.contentsMargins().bottom()
+        )
+        size = self.document().documentLayout().documentSize().toSize()
+        size.setHeight(size.height() + content_margins)
+        return size

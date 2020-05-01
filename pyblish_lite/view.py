@@ -180,6 +180,7 @@ class TerminalView(QtWidgets.QTreeView):
                 self.collapse(index)
             else:
                 self.expand(index)
+                self.model().layoutChanged.emit()
             self.updateGeometry()
 
     def rowsInserted(self, parent, start, end):
@@ -187,6 +188,10 @@ class TerminalView(QtWidgets.QTreeView):
         super(TerminalView, self).rowsInserted(parent, start, end)
         self.updateGeometry()
         self.scrollToBottom()
+
+    def resizeEvent(self, event):
+        super(self.__class__, self).resizeEvent(event)
+        self.model().layoutChanged.emit()
 
     def sizeHint(self):
         size = super(TerminalView, self).sizeHint()

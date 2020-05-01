@@ -371,7 +371,7 @@ QToolButton {
 	color: #eeeeee;
 }
 
-#TerminalView QLabel {
+#TerminalView QTextEdit {
 	padding:3px;
 	color: #aaa;
 	border-radius: 7px;
@@ -381,11 +381,11 @@ QToolButton {
 	background-color: #333;
 }
 
-#TerminalView QLabel:hover {
+#TerminalView QTextEdit:hover {
 	background-color: #353535;
 }
 
-#TerminalView QLabel:selected {
+#TerminalView QTextEdit:selected {
 	background-color: #303030;
 }
 
