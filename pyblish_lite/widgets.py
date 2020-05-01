@@ -57,6 +57,8 @@ class PerspectiveWidget(QtWidgets.QWidget):
         main_layout.addWidget(header_widget)
 
         scroll_widget = QtWidgets.QScrollArea(self)
+        scroll_widget.setObjectName("PerspectiveScrollContent")
+
         contents_widget = QtWidgets.QWidget(scroll_widget)
         contents_widget.setObjectName("PerspectiveWidgetContent")
 

@@ -246,7 +246,9 @@ QToolButton:hover {
 	color: white;
 }
 
-#ButtonWithMenu:pressed {background: #777;}
+#ButtonWithMenu:pressed {
+	background: #777;
+}
 
 #ButtonWithMenu:hover {
 	color: white;
@@ -401,6 +403,10 @@ QToolButton:hover {
 	font-size: 16pt;
 	font-style: bold;
 	font-weight: 50;
+}
+
+#PerspectiveScrollContent {
+	border: 1px solid #333;
 }
 
 #PerspectiveWidgetContent{
