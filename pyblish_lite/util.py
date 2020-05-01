@@ -80,8 +80,10 @@ def collect_families_from_instances(instances, only_active=False):
             if instance.data.get("publish") is False:
                 continue
         family = instance.data.get("family")
-        families = [family] if family else []
-        families += instance.data.get("families", [])
+        if family:
+            all_families.add(family)
+
+        families = instance.data.get("families") or tuple()
         for family in families:
             all_families.add(family)
 
