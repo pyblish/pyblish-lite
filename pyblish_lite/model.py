@@ -1030,22 +1030,20 @@ class TerminalModel(QtGui.QStandardItemModel):
     item_icon_colors = {
         "info": "#ffffff",
         "error": "#ff4a4a",
-        "record": {
-            None: "#333333",
-            "DEBUG": "#ff66e8",
-            "INFO": "#66abff",
-            "WARNING": "#ffba66",
-            "ERROR": "#ff4d58",
-            "CRITICAL": "#ff4f75"
-        }
+        "log_debug": "#ff66e8",
+        "log_info": "#66abff",
+        "log_warning": "#ffba66",
+        "log_error": "#ff4d58",
+        "log_critical": "#ff4f75",
+        None: "#333333"
     }
 
     level_to_record = (
-        (10, "DEBUG"),
-        (20, "INFO"),
-        (30, "WARNING"),
-        (40, "ERROR"),
-        (50, "CRITICAL")
+        (10, "log_debug"),
+        (20, "log_info"),
+        (30, "log_warning"),
+        (40, "log_error"),
+        (50, "log_critical")
 
     )
 
@@ -1075,38 +1073,39 @@ class TerminalModel(QtGui.QStandardItemModel):
                 "levelname": record.levelname
             }
 
-        top_item = QtGui.QStandardItem()
-        top_item.setData(TerminalLabelType, Roles.TypeRole)
-        label = record_item["label"].split("\n")[0]
-        top_item.setData(label, QtCore.Qt.DisplayRole)
-        top_item.setFlags(
-            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        )
-        self.appendRow(top_item)
-
-        icon_color = None
-        icon_name = None
         record_type = record_item["type"]
+
+        terminal_item_type = None
         if record_type == "record":
-            color_name = None
-            for level, _color_name in self.level_to_record:
+            for level, _type in self.level_to_record:
                 if level > record.levelno:
                     break
-                color_name = _color_name
+                terminal_item_type = _type
 
-            icon_color = self.item_icon_colors[record_type][color_name]
-            icon_name = self.item_icon_name[record_type]
+        else:
+            terminal_item_type = record_type
 
-        elif record_type in ("info", "error"):
-            icon_color = self.item_icon_colors[record_type]
-            icon_name = self.item_icon_name[record_type]
+        icon_color = self.item_icon_colors.get(terminal_item_type)
+        icon_name = self.item_icon_name.get(record_type)
 
         top_item_icon = None
         if icon_color and icon_name:
             top_item_icon = QAwesomeIconFactory.icon(icon_name, icon_color)
 
+        label = record_item["label"].split("\n")[0]
+
+        top_item = QtGui.QStandardItem()
+        top_item.setData(TerminalLabelType, Roles.TypeRole)
+        top_item.setData(terminal_item_type, Roles.TerminalItemTypeRole)
+        top_item.setData(label, QtCore.Qt.DisplayRole)
+        top_item.setFlags(
+            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        )
+
         if top_item_icon:
             top_item.setData(top_item_icon, QtCore.Qt.DecorationRole)
+
+        self.appendRow(top_item)
 
         detail_text = self.prepare_detail_text(record_item)
         detail_item = QtGui.QStandardItem(detail_text)
