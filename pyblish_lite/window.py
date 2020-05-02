@@ -53,6 +53,18 @@ from .constants import (
 class Window(QtWidgets.QDialog):
     def __init__(self, controller, parent=None):
         super(Window, self).__init__(parent=parent)
+
+        # Use plastique style for specific ocations
+        # TODO set style name via environment variable
+        low_keys = {
+            key.lower(): key
+            for key in QtWidgets.QStyleFactory.keys()
+        }
+        if "plastique" in low_keys:
+            self.setStyle(
+                QtWidgets.QStyleFactory.create(low_keys["plastique"])
+            )
+
         icon = QtGui.QIcon(util.get_asset("img", "logo-extrasmall.png"))
         if parent is None:
             on_top_flag = QtCore.Qt.WindowStaysOnTopHint
@@ -214,7 +226,10 @@ class Window(QtWidgets.QDialog):
 
         terminal_view = view.TerminalView()
         terminal_model = model.TerminalModel()
-        terminal_view.setModel(terminal_model)
+        terminal_proxy = model.TerminalProxy(terminal_view)
+        terminal_proxy.setSourceModel(terminal_model)
+
+        terminal_view.setModel(terminal_proxy)
         terminal_delegate = delegate.TerminalItem()
         terminal_view.setItemDelegate(terminal_delegate)
 
@@ -261,6 +276,10 @@ class Window(QtWidgets.QDialog):
         comment_intent_layout.setSpacing(5)
         comment_intent_layout.addWidget(comment_box)
         comment_intent_layout.addWidget(intent_box)
+
+        """Terminal filters"""
+
+        terminal_filters_widget = widgets.TerminalFilterWidget()
 
         """Footer
          ______________________
@@ -321,6 +340,7 @@ class Window(QtWidgets.QDialog):
         layout.addWidget(body_widget, 3)
         layout.addWidget(perspective_widget, 3)
         layout.addWidget(closing_placeholder, 1)
+        layout.addWidget(terminal_filters_widget, 0)
         layout.addWidget(footer_widget, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -520,6 +540,8 @@ class Window(QtWidgets.QDialog):
         self.header_widget = header_widget
         self.body_widget = body_widget
 
+        self.terminal_filters_widget = terminal_filters_widget
+
         self.footer_widget = footer_widget
         self.footer_button_reset = footer_button_reset
         self.footer_button_validate = footer_button_validate
@@ -540,6 +562,7 @@ class Window(QtWidgets.QDialog):
         self.animation_info_msg = animation_info_msg
 
         self.terminal_model = terminal_model
+        self.terminal_proxy = terminal_proxy
         self.terminal_view = terminal_view
 
         self.comment_main_widget = comment_intent_widget
@@ -604,6 +627,7 @@ class Window(QtWidgets.QDialog):
         self.header_widget.setVisible(not show)
 
         self.perspective_widget.setVisible(show)
+        self.terminal_filters_widget.setVisible(show)
 
     def change_toggleability(self, enable_value):
         for plugin_item in self.plugin_model.plugin_items.values():
@@ -630,6 +654,7 @@ class Window(QtWidgets.QDialog):
 
     def on_tab_changed(self, target):
         self.comment_main_widget.setVisible(not target == "terminal")
+        self.terminal_filters_widget.setVisible(target == "terminal")
 
         for name, page in self.pages.items():
             if name != target:
@@ -907,7 +932,8 @@ class Window(QtWidgets.QDialog):
         while not self.terminal_model.items_to_set_widget.empty():
             item = self.terminal_model.items_to_set_widget.get()
             widget = widgets.TerminalDetail(item.data(QtCore.Qt.DisplayRole))
-            self.terminal_view.setIndexWidget(item.index(), widget)
+            index = self.terminal_proxy.mapFromSource(item.index())
+            self.terminal_view.setIndexWidget(index, widget)
 
         self.update_compatibility()
 

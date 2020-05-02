@@ -1164,20 +1164,21 @@ class TerminalProxy(QtCore.QSortFilterProxyModel):
 
     instances = []
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, view, *args, **kwargs):
         super(self.__class__, self).__init__(*args, **kwargs)
         self.__class__.instances.append(self)
+        # Store parent because by own `QSortFilterProxyModel` has `parent`
+        # method not returning parent QObject in PySide and PyQt4
+        self.view = view
 
     @classmethod
     def change_filter(cls, name, value):
-        # self.__class__.filter_buttons_checks[name] = value
         cls.filter_buttons_checks[name] = value
 
         for instance in cls.instances:
             instance.invalidate()
-            parent = instance.parent()
-            if parent:
-                parent.updateGeometry()
+            if instance.view:
+                instance.view.updateGeometry()
 
     def filterAcceptsRow(self, source_row, source_parent):
         index = self.sourceModel().index(source_row, 0, source_parent)

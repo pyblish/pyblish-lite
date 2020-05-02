@@ -1,6 +1,6 @@
 import sys
 from .vendor.Qt import QtCore, QtWidgets, QtGui
-from . import model, delegate, view
+from . import model, delegate, view, awesome, settings
 from .constants import PluginStates, InstanceStates, Roles
 
 
@@ -90,7 +90,10 @@ class PerspectiveWidget(QtWidgets.QWidget):
         terminal_view = view.TerminalView()
         terminal_view.setObjectName("TerminalView")
         terminal_model = model.TerminalModel()
-        terminal_view.setModel(terminal_model)
+        terminal_proxy = model.TerminalProxy(terminal_view)
+        terminal_proxy.setSourceModel(terminal_model)
+
+        terminal_view.setModel(terminal_proxy)
         terminal_delegate = delegate.TerminalItem()
         terminal_view.setItemDelegate(terminal_delegate)
         records.set_content(terminal_view)
@@ -105,6 +108,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
         self.terminal_view = terminal_view
         self.terminal_model = terminal_model
+        self.terminal_proxy = terminal_proxy
 
         self.indicator = indicator
         self.scroll_widget = scroll_widget
@@ -289,7 +293,8 @@ class PerspectiveWidget(QtWidgets.QWidget):
         while not self.terminal_model.items_to_set_widget.empty():
             item = self.terminal_model.items_to_set_widget.get()
             widget = TerminalDetail(item.data(QtCore.Qt.DisplayRole))
-            self.terminal_view.setIndexWidget(item.index(), widget)
+            index = self.terminal_proxy.mapFromSource(item.index())
+            self.terminal_view.setIndexWidget(index, widget)
 
         self.records.button_toggle_text.setText(
             "{} ({})".format(self.l_rec, len_records)
@@ -374,6 +379,10 @@ class ExpandableWidget(QtWidgets.QWidget):
         self.button_toggle.setChecked(checked)
         self.button_toggle.setArrowType(arrow_type)
         self.content_widget.setVisible(checked)
+
+    def resizeEvent(self, event):
+        super(self.__class__, self).resizeEvent(event)
+        self.content.updateGeometry()
 
     def set_content(self, in_widget):
         if self.content:
