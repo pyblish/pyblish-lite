@@ -1149,3 +1149,42 @@ class TerminalModel(QtGui.QStandardItemModel):
             html_text
         )
         return html_text
+
+
+class TerminalProxy(QtCore.QSortFilterProxyModel):
+    filter_buttons_checks = {
+        "info": settings.TerminalFilters.get("info", True),
+        "log_debug": settings.TerminalFilters.get("log_debug", True),
+        "log_info": settings.TerminalFilters.get("log_info", True),
+        "log_warning": settings.TerminalFilters.get("log_warning", True),
+        "log_error": settings.TerminalFilters.get("log_error", True),
+        "log_critical": settings.TerminalFilters.get("log_critical", True),
+        "error": settings.TerminalFilters.get("error", True)
+    }
+
+    instances = []
+
+    def __init__(self, *args, **kwargs):
+        super(self.__class__, self).__init__(*args, **kwargs)
+        self.__class__.instances.append(self)
+
+    @classmethod
+    def change_filter(cls, name, value):
+        # self.__class__.filter_buttons_checks[name] = value
+        cls.filter_buttons_checks[name] = value
+
+        for instance in cls.instances:
+            instance.invalidate()
+            parent = instance.parent()
+            if parent:
+                parent.updateGeometry()
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        index = self.sourceModel().index(source_row, 0, source_parent)
+        item_type = index.data(Roles.TypeRole)
+        if not item_type == TerminalLabelType:
+            return True
+        terminal_item_type = index.data(Roles.TerminalItemTypeRole)
+        return self.__class__.filter_buttons_checks.get(
+            terminal_item_type, True
+        )
