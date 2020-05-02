@@ -142,6 +142,7 @@ class TerminalView(QtWidgets.QTreeView):
         super(TerminalView, self).__init__(parent)
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setAutoScroll(False)
         self.setHeaderHidden(True)
         self.setIndentation(0)
         self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollPerPixel)
