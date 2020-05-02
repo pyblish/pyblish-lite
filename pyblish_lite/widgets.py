@@ -463,3 +463,56 @@ class TerminalDetail(QtWidgets.QTextEdit):
         size = self.document().documentLayout().documentSize().toSize()
         size.setHeight(size.height() + content_margins)
         return size
+
+
+class FilterButton(QtWidgets.QPushButton):
+    def __init__(self, name, *args, **kwargs):
+        self.filter_name = name
+
+        super(self.__class__, self).__init__(*args, **kwargs)
+
+        self.toggled.connect(self.on_toggle)
+
+        self.setProperty("type", name)
+        self.setObjectName("TerminalFilerBtn")
+        self.setCheckable(True)
+        self.setChecked(
+            model.TerminalProxy.filter_buttons_checks[name]
+        )
+
+    def on_toggle(self, toggle_state):
+        model.TerminalProxy.change_filter(self.filter_name, toggle_state)
+
+
+class TerminalFilterWidget(QtWidgets.QWidget):
+    # timer.timeout.connect(lambda: self._update(self.parent_widget))
+    def __init__(self, *args, **kwargs):
+        super(self.__class__, self).__init__(*args, **kwargs)
+
+        self.filter_changed = QtCore.Signal()
+
+        info_icon = awesome.tags["info"]
+        log_icon = awesome.tags["circle"]
+        error_icon = awesome.tags["exclamation-triangle"]
+
+        filter_buttons = (
+            FilterButton("info", info_icon),
+            FilterButton("log_debug", log_icon),
+            FilterButton("log_info", log_icon),
+            FilterButton("log_warning", log_icon),
+            FilterButton("log_error", log_icon),
+            FilterButton("log_critical", log_icon),
+            FilterButton("error", error_icon)
+        )
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        # Add spacers
+        layout.addWidget(QtWidgets.QWidget(), 1)
+
+        for btn in filter_buttons:
+            layout.addWidget(btn)
+
+        self.setLayout(layout)
+
+        self.filter_buttons = filter_buttons

@@ -458,3 +458,36 @@ QToolButton {
 #ExpandableHeader QWidget:hover {
 	color: #fff;
 }
+
+#TerminalFilerBtn {
+	/* font: %(font_size_pt)spt; */
+	font-family: "FontAwesome";
+	text-align: center;
+	background-color: transparent;
+	border-width: 1px;
+	border-color: #777777;
+	border-style: none;
+	padding: 0px;
+	border-radius: 3px;
+}
+
+#TerminalFilerBtn[type="info"]:checked {color: rgb(255, 255, 255);}
+#TerminalFilerBtn[type="info"] {color: rgba(255, 255, 255, 63);}
+
+#TerminalFilerBtn[type="error"]:checked {color: rgb(255, 74, 74);}
+#TerminalFilerBtn[type="error"] {color: rgba(255, 74, 74, 63);}
+
+#TerminalFilerBtn[type="log_debug"]:checked {color: rgb(255, 102, 232);}
+#TerminalFilerBtn[type="log_debug"] {color: rgba(255, 102, 232, 63);}
+
+#TerminalFilerBtn[type="log_info"]:checked {color: rgb(102, 171, 255);}
+#TerminalFilerBtn[type="log_info"] {color: rgba(102, 171, 255, 63);}
+
+#TerminalFilerBtn[type="log_warning"]:checked {color: rgb(255, 186, 102);}
+#TerminalFilerBtn[type="log_warning"] {color: rgba(255, 186, 102, 63);}
+
+#TerminalFilerBtn[type="log_error"]:checked {color: rgb(255, 77, 88);}
+#TerminalFilerBtn[type="log_error"] {color: rgba(255, 77, 88, 63);}
+
+#TerminalFilerBtn[type="log_critical"]:checked {color: rgb(255, 79, 117);}
+#TerminalFilerBtn[type="log_critical"] {color: rgba(255, 79, 117, 63);}
