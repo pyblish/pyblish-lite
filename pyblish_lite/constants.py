@@ -42,7 +42,7 @@ Roles = roles(
     "TypeRole",
     "PublishFlagsRole",
     "LogRecordsRole",
-    
+
     "IsOptionalRole",
     "IsEnabledRole",
 
@@ -53,6 +53,8 @@ Roles = roles(
     "PluginActionsVisibleRole",
     "PluginValidActionsRole",
     "PluginActionProgressRole",
+
+    "TerminalItemTypeRole",
 
     "IntentItemValue",
 
