@@ -1176,9 +1176,14 @@ class TerminalProxy(QtCore.QSortFilterProxyModel):
         cls.filter_buttons_checks[name] = value
 
         for instance in cls.instances:
-            instance.invalidate()
-            if instance.view:
-                instance.view.updateGeometry()
+            try:
+                instance.invalidate()
+                if instance.view:
+                    instance.view.updateGeometry()
+
+            except RuntimeError:
+                # C++ Object was deleted
+                cls.instances.remove(instance)
 
     def filterAcceptsRow(self, source_row, source_parent):
         index = self.sourceModel().index(source_row, 0, source_parent)

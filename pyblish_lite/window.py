@@ -1070,6 +1070,7 @@ class Window(QtWidgets.QDialog):
             self.intent_model.deleteLater()
             self.plugin_model.deleteLater()
             self.terminal_model.deleteLater()
+            self.terminal_proxy.deleteLater()
             self.plugin_proxy.deleteLater()
 
             self.artist_view.setModel(None)
