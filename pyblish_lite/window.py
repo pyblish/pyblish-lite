@@ -905,25 +905,12 @@ class Window(QtWidgets.QDialog):
         for instance_id in existing_ids:
             self.instance_model.remove(instance_id)
 
-        error = result.get("error")
-        if error:
-            records = result.get("records") or []
-            fname, line_no, func, exc = error.traceback
-
-            records.append({
-                "label": str(error),
-                "type": "error",
-                "filename": str(fname),
-                "lineno": str(line_no),
-                "func": str(func),
-                "traceback": error.formatted_traceback,
-            })
-
-            result["records"] = records
-
+        if result.get("error"):
             # Toggle from artist to overview tab on error
             if self.tabs["artist"].isChecked():
                 self.tabs["overview"].toggle()
+
+        result["records"] = self.terminal_model.prepare_records(result)
 
         plugin_item = self.plugin_model.update_with_result(result)
         instance_item = self.instance_model.update_with_result(result)

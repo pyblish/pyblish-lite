@@ -1011,6 +1011,7 @@ class ArtistProxy(QtCore.QAbstractProxyModel):
 
 class TerminalModel(QtGui.QStandardItemModel):
     key_label_record_map = (
+        ("instance", "Instance"),
         ("msg", "Message"),
         ("name", "Plugin"),
         ("pathname", "Path"),
@@ -1055,30 +1056,62 @@ class TerminalModel(QtGui.QStandardItemModel):
         self.items_to_set_widget = queue.Queue()
         self.clear()
 
-    def append(self, record):
-        if isinstance(record, dict):
-            record_item = record
-        else:
-            record_item = {
-                "label": text_type(record.msg),
-                "type": "record",
-                "levelno": record.levelno,
-                "threadName": record.threadName,
-                "name": record.name,
-                "filename": record.filename,
-                "pathname": record.pathname,
-                "lineno": record.lineno,
-                "msg": text_type(record.msg),
-                "msecs": record.msecs,
-                "levelname": record.levelname
+    def prepare_records(self, result):
+        prepared_records = []
+        instance_name = None
+        instance = result["instance"]
+        if instance is not None:
+            instance_name = instance.data["name"]
+
+        for record in result.get("records") or []:
+            if isinstance(record, dict):
+                record_item = record
+            else:
+                record_item = {
+                    "label": text_type(record.msg),
+                    "type": "record",
+                    "levelno": record.levelno,
+                    "threadName": record.threadName,
+                    "name": record.name,
+                    "filename": record.filename,
+                    "pathname": record.pathname,
+                    "lineno": record.lineno,
+                    "msg": text_type(record.msg),
+                    "msecs": record.msecs,
+                    "levelname": record.levelname
+                }
+
+            if instance_name is not None:
+                record_item["instance"] = instance_name
+
+            prepared_records.append(record_item)
+
+        error = result.get("error")
+        if error:
+            fname, line_no, func, exc = error.traceback
+            error_item = {
+                "label": str(error),
+                "type": "error",
+                "filename": str(fname),
+                "lineno": str(line_no),
+                "func": str(func),
+                "traceback": error.formatted_traceback,
             }
 
+            if instance_name is not None:
+                error_item["instance"] = instance_name
+
+            prepared_records.append(error_item)
+
+        return prepared_records
+
+    def append(self, record_item):
         record_type = record_item["type"]
 
         terminal_item_type = None
         if record_type == "record":
             for level, _type in self.level_to_record:
-                if level > record.levelno:
+                if level > record_item["levelno"]:
                     break
                 terminal_item_type = _type
 
