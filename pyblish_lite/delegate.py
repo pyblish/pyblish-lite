@@ -393,6 +393,14 @@ class ArtistDelegate(QtWidgets.QStyledItemDelegate):
         body_rect = QtCore.QRectF(option.rect).adjusted(2, 2, -8, -2)
         content_rect = body_rect.adjusted(5, 5, -5, -5)
 
+        perspective_rect = QtCore.QRectF(body_rect)
+        perspective_rect.setWidth(35)
+        perspective_rect.setHeight(35)
+        perspective_rect.translate(
+            content_rect.width() - (perspective_rect.width() / 2) + 10,
+            (content_rect.height() / 2) - (perspective_rect.height() / 2)
+        )
+
         toggle_rect = QtCore.QRectF(body_rect)
         toggle_rect.setWidth(7)
         toggle_rect.adjust(1, 1, 0, -1)
@@ -406,22 +414,20 @@ class ArtistDelegate(QtWidgets.QStyledItemDelegate):
         duration_rect.translate(content_rect.width() - 50, 0)
 
         label_rect = QtCore.QRectF(content_rect)
+        label_x_offset = icon_rect.width() + spacing
         label_rect.translate(
-            icon_rect.width() + spacing,
+            label_x_offset,
             0
         )
         label_rect.setHeight(metrics.lineSpacing() + spacing)
+        label_rect.setWidth(
+            content_rect.width()
+            - label_x_offset
+            - perspective_rect.width()
+        )
 
         families_rect = QtCore.QRectF(label_rect)
         families_rect.translate(0, label_rect.height())
-
-        perspective_rect = QtCore.QRectF(body_rect)
-        perspective_rect.setWidth(35)
-        perspective_rect.setHeight(35)
-        perspective_rect.translate(
-            content_rect.width() - (perspective_rect.width() / 2) + 10,
-            (content_rect.height() / 2) - (perspective_rect.height() / 2)
-        )
 
         # Colors
         check_color = colors["idle"]
