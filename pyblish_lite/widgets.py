@@ -6,7 +6,7 @@ from .constants import PluginStates, InstanceStates, Roles
 
 class EllidableLabel(QtWidgets.QLabel):
     def __init__(self, *args, **kwargs):
-        super(EllidableLabel, self).__init__(*args, **kwargs)
+        super(self.__class__, self).__init__(*args, **kwargs)
         self.setObjectName("EllidableLabel")
 
     def paintEvent(self, event):
@@ -17,6 +17,41 @@ class EllidableLabel(QtWidgets.QLabel):
             self.text(), QtCore.Qt.ElideRight, self.width()
         )
         painter.drawText(self.rect(), self.alignment(), elided)
+
+
+class PerspectiveLabel(QtWidgets.QTextEdit):
+    def __init__(self, parent=None):
+        super(self.__class__, self).__init__(parent)
+        self.setObjectName("PerspectiveLabel")
+
+        size_policy = self.sizePolicy()
+        size_policy.setHeightForWidth(True)
+        size_policy.setVerticalPolicy(QtWidgets.QSizePolicy.Preferred)
+        self.setSizePolicy(size_policy)
+
+        self.textChanged.connect(self.on_text_changed)
+
+    def on_text_changed(self, *args, **kwargs):
+        self.updateGeometry()
+
+    def hasHeightForWidth(self):
+        return True
+
+    def heightForWidth(self, width):
+        margins = self.contentsMargins()
+
+        document_width = 0
+        if width >= margins.left() + margins.right():
+            document_width = width - margins.left() - margins.right()
+
+        document = self.document().clone()
+        document.setTextWidth(document_width)
+
+        return margins.top() + document.size().height() + margins.bottom()
+
+    def sizeHint(self):
+        width = super(self.__class__, self).sizeHint().width()
+        return QtCore.QSize(width, self.heightForWidth(width))
 
 
 class PerspectiveWidget(QtWidgets.QWidget):
@@ -67,20 +102,14 @@ class PerspectiveWidget(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         documentation = ExpandableWidget(self, self.l_doc)
-        doc_label = QtWidgets.QLabel()
-        doc_label.setWordWrap(True)
-        doc_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        doc_label = PerspectiveLabel()
         documentation.set_content(doc_label)
         layout.addWidget(documentation)
 
         path = ExpandableWidget(self, self.l_path)
-        path_label = QtWidgets.QLabel()
-        path_label.setWordWrap(True)
-        path_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        path_label = PerspectiveLabel()
         path.set_content(path_label)
         layout.addWidget(path)
-        for widget in [path_label, doc_label]:
-            widget.setObjectName("PerspectiveLabel")
 
         records = ExpandableWidget(self, self.l_rec)
         layout.addWidget(records)

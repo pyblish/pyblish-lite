@@ -412,6 +412,7 @@ QToolButton {
 
 #PerspectiveLabel {
 	background-color: transparent;
+	border: none;
 }
 
 #PerspectiveIndicator {
