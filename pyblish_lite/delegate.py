@@ -388,7 +388,6 @@ class ArtistDelegate(QtWidgets.QStyledItemDelegate):
 
         # Layout
         spacing = 10
-        metrics = painter.fontMetrics()
 
         body_rect = QtCore.QRectF(option.rect).adjusted(2, 2, -8, -2)
         content_rect = body_rect.adjusted(5, 5, -5, -5)
@@ -413,22 +412,6 @@ class ArtistDelegate(QtWidgets.QStyledItemDelegate):
         duration_rect = QtCore.QRectF(content_rect)
         duration_rect.translate(content_rect.width() - 50, 0)
 
-        label_rect = QtCore.QRectF(content_rect)
-        label_x_offset = icon_rect.width() + spacing
-        label_rect.translate(
-            label_x_offset,
-            0
-        )
-        label_rect.setHeight(metrics.lineSpacing() + spacing)
-        label_rect.setWidth(
-            content_rect.width()
-            - label_x_offset
-            - perspective_rect.width()
-        )
-
-        families_rect = QtCore.QRectF(label_rect)
-        families_rect.translate(0, label_rect.height())
-
         # Colors
         check_color = colors["idle"]
 
@@ -450,26 +433,13 @@ class ArtistDelegate(QtWidgets.QStyledItemDelegate):
         elif not index.data(Roles.IsEnabledRole):
             check_color = colors["inactive"]
 
-        icon = index.data(QtCore.Qt.DecorationRole)
         perspective_icon = icons["angle-right"]
-        label = index.data(QtCore.Qt.DisplayRole)
 
-        families = ", ".join(index.data(Roles.FamiliesRole))
-
-        # Elide
-        label = metrics.elidedText(
-            label, QtCore.Qt.ElideRight, label_rect.width()
-        )
-
-        families = metrics.elidedText(
-            families, QtCore.Qt.ElideRight, label_rect.width()
-        )
-
-        font_color = colors["idle"]
         if not index.data(QtCore.Qt.CheckStateRole):
             font_color = colors["inactive"]
+        else:
+            font_color = colors["idle"]
 
-        perspective_color = colors["inactive"]
         if (
             option.state
             & (
@@ -478,11 +448,16 @@ class ArtistDelegate(QtWidgets.QStyledItemDelegate):
             )
         ):
             perspective_color = colors["idle"]
+        else:
+            perspective_color = colors["inactive"]
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
         # Draw background
         painter.fillRect(body_rect, colors["hover"])
+
+        # Draw icon
+        icon = index.data(QtCore.Qt.DecorationRole)
 
         painter.setFont(fonts["largeAwesome"])
         painter.setPen(QtGui.QPen(font_color))
@@ -490,11 +465,38 @@ class ArtistDelegate(QtWidgets.QStyledItemDelegate):
 
         # Draw label
         painter.setFont(fonts["h3"])
+        label_rect = QtCore.QRectF(content_rect)
+        label_x_offset = icon_rect.width() + spacing
+        label_rect.translate(
+            label_x_offset,
+            0
+        )
+        metrics = painter.fontMetrics()
+        label_rect.setHeight(metrics.lineSpacing())
+        label_rect.setWidth(
+            content_rect.width()
+            - label_x_offset
+            - perspective_rect.width()
+        )
+        # Elide label
+        label = index.data(QtCore.Qt.DisplayRole)
+        label = metrics.elidedText(
+            label, QtCore.Qt.ElideRight, label_rect.width()
+        )
         painter.drawText(label_rect, label)
 
         # Draw families
         painter.setFont(fonts["h5"])
         painter.setPen(QtGui.QPen(colors["inactive"]))
+
+        families = ", ".join(index.data(Roles.FamiliesRole))
+        families = painter.fontMetrics().elidedText(
+            families, QtCore.Qt.ElideRight, label_rect.width()
+        )
+
+        families_rect = QtCore.QRectF(label_rect)
+        families_rect.translate(0, label_rect.height() + spacing)
+
         painter.drawText(families_rect, families)
 
         painter.setFont(fonts["largeAwesome"])
