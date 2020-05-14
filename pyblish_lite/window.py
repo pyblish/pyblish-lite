@@ -950,6 +950,7 @@ class Window(QtWidgets.QDialog):
         self.instance_model.reset()
         self.plugin_model.reset()
         self.intent_model.reset()
+        self.terminal_model.reset()
 
         self.footer_button_stop.setEnabled(False)
         self.footer_button_reset.setEnabled(False)
