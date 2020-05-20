@@ -308,7 +308,7 @@ QToolButton {
 }
 
 #CommentBox, #CommentPlaceholder {
-	font-family: Open Sans;
+	font-family: "Open Sans";
 	font-size: 8pt;
 	padding: 5px;
 	background: #444;
