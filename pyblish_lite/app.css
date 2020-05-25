@@ -4,6 +4,7 @@
 	outline: none;
 	color: #ddd;
   	font-family: "Open Sans";
+	font-style: normal;
 }
 
 /* General CSS */
@@ -397,8 +398,7 @@ QToolButton {
 
 #EllidableLabel {
 	font-size: 16pt;
-	font-style: bold;
-	font-weight: 50;
+	font-weight: normal;
 }
 
 #PerspectiveScrollContent {
@@ -417,8 +417,7 @@ QToolButton {
 
 #PerspectiveIndicator {
 	font-size: 16pt;
-	font-style: bold;
-	font-weight: 50;
+	font-weight: normal;
 	padding: 5px;
 	background-color: #ffffff;
 	color: #333333;
