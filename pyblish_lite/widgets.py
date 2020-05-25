@@ -191,7 +191,7 @@ class PerspectiveWidget(QtWidgets.QWidget):
 
     def reset(self):
         self.last_id = None
-        self.terminal_model.reset()
+        self.set_records(list())
         self.set_indicator_state(None)
 
     def update_context(self, plugin_item, instance_item):
@@ -311,7 +311,9 @@ class PerspectiveWidget(QtWidgets.QWidget):
         self.records.setVisible(True)
 
         records = index.data(Roles.LogRecordsRole) or []
+        self.set_records(records)
 
+    def set_records(self, records):
         len_records = 0
         if records:
             len_records += len(records)
