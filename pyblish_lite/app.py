@@ -25,6 +25,8 @@ def application():
     else:
         print("Using existing QApplication..")
         yield app
+        if os.environ.get("PYBLISH_LITE_ALWAYS_EXEC"):
+            app.exec_()
 
 
 def install_translator(app):
