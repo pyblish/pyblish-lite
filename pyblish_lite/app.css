@@ -3,7 +3,7 @@
 * {
 	outline: none;
 	color: #ddd;
-  font-family: "Open Sans";
+  	font-family: "Open Sans";
 }
 
 /* General CSS */
@@ -161,13 +161,9 @@ QLabel {
 QToolButton {
 	background-color: transparent;
 	margin: 0px;
-	padding: 3px;
+	padding: 0px;
 	border-radius: 0px;
-	min-width: 20px;
-}
-
-QToolButton:hover {
-	background-color: #666;
+	border: none;
 }
 
 /* Specific CSS */
@@ -246,7 +242,9 @@ QToolButton:hover {
 	color: white;
 }
 
-#ButtonWithMenu:pressed {background: #777;}
+#ButtonWithMenu:pressed {
+	background: #777;
+}
 
 #ButtonWithMenu:hover {
 	color: white;
@@ -258,7 +256,7 @@ QToolButton:hover {
 	border: 1px solid #999;
 }
 
-#FooterSpacer, #FooterInfo {
+#FooterSpacer, #FooterInfo, #HeaderSpacer {
 	background: transparent;
 }
 
@@ -310,7 +308,7 @@ QToolButton:hover {
 }
 
 #CommentBox, #CommentPlaceholder {
-	font-family: Open Sans;
+	font-family: "Open Sans";
 	font-size: 8pt;
 	padding: 5px;
 	background: #444;
@@ -349,44 +347,148 @@ QToolButton:hover {
 	image: url();
 }
 
-#Details {
-	width: 20px;
-	background: #333;
-	border: 1px solid #222;
+#TerminalView {
+	background-color: transparent;
 }
 
-#Details QLabel {
-	font-size: 8pt;
+#TerminalView:item {
+	background-color: transparent;
 }
 
-#Details #Header {
-	background: #444;
-	border: 1px solid #222;
+#TerminalView:hover {
+	background-color: transparent;
 }
 
-#Details #Body {
-	background: transparent;
+#TerminalView:selected {
+	background-color: transparent;
 }
 
-#Details #Heading {
-	font-size: 9pt;
-	font-weight: bold;
+#TerminalView:item:hover {
+	color: #ffffff;
 }
 
-#Details #Subheading {
-	background: transparent;
+#TerminalView:item:selected {
+	color: #eeeeee;
 }
 
-#Details #Timestamp {
-	color: #999;
+#TerminalView QTextEdit {
+	padding:3px;
+	color: #aaa;
+	border-radius: 7px;
+	border-color: #222;
+	border-style: solid;
+	border-width: 2px;
+	background-color: #333;
 }
 
-#Details #Text {
-	font-family: "Courier";
-	font-size: 9pt;
+#TerminalView QTextEdit:hover {
+	background-color: #353535;
 }
 
-#Details #Icon {
+#TerminalView QTextEdit:selected {
+	background-color: #303030;
+}
+
+#ExpandableWidgetContent {
+	border: none;
+	background-color: #232323;
+	color:#eeeeee;
+}
+
+#EllidableLabel {
+	font-size: 16pt;
+	font-style: bold;
+	font-weight: 50;
+}
+
+#PerspectiveScrollContent {
+	border: 1px solid #333;
+	border-radius: 0px;
+}
+
+#PerspectiveWidgetContent{
+	padding: 0px;
+}
+
+#PerspectiveLabel {
+	background-color: transparent;
+	border: none;
+}
+
+#PerspectiveIndicator {
+	font-size: 16pt;
+	font-style: bold;
+	font-weight: 50;
+	padding: 5px;
+	background-color: #ffffff;
+	color: #333333;
+}
+
+#PerspectiveIndicator[state="warning"] {
+	background-color: #ff9900;
+	color: #ffffff;
+}
+
+#PerspectiveIndicator[state="active"] {
+	background-color: #99CEEE;
+	color: #ffffff;
+}
+
+#PerspectiveIndicator[state="error"] {
+	background-color: #cc4a4a;
+	color: #ffffff;
+}
+
+#PerspectiveIndicator[state="ok"] {
+	background-color: #69a567;
+	color: #ffffff;
+}
+
+#ExpandableHeader {
+	background-color: transparent;
+	margin: 0px;
+	padding: 0px;
+	border-radius: 0px;
+	border: none;
+}
+
+#ExpandableHeader QWidget {
+	color: #ddd;
+}
+
+#ExpandableHeader QWidget:hover {
+	color: #fff;
+}
+
+#TerminalFilerBtn {
+	/* font: %(font_size_pt)spt; */
 	font-family: "FontAwesome";
-	font-size: 15pt;
+	text-align: center;
+	background-color: transparent;
+	border-width: 1px;
+	border-color: #777777;
+	border-style: none;
+	padding: 0px;
+	border-radius: 3px;
 }
+
+#TerminalFilerBtn[type="info"]:checked {color: rgb(255, 255, 255);}
+#TerminalFilerBtn[type="info"] {color: rgba(255, 255, 255, 63);}
+
+#TerminalFilerBtn[type="error"]:checked {color: rgb(255, 74, 74);}
+#TerminalFilerBtn[type="error"] {color: rgba(255, 74, 74, 63);}
+
+#TerminalFilerBtn[type="log_debug"]:checked {color: rgb(255, 102, 232);}
+#TerminalFilerBtn[type="log_debug"] {color: rgba(255, 102, 232, 63);}
+
+#TerminalFilerBtn[type="log_info"]:checked {color: rgb(102, 171, 255);}
+#TerminalFilerBtn[type="log_info"] {color: rgba(102, 171, 255, 63);}
+
+#TerminalFilerBtn[type="log_warning"]:checked {color: rgb(255, 186, 102);}
+#TerminalFilerBtn[type="log_warning"] {color: rgba(255, 186, 102, 63);}
+
+#TerminalFilerBtn[type="log_error"]:checked {color: rgb(255, 77, 88);}
+#TerminalFilerBtn[type="log_error"] {color: rgba(255, 77, 88, 63);}
+
+#TerminalFilerBtn[type="log_critical"]:checked {color: rgb(255, 79, 117);}
+#TerminalFilerBtn[type="log_critical"] {color: rgba(255, 79, 117, 63);}
