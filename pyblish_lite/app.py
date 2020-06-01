@@ -39,10 +39,21 @@ def install_translator(app):
 
 def install_fonts():
     database = QtGui.QFontDatabase()
+    fonts = [
+        "opensans/OpenSans-Bold.ttf",
+        "opensans/OpenSans-BoldItalic.ttf",
+        "opensans/OpenSans-ExtraBold.ttf",
+        "opensans/OpenSans-ExtraBoldItalic.ttf",
+        "opensans/OpenSans-Italic.ttf",
+        "opensans/OpenSans-Light.ttf",
+        "opensans/OpenSans-LightItalic.ttf",
+        "opensans/OpenSans-Regular.ttf",
+        "opensans/OpenSans-Semibold.ttf",
+        "opensans/OpenSans-SemiboldItalic.ttf",
+        "fontawesome/fontawesome-webfont.ttf"
+    ]
 
-    for font in (os.path.join("opensans", "OpenSans-Regular.ttf"),
-                 os.path.join("opensans", "OpenSans-Semibold.ttf"),
-                 os.path.join("fontawesome", "fontawesome-webfont.ttf")):
+    for font in fonts:
         path = util.get_asset("font", font)
 
         # TODO(marcus): Check if they are already installed first.
@@ -84,11 +95,7 @@ def show(parent=None):
         self._window.resize(*settings.WindowSize)
         self._window.setWindowTitle(settings.WindowTitle)
 
-        font = self._window.font()
-        font.setFamily("Open Sans")
-        font.setPointSize(8)
-        font.setWeight(400)
-
+        font = QtGui.QFont("Open Sans", 8, QtGui.QFont.Normal)
         self._window.setFont(font)
         self._window.setStyleSheet(css)
 

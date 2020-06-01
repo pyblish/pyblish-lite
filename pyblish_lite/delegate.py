@@ -4,6 +4,9 @@ from .vendor.Qt import QtWidgets, QtGui, QtCore
 
 from . import model
 from .awesome import tags as awesome
+from .constants import (
+    PluginStates, InstanceStates, PluginActionStates, GroupStates, Roles
+)
 
 colors = {
     "error": QtGui.QColor("#ff4a4a"),
@@ -16,34 +19,26 @@ colors = {
     "hover": QtGui.QColor(255, 255, 255, 10),
     "selected": QtGui.QColor(255, 255, 255, 20),
     "outline": QtGui.QColor("#333"),
-    "group_bg": QtGui.QColor("#333")
-}
-
-record_colors = {
-    "DEBUG": QtGui.QColor("#ff66e8"),
-    "INFO": QtGui.QColor("#66abff"),
-    "WARNING": QtGui.QColor("#ffba66"),
-    "ERROR": QtGui.QColor("#ff4d58"),
-    "CRITICAL": QtGui.QColor("#ff4f75"),
+    "group": QtGui.QColor("#333")
 }
 
 scale_factors = {"darwin": 1.5}
 scale_factor = scale_factors.get(platform.system().lower(), 1.0)
 fonts = {
-    "h3": QtGui.QFont("Open Sans", 10 * scale_factor, 900),
-    "h4": QtGui.QFont("Open Sans", 8 * scale_factor, 400),
-    "h5": QtGui.QFont("Open Sans", 8 * scale_factor, 800),
+    "h3": QtGui.QFont("Open Sans", 10 * scale_factor, QtGui.QFont.Normal),
+    "h4": QtGui.QFont("Open Sans", 8 * scale_factor, QtGui.QFont.Normal),
+    "h5": QtGui.QFont("Open Sans", 8 * scale_factor, QtGui.QFont.DemiBold),
     "awesome6": QtGui.QFont("FontAwesome", 6 * scale_factor),
     "awesome10": QtGui.QFont("FontAwesome", 10 * scale_factor),
     "smallAwesome": QtGui.QFont("FontAwesome", 8 * scale_factor),
     "largeAwesome": QtGui.QFont("FontAwesome", 16 * scale_factor),
 }
-
+font_metrics = {
+    "awesome6": QtGui.QFontMetrics(fonts["awesome6"]),
+    "h4": QtGui.QFontMetrics(fonts["h4"]),
+    "h5": QtGui.QFontMetrics(fonts["h5"])
+}
 icons = {
-    "info": awesome["info"],
-    "record": awesome["circle"],
-    "file": awesome["file"],
-    "error": awesome["exclamation-triangle"],
     "action": awesome["adn"],
     "angle-right": awesome["angle-right"],
     "angle-left": awesome["angle-left"],
@@ -52,21 +47,23 @@ icons = {
 }
 
 
-class Item(QtWidgets.QStyledItemDelegate):
+class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
     """Generic delegate for model items"""
 
     def paint(self, painter, option, index):
-        """Paint checkbox and text
+        """Paint checkbox and text.
          _
         |_|  My label    >
-
         """
 
         body_rect = QtCore.QRectF(option.rect)
 
         check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
-        check_rect.adjust(6, 6, -6, -6)
+        check_offset = (check_rect.height() / 4) + 1
+        check_rect.adjust(
+            check_offset, check_offset, -check_offset, -check_offset
+        )
 
         check_color = colors["idle"]
 
@@ -75,45 +72,42 @@ class Item(QtWidgets.QStyledItemDelegate):
         perspective_rect.setWidth(perspective_rect.height())
         perspective_rect.adjust(0, 3, 0, 0)
         perspective_rect.translate(
-            body_rect.width()-(perspective_rect.width()/2+2),
+            body_rect.width() - (perspective_rect.width() / 2 + 2),
             0
         )
 
-        if index.data(model.IsProcessing) is True:
+        publish_states = index.data(Roles.PublishFlagsRole)
+        if publish_states & PluginStates.InProgress:
             check_color = colors["active"]
 
-        elif index.data(model.HasFailed) is True:
+        elif publish_states & PluginStates.HasError:
             check_color = colors["error"]
 
-        elif index.data(model.HasSucceeded) is True:
+        elif publish_states & PluginStates.HasWarning:
+            check_color = colors["warning"]
+
+        elif publish_states & PluginStates.WasProcessed:
             check_color = colors["ok"]
 
-        elif index.data(model.HasProcessed) is True:
-            check_color = colors["ok"]
+        elif not index.data(Roles.IsEnabledRole):
+            check_color = colors["inactive"]
 
-        if index.data(model.HasWarning) is True:
-            if (
-                index.data(model.HasFailed) is False and
-                index.data(model.HasSucceeded) is True
-            ):
-                check_color = colors["warning"]
-
-        metrics = painter.fontMetrics()
-
-        label_rect = QtCore.QRectF(option.rect.adjusted(
-            check_rect.width() + 12, 2, 0, -2))
+        offset = (body_rect.height() - font_metrics["h4"].height()) / 2
+        label_rect = QtCore.QRectF(body_rect.adjusted(
+            check_rect.width() + 12, offset - 1, 0, 0
+        ))
 
         assert label_rect.width() > 0
 
         label = index.data(QtCore.Qt.DisplayRole)
-        label = metrics.elidedText(
+        label = font_metrics["h4"].elidedText(
             label,
             QtCore.Qt.ElideRight,
             label_rect.width() - 20
         )
 
         font_color = colors["idle"]
-        if not index.data(model.IsChecked):
+        if not index.data(QtCore.Qt.CheckStateRole):
             font_color = colors["inactive"]
 
         # Maintain reference to state, so we can restore it once we're done
@@ -130,17 +124,17 @@ class Item(QtWidgets.QStyledItemDelegate):
         painter.drawText(label_rect, label)
 
         # Draw action icon
-        if index.data(model.ActionIconVisible):
+        if index.data(Roles.PluginActionsVisibleRole):
             painter.save()
-
-            if index.data(model.ActionIdle):
-                color = colors["idle"]
-            elif index.data(model.IsProcessing):
-                color = colors["active"]
-            elif index.data(model.ActionFailed):
+            action_state = index.data(Roles.PluginActionProgressRole)
+            if action_state & PluginActionStates.HasFailed:
                 color = colors["error"]
-            else:
+            elif action_state & PluginActionStates.HasFinished:
                 color = colors["ok"]
+            elif action_state & PluginActionStates.InProgress:
+                color = colors["active"]
+            else:
+                color = colors["idle"]
 
             painter.setFont(fonts["smallAwesome"])
             painter.setPen(QtGui.QPen(color))
@@ -159,19 +153,16 @@ class Item(QtWidgets.QStyledItemDelegate):
         pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
 
-        optional_check_rect = QtCore.QRectF(check_rect)
-        optional_check_rect.adjust(2, 2, -1, -1)
-
-        if index.data(model.IsOptional):
+        if index.data(Roles.IsOptionalRole):
             painter.drawRect(check_rect)
 
-            if index.data(model.IsChecked):
+            if index.data(QtCore.Qt.CheckStateRole):
+                optional_check_rect = QtCore.QRectF(check_rect)
+                optional_check_rect.adjust(2, 2, -1, -1)
                 painter.fillRect(optional_check_rect, check_color)
 
-        elif not index.data(model.IsIdle) and index.data(model.IsChecked):
-            painter.fillRect(check_rect, check_color)
         else:
-            painter.fillRect(check_rect, colors["inactive"])
+            painter.fillRect(check_rect, check_color)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
             painter.fillRect(body_rect, colors["hover"])
@@ -186,59 +177,176 @@ class Item(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20)
 
 
-class Section(QtWidgets.QStyledItemDelegate):
-    """Generic delegate for section header"""
+class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
+    """Generic delegate for model items"""
 
     def paint(self, painter, option, index):
+        """Paint checkbox and text.
+         _
+        |_|  My label    >
+        """
+
+        body_rect = QtCore.QRectF(option.rect)
+
+        check_rect = QtCore.QRectF(body_rect)
+        check_rect.setWidth(check_rect.height())
+        offset = (check_rect.height() / 4) + 1
+        check_rect.adjust(offset, offset, -(offset), -(offset))
+
+        check_color = colors["idle"]
+
+        perspective_icon = icons["angle-right"]
+        perspective_rect = QtCore.QRectF(body_rect)
+        perspective_rect.setWidth(perspective_rect.height())
+        perspective_rect.adjust(0, 3, 0, 0)
+        perspective_rect.translate(
+            body_rect.width() - (perspective_rect.width() / 2 + 2),
+            0
+        )
+
+        publish_states = index.data(Roles.PublishFlagsRole)
+        if publish_states & InstanceStates.InProgress:
+            check_color = colors["active"]
+
+        elif publish_states & InstanceStates.HasError:
+            check_color = colors["error"]
+
+        elif publish_states & InstanceStates.HasWarning:
+            check_color = colors["warning"]
+
+        elif publish_states & InstanceStates.HasFinished:
+            check_color = colors["ok"]
+
+        elif not index.data(Roles.IsEnabledRole):
+            check_color = colors["inactive"]
+
+        offset = (body_rect.height() - font_metrics["h4"].height()) / 2
+        label_rect = QtCore.QRectF(body_rect.adjusted(
+            check_rect.width() + 12, offset - 1, 0, 0
+        ))
+
+        assert label_rect.width() > 0
+
+        label = index.data(QtCore.Qt.DisplayRole)
+        label = font_metrics["h4"].elidedText(
+            label,
+            QtCore.Qt.ElideRight,
+            label_rect.width() - 20
+        )
+
+        font_color = colors["idle"]
+        if not index.data(QtCore.Qt.CheckStateRole):
+            font_color = colors["inactive"]
+
+        # Maintain reference to state, so we can restore it once we're done
+        painter.save()
+
+        # Draw perspective icon
+        painter.setFont(fonts["awesome10"])
+        painter.setPen(QtGui.QPen(font_color))
+        painter.drawText(perspective_rect, perspective_icon)
+
+        # Draw label
+        painter.setFont(fonts["h4"])
+        painter.setPen(QtGui.QPen(font_color))
+        painter.drawText(label_rect, label)
+
+        # Draw checkbox
+        pen = QtGui.QPen(check_color, 1)
+        painter.setPen(pen)
+
+        if index.data(Roles.IsOptionalRole):
+            painter.drawRect(check_rect)
+
+            if index.data(QtCore.Qt.CheckStateRole):
+                optional_check_rect = QtCore.QRectF(check_rect)
+                optional_check_rect.adjust(2, 2, -1, -1)
+                painter.fillRect(optional_check_rect, check_color)
+
+        else:
+            painter.fillRect(check_rect, check_color)
+
+        if option.state & QtWidgets.QStyle.State_MouseOver:
+            painter.fillRect(body_rect, colors["hover"])
+
+        if option.state & QtWidgets.QStyle.State_Selected:
+            painter.fillRect(body_rect, colors["selected"])
+
+        # Ok, we're done, tidy up.
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        return QtCore.QSize(option.rect.width(), 20)
+
+
+class OverviewGroupSection(QtWidgets.QStyledItemDelegate):
+    """Generic delegate for section header"""
+
+    item_class = None
+
+    def __init__(self, parent):
+        super(OverviewGroupSection, self).__init__(parent)
+        self.item_delegate = self.item_class(parent)
+
+    def paint(self, painter, option, index):
+        if index.data(Roles.TypeRole) in (
+            model.InstanceType, model.PluginType
+        ):
+            self.item_delegate.paint(painter, option, index)
+            return
+
+        self.group_item_paint(painter, option, index)
+
+    def group_item_paint(self, painter, option, index):
         """Paint text
          _
         My label
         """
         body_rect = QtCore.QRectF(option.rect)
         bg_rect = QtCore.QRectF(
-            body_rect.left(), body_rect.top()+1,
-            body_rect.width()-5, body_rect.height()-2
+            body_rect.left(), body_rect.top() + 1,
+            body_rect.width() - 5, body_rect.height() - 2
         )
-        radius = 7.0
+        radius = 8.0
         bg_path = QtGui.QPainterPath()
         bg_path.addRoundedRect(bg_rect, radius, radius)
-        painter.fillPath(bg_path, colors['group_bg'])
+        painter.fillPath(bg_path, colors["group"])
 
-        metrics = painter.fontMetrics()
-
-        expander_rect = QtCore.QRectF(body_rect)
+        expander_rect = QtCore.QRectF(bg_rect)
         expander_rect.setWidth(expander_rect.height())
-        expander_rect.adjust(6, 6, -8, -2)
+        text_height = font_metrics["awesome6"].height()
+        adjust_value = (expander_rect.height() - text_height) / 2
+        expander_rect.adjust(
+            adjust_value + 1.5, adjust_value - 0.5,
+            -adjust_value + 1.5, -adjust_value - 0.5
+        )
 
-        expander_color = colors["idle"]
-
-        label_rect = QtCore.QRectF(option.rect.adjusted(
-            expander_rect.width() + 12, 2, 0, -2
+        offset = (bg_rect.height() - font_metrics["h5"].height()) / 2
+        label_rect = QtCore.QRectF(bg_rect.adjusted(
+            expander_rect.width() + 12, offset - 1, 0, 0
         ))
 
         assert label_rect.width() > 0
 
-        expander_icon = icons['plus-sign']
-        group = index.data(model.GroupObject)
-        if group.expanded:
-            expander_icon = icons['minus-sign']
+        expander_icon = icons["plus-sign"]
+
+        expanded = self.parent().isExpanded(index)
+        if expanded:
+            expander_icon = icons["minus-sign"]
         label = index.data(QtCore.Qt.DisplayRole)
-        label = metrics.elidedText(
+        label = font_metrics["h5"].elidedText(
             label, QtCore.Qt.ElideRight, label_rect.width()
         )
-
-        font_color = colors["idle"]
 
         # Maintain reference to state, so we can restore it once we're done
         painter.save()
 
-        painter.setFont(fonts['awesome6'])
-        painter.setPen(QtGui.QPen(expander_color))
+        painter.setFont(fonts["awesome6"])
+        painter.setPen(QtGui.QPen(colors["idle"]))
         painter.drawText(expander_rect, expander_icon)
 
         # Draw label
-        painter.setFont(fonts["h4"])
-        painter.setPen(QtGui.QPen(font_color))
+        painter.setFont(fonts["h5"])
         painter.drawText(label_rect, label)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
@@ -254,19 +362,17 @@ class Section(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20)
 
 
-class ItemAndSection(Item):
+class PluginDelegate(OverviewGroupSection):
     """Generic delegate for model items in proxy tree view"""
-    def paint(self, painter, option, index):
-
-        index_model = index.model()
-        if index_model.is_header(index):
-            Section().paint(painter, option, index)
-            return
-
-        super(ItemAndSection, self).paint(painter, option, index)
+    item_class = PluginItemDelegate
 
 
-class Artist(QtWidgets.QStyledItemDelegate):
+class InstanceDelegate(OverviewGroupSection):
+    """Generic delegate for model items in proxy tree view"""
+    item_class = InstanceItemDelegate
+
+
+class ArtistDelegate(QtWidgets.QStyledItemDelegate):
     """Delegate used on Artist page"""
 
     def paint(self, painter, option, index):
@@ -282,10 +388,17 @@ class Artist(QtWidgets.QStyledItemDelegate):
 
         # Layout
         spacing = 10
-        metrics = painter.fontMetrics()
 
         body_rect = QtCore.QRectF(option.rect).adjusted(2, 2, -8, -2)
         content_rect = body_rect.adjusted(5, 5, -5, -5)
+
+        perspective_rect = QtCore.QRectF(body_rect)
+        perspective_rect.setWidth(35)
+        perspective_rect.setHeight(35)
+        perspective_rect.translate(
+            content_rect.width() - (perspective_rect.width() / 2) + 10,
+            (content_rect.height() / 2) - (perspective_rect.height() / 2)
+        )
 
         toggle_rect = QtCore.QRectF(body_rect)
         toggle_rect.setWidth(7)
@@ -299,81 +412,52 @@ class Artist(QtWidgets.QStyledItemDelegate):
         duration_rect = QtCore.QRectF(content_rect)
         duration_rect.translate(content_rect.width() - 50, 0)
 
-        label_rect = QtCore.QRectF(content_rect)
-        label_rect.translate(
-            icon_rect.width() + spacing,
-            0
-        )
-        label_rect.setHeight(metrics.lineSpacing() + spacing)
-
-        families_rect = QtCore.QRectF(label_rect)
-        families_rect.translate(0, label_rect.height())
-
-        perspective_rect = QtCore.QRectF(body_rect)
-        perspective_rect.setWidth(35)
-        perspective_rect.setHeight(35)
-        perspective_rect.translate(
-            content_rect.width()-(perspective_rect.width()/2)+10,
-            (content_rect.height()/2)-(perspective_rect.height()/2)
-        )
-
         # Colors
         check_color = colors["idle"]
 
-        if index.data(model.IsProcessing) is True:
+        publish_states = index.data(Roles.PublishFlagsRole)
+        if publish_states is None:
+            return
+        if publish_states & InstanceStates.InProgress:
             check_color = colors["active"]
 
-        elif index.data(model.HasFailed) is True:
+        elif publish_states & InstanceStates.HasError:
             check_color = colors["error"]
 
-        elif index.data(model.HasSucceeded) is True:
+        elif publish_states & InstanceStates.HasWarning:
+            check_color = colors["warning"]
+
+        elif publish_states & InstanceStates.HasFinished:
             check_color = colors["ok"]
 
-        elif index.data(model.HasProcessed) is True:
-            check_color = colors["ok"]
+        elif not index.data(Roles.IsEnabledRole):
+            check_color = colors["inactive"]
 
-        if index.data(model.HasWarning) is True:
-            if (
-                index.data(model.HasFailed) is False and
-                index.data(model.HasSucceeded) is True
-            ):
-                check_color = colors["warning"]
-
-        icon = index.data(QtCore.Qt.DecorationRole) or icons["file"]
         perspective_icon = icons["angle-right"]
-        label = index.data(QtCore.Qt.DisplayRole)
 
-        families = ", ".join(index.data(model.Families))
-        if families == '__context__':
-            families = 'Context'
-
-        # Elide
-        label = metrics.elidedText(
-            label, QtCore.Qt.ElideRight, label_rect.width()
-        )
-
-        families = metrics.elidedText(
-            families, QtCore.Qt.ElideRight, label_rect.width()
-        )
-
-        font_color = colors["idle"]
-        if not index.data(model.IsChecked):
+        if not index.data(QtCore.Qt.CheckStateRole):
             font_color = colors["inactive"]
+        else:
+            font_color = colors["idle"]
 
-        perspective_color = colors['inactive']
         if (
-            option.state &
-            (
-                QtWidgets.QStyle.State_MouseOver or
-                QtWidgets.QStyle.State_Selected
+            option.state
+            & (
+                QtWidgets.QStyle.State_MouseOver
+                or QtWidgets.QStyle.State_Selected
             )
         ):
-            perspective_color = colors['idle']
+            perspective_color = colors["idle"]
+        else:
+            perspective_color = colors["inactive"]
         # Maintan reference to state, so we can restore it once we're done
         painter.save()
 
         # Draw background
         painter.fillRect(body_rect, colors["hover"])
+
+        # Draw icon
+        icon = index.data(QtCore.Qt.DecorationRole)
 
         painter.setFont(fonts["largeAwesome"])
         painter.setPen(QtGui.QPen(font_color))
@@ -381,11 +465,38 @@ class Artist(QtWidgets.QStyledItemDelegate):
 
         # Draw label
         painter.setFont(fonts["h3"])
+        label_rect = QtCore.QRectF(content_rect)
+        label_x_offset = icon_rect.width() + spacing
+        label_rect.translate(
+            label_x_offset,
+            0
+        )
+        metrics = painter.fontMetrics()
+        label_rect.setHeight(metrics.lineSpacing())
+        label_rect.setWidth(
+            content_rect.width()
+            - label_x_offset
+            - perspective_rect.width()
+        )
+        # Elide label
+        label = index.data(QtCore.Qt.DisplayRole)
+        label = metrics.elidedText(
+            label, QtCore.Qt.ElideRight, label_rect.width()
+        )
         painter.drawText(label_rect, label)
 
         # Draw families
         painter.setFont(fonts["h5"])
         painter.setPen(QtGui.QPen(colors["inactive"]))
+
+        families = ", ".join(index.data(Roles.FamiliesRole))
+        families = painter.fontMetrics().elidedText(
+            families, QtCore.Qt.ElideRight, label_rect.width()
+        )
+
+        families_rect = QtCore.QRectF(label_rect)
+        families_rect.translate(0, label_rect.height() + spacing)
+
         painter.drawText(families_rect, families)
 
         painter.setFont(fonts["largeAwesome"])
@@ -396,14 +507,16 @@ class Artist(QtWidgets.QStyledItemDelegate):
         pen = QtGui.QPen(check_color, 1)
         painter.setPen(pen)
 
-        if index.data(model.IsOptional):
+        if index.data(Roles.IsOptionalRole):
             painter.drawRect(toggle_rect)
 
-            if index.data(model.IsChecked):
+            if index.data(QtCore.Qt.CheckStateRole):
                 painter.fillRect(toggle_rect, check_color)
 
-        elif not index.data(model.IsIdle) and index.data(model.IsChecked):
-                painter.fillRect(toggle_rect, check_color)
+        elif (
+            index.data(QtCore.Qt.CheckStateRole)
+        ):
+            painter.fillRect(toggle_rect, check_color)
 
         if option.state & QtWidgets.QStyle.State_MouseOver:
             painter.fillRect(body_rect, colors["hover"])
@@ -423,215 +536,17 @@ class Artist(QtWidgets.QStyledItemDelegate):
 
 class TerminalItem(QtWidgets.QStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
-    HEIGHT = 20
+
     def paint(self, painter, option, index):
-        """Paint text"""
-
-        icon_rect = QtCore.QRectF(option.rect).adjusted(3, 3, -3, -3)
-        icon_rect.setWidth(14)
-        icon_rect.setHeight(14)
-        icon_color = colors["idle"]
-
-        icon = icons[index.data(model.Type)]
-
-        if index.data(model.Type) == "record":
-            icon_color = record_colors[index.data(model.LogLevel)]
-
-        elif index.data(model.Type) == "error":
-            icon_color = colors["error"]
-
-        metrics = painter.fontMetrics()
-
-        label_rect = QtCore.QRectF(option.rect.adjusted(
-            icon_rect.width() + 12, 2, 0, -2))
-
-        assert label_rect.width() > 0
-
-        label = index.data(QtCore.Qt.DisplayRole)
-        label = metrics.elidedText(
-            label, QtCore.Qt.ElideRight, label_rect.width() - 20
-        )
-
-        font_color = colors["idle"]
+        super(TerminalItem, self).paint(painter, option, index)
+        item_type = index.data(Roles.TypeRole)
+        if item_type == model.TerminalDetailType:
+            return
 
         hover = QtGui.QPainterPath()
         hover.addRect(QtCore.QRectF(option.rect).adjusted(0, 0, -1, -1))
-
-        # Maintain reference to state, so we can restore it once we're done
-        painter.save()
-
-        # Draw label
-        painter.setFont(fonts["h4"])
-        painter.setPen(QtGui.QPen(font_color))
-        painter.drawText(label_rect, label)
-
-        # Draw icon
-        painter.setFont(fonts["smallAwesome"])
-        painter.setPen(QtGui.QPen(icon_color))
-        painter.drawText(icon_rect, QtCore.Qt.AlignCenter, icon)
-
-        if option.state & QtWidgets.QStyle.State_MouseOver:
-            painter.fillPath(hover, colors["hover"])
-
         if option.state & QtWidgets.QStyle.State_Selected:
             painter.fillPath(hover, colors["selected"])
 
-        # Ok, we're done, tidy up.
-        painter.restore()
-
-    def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), self.HEIGHT)
-
-
-class TerminalDetail(QtWidgets.QStyledItemDelegate):
-    """Delegate used exclusively for the Terminal"""
-
-    show_roles = {
-        QtCore.Qt.DisplayRole: 'Message',
-        model.LogName: 'Plugin',
-        model.LogPath: 'Path',
-        model.LogLineNumber: 'Line',
-        model.ExcTraceback: 'Traceback',
-        model.LogLevel: 'Level',
-        model.LogThreadName: 'Thread',
-        model.LogMilliseconds: 'Millis'
-    }
-
-    def paint(self, painter, option, index):
-        """Paint text"""
-        html_text = ''
-        for role, title in self.show_roles.items():
-            text = index.model().data(index, role)
-            # TODO Fix this issue:
-            # Maya and Nuke have LogFilename and LogPath in strange str object.
-            # When printed, empty string is show and value is equal to <string>
-            if not text or text == '<string>':
-                continue
-
-            text = (
-                str(text)
-                .replace("<", "&#60;")
-                .replace(">", "&#62;")
-                .replace('\n', '<br/>')
-                .replace(' ', '&nbsp;')
-            )
-
-            title_tag = (
-                '<span style=\" font-size:8pt; font-weight:600;'
-                # ' background-color:#bbb; color:#333;\" >{}:</span> '
-                ' color:#fff;\" >{}:</span> '
-            ).format(title)
-
-            html_text += (
-                '<tr><td width="100%" align=left>{}</td></tr>'
-                '<tr><td width="100%">{}</td></tr>'
-            ).format(title_tag, text)
-
-        html_text = '<table width="100%" cellspacing="3">{}</table>'.format(
-            html_text
-        )
-        document = QtGui.QTextDocument()
-        document.setHtml(html_text)
-        document.setTextWidth(option.rect.width())
-
-        painter.save()
-
-        font_color = QtGui.QColor("#aaa")
-        bg_color = QtGui.QColor("#333")
-
-        if (
-            option.state & QtWidgets.QStyle.State_MouseOver and
-            option.state & QtWidgets.QStyle.State_Selected
-        ):
-            bg_color = QtGui.QColor("#353535")
-
-        elif option.state & QtWidgets.QStyle.State_MouseOver:
-            bg_color = QtGui.QColor("#3b3b3b")
-
-        elif option.state & QtWidgets.QStyle.State_Selected:
-            bg_color = QtGui.QColor("#303030")
-
-        # Rounded corners of background rectangle
-        radius = 7.0
-        bg_path = QtGui.QPainterPath()
-        bg_path.addRoundedRect(QtCore.QRectF(option.rect), radius, radius)
-        painter.fillPath(bg_path, bg_color)
-
-        painter.translate(option.rect.x(), option.rect.y())
-
-        # Set default color for text
-        ctx = QtGui.QAbstractTextDocumentLayout.PaintContext()
-        ctx.palette.setColor(QtGui.QPalette.Text, font_color)
-        document.documentLayout().draw(painter, ctx)
-
-        painter.restore()
-
-        # Store height of detail to index data for sizeHint
-        log_size = QtCore.QSize(
-            document.idealWidth(),
-            document.size().height()
-        )
-        index.model().setData(index, log_size, model.LogSize)
-
-    def sizeHint(self, option, index):
-        size = index.data(model.LogSize)
-        if size:
-            return size
-
-        html_text = ''
-        for role, title in self.show_roles.items():
-            text = index.model().data(index, role)
-            # TODO Fix this issue:
-            # Maya and Nuke have LogFilename and LogPath in strange str object.
-            # When printed, empty string is show and value is equal to <string>
-            if not text or text == '<string>':
-                continue
-
-            text = (
-                str(text)
-                .replace("<", "&#60;")
-                .replace(">", "&#62;")
-                .replace('\n', '<br/>')
-                .replace(' ', '&nbsp;')
-            )
-
-            title_tag = (
-                '<span style=\" font-size:8pt; font-weight:600;'
-                # ' background-color:#bbb; color:#333;\" >{}:</span> '
-                ' color:#fff;\" >{}:</span> '
-            ).format(title)
-
-            html_text += (
-                '<tr><td width="100%" align=left>{}</td></tr>'
-                '<tr><td width="100%">{}</td></tr>'
-            ).format(title_tag, text)
-
-        html_text = '<table width="100%" cellspacing="3">{}</table>'.format(
-            html_text
-        )
-        document = QtGui.QTextDocument()
-        document.setHtml(html_text)
-        document.setTextWidth(option.rect.width())
-
-        return QtCore.QSize(document.idealWidth(), document.size().height())
-
-
-class LogsAndDetails(TerminalDetail):
-    """Generic delegate for model items in proxy tree view"""
-    HEIGHT = TerminalItem.HEIGHT
-
-    def paint(self, painter, option, index):
-
-        index_model = index.model()
-        if index_model.is_header(index):
-            TerminalItem().paint(painter, option, index)
-            return
-
-        super(LogsAndDetails, self).paint(painter, option, index)
-
-    def sizeHint(self, option, index):
-        index_model = index.model()
-        if index_model.is_header(index):
-            return TerminalItem().sizeHint(option, index)
-
-        return super(LogsAndDetails, self).sizeHint(option, index)
+        if option.state & QtWidgets.QStyle.State_MouseOver:
+            painter.fillPath(hover, colors["hover"])
