@@ -20,7 +20,7 @@ import pyblish.version
 from . import util
 from .constants import InstanceStates
 try:
-    from pypeapp.config import get_presets
+    from pypeapp.lib.config import get_presets
 except Exception:
     get_presets = dict
 
