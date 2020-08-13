@@ -185,7 +185,7 @@ class Controller(QtCore.QObject):
                 self.was_processed.emit(result)
 
             except Exception as e:
-                stack = traceback.format_exc(e)
+                stack = traceback.format_exc()
                 return util.defer(
                     500, lambda: on_unexpected_error(error=stack))
 
@@ -205,7 +205,7 @@ class Controller(QtCore.QObject):
 
             except Exception as e:
                 # This is a bug
-                stack = traceback.format_exc(e)
+                stack = traceback.format_exc()
                 self.current_pair = (None, None)
                 return util.defer(
                     500, lambda: on_unexpected_error(error=stack))
