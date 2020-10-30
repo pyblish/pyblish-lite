@@ -60,6 +60,7 @@ class Window(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.controller = controller
+        self._delegates = []
 
         """General layout
          __________________       _____________________
@@ -114,6 +115,7 @@ class Window(QtWidgets.QDialog):
 
         artist_delegate = delegate.Artist()
         artist_view.setItemDelegate(artist_delegate)
+        self._delegates.append(artist_delegate)
 
         layout = QtWidgets.QVBoxLayout(artist_page)
         layout.addWidget(artist_view)
@@ -140,6 +142,7 @@ class Window(QtWidgets.QDialog):
         item_delegate = delegate.Item()
         left_view.setItemDelegate(item_delegate)
         right_view.setItemDelegate(item_delegate)
+        self._delegates.append(item_delegate)
 
         layout = QtWidgets.QHBoxLayout(overview_page)
         layout.addWidget(left_view, 1)
@@ -165,6 +168,7 @@ class Window(QtWidgets.QDialog):
         terminal_delegate = delegate.Terminal()
         terminal_view = view.LogView()
         terminal_view.setItemDelegate(terminal_delegate)
+        self._delegates.append(terminal_delegate)
 
         layout = QtWidgets.QVBoxLayout(terminal_container)
         layout.addWidget(terminal_view)
@@ -1062,3 +1066,9 @@ class Window(QtWidgets.QDialog):
 
         # TODO(marcus): Implement this.
         self.info(message)
+
+    def paintEvent(self, event):
+        scale = self.windowHandle().screen().logicalDotsPerInch() / 96.0
+        for delegate in self._delegates:
+            delegate.set_dpi_scale(scale)
+        super(Window, self).paintEvent(event)
