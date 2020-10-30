@@ -493,7 +493,7 @@ class Window(QtWidgets.QDialog):
         controller.was_validated.connect(self.on_was_validated)
         controller.was_published.connect(self.on_was_published)
         controller.was_acted.connect(self.on_was_acted)
-        controller.was_finished.connect(self.on_finished)
+        # controller.was_finished.connect(self.on_finished)
 
         # Discovery happens synchronously during reset, that's
         # why it's important that this connection is triggered

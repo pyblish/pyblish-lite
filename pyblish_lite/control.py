@@ -171,6 +171,12 @@ class Controller(QtCore.QObject):
             if order > (until + 0.5):
                 return util.defer(100, on_finished_)
 
+            plug, instance = self.current_pair
+            if not plug.active or \
+                (instance is not None and instance.data.get("publish") is False):
+                util.defer(10, try_next)
+                return
+
             self.about_to_process.emit(*self.current_pair)
 
             util.defer(10, on_process)
@@ -195,6 +201,9 @@ class Controller(QtCore.QObject):
             # IMPORTANT: This *must* be done *after* processing of
             # the current pair, otherwise data generated at that point
             # will *not* be included.
+            try_next()
+
+        def try_next():
             try:
                 self.current_pair = next(self.pair_generator)
 
@@ -235,11 +244,10 @@ class Controller(QtCore.QObject):
         test = pyblish.logic.registered_test()
 
         for plug, instance in pyblish.logic.Iterator(plugins, context):
-            if not plug.active:
-                continue
 
-            if instance is not None and instance.data.get("publish") is False:
-                continue
+            # We do not care about checking the plugin or instance "active" states
+            # because it can change outside of this "for" loop, so any checks here
+            # could potentially be outdated or inaccurate.
 
             self.processing["nextOrder"] = plug.order
 
