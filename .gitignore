@@ -6,6 +6,7 @@ dist
 cover
 .coverage
 build
+.idea/
 .idea/misc.xml
 .idea/modules.xml
 .idea/pyblish-lite.iml
