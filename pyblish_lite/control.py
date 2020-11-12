@@ -229,12 +229,6 @@ class Controller(QtCore.QObject):
             self.was_finished.emit()
 
         self.is_running = True
-        if self.current_pair[1] and not self.current_pair[1].data["publish"]:
-            try:
-                self.current_pair = next(self.pair_generator)
-            except StopIteration:
-                self.current_pair = (None, None)
-
         util.defer(10, on_next)
 
     def _current_pair_is_active(self):
