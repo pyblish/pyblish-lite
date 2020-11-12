@@ -171,18 +171,22 @@ class Controller(QtCore.QObject):
             if order > (until + 0.5):
                 return util.defer(100, on_finished_)
 
-            self.about_to_process.emit(*self.current_pair)
+            # The instance may have been disabled, check because the iterator will
+            # have already provided it
+            if self._current_pair_is_active():
+                self.about_to_process.emit(*self.current_pair)
 
             util.defer(10, on_process)
 
         def on_process():
             try:
-                result = self._process(*self.current_pair)
+                if self._current_pair_is_active():
+                    result = self._process(*self.current_pair)
 
-                if result["error"] is not None:
-                    self.current_error = result["error"]
+                    if result["error"] is not None:
+                        self.current_error = result["error"]
 
-                self.was_processed.emit(result)
+                    self.was_processed.emit(result)
 
             except Exception as e:
                 stack = traceback.format_exc()
@@ -217,13 +221,31 @@ class Controller(QtCore.QObject):
             return util.defer(500, on_finished_)
 
         def on_finished_():
+            if until != float("inf"):
+                # The iterator doesn't sync with the GUI check states so
+                # reset the iterator to ensure we grab the the proper instances
+                self._reset_iterator(start_from=until + 0.5)
             on_finished()
             self.was_finished.emit()
 
         self.is_running = True
+        if self.current_pair[1] and not self.current_pair[1].data["publish"]:
+            try:
+                self.current_pair = next(self.pair_generator)
+            except StopIteration:
+                self.current_pair = (None, None)
+
         util.defer(10, on_next)
 
-    def _iterator(self, plugins, context):
+    def _current_pair_is_active(self):
+        return self.current_pair[1] is None or self.current_pair[1].data["publish"]
+
+    def _reset_iterator(self, start_from=-float("inf")):
+        self.pair_generator = self._iterator(self.plugins,
+                                             self.context,
+                                             start_from)
+
+    def _iterator(self, plugins, context, start_from=-float("inf")):
         """Yield next plug-in and instance to process.
 
         Arguments:
@@ -231,11 +253,12 @@ class Controller(QtCore.QObject):
             context (pyblish.api.Context): Context to process
 
         """
-
         test = pyblish.logic.registered_test()
 
         for plug, instance in pyblish.logic.Iterator(plugins, context):
-            if not plug.active:
+            order = plug.order
+
+            if order < start_from or not plug.active:
                 continue
 
             if instance is not None and instance.data.get("publish") is False:
