@@ -232,7 +232,7 @@ class Controller(QtCore.QObject):
         util.defer(10, on_next)
 
     def _current_pair_is_active(self):
-        return self.current_pair[1] is None or self.current_pair[1].data["publish"]
+        return self.current_pair[1] is None or self.current_pair[1].data.get("publish", True)
 
     def _reset_iterator(self, start_from=-float("inf")):
         self.pair_generator = self._iterator(self.plugins,
