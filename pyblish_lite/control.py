@@ -79,10 +79,18 @@ class Controller(QtCore.QObject):
                   on_finished=self.was_reset.emit)
 
     def validate(self):
+        # The iterator doesn't sync with the GUI check states so
+        # reset the iterator to ensure we grab the updated instances
+        self._reset_iterator(start_from=pyblish.api.ValidatorOrder)
         self._run(until=pyblish.api.ValidatorOrder,
                   on_finished=self.on_validated)
 
     def publish(self):
+        plugin = self.current_pair[0]
+        if plugin:
+            # The iterator doesn't sync with the GUI check states so
+            # reset the iterator to ensure we grab the updated instances
+            self._reset_iterator(start_from=plugin.order)
         self._run(on_finished=self.on_published)
 
     def on_validated(self):
@@ -221,10 +229,6 @@ class Controller(QtCore.QObject):
             return util.defer(500, on_finished_)
 
         def on_finished_():
-            if until != float("inf"):
-                # The iterator doesn't sync with the GUI check states so
-                # reset the iterator to ensure we grab the the proper instances
-                self._reset_iterator(start_from=until + 0.5)
             on_finished()
             self.was_finished.emit()
 
@@ -235,9 +239,12 @@ class Controller(QtCore.QObject):
         return self.current_pair[1] is None or self.current_pair[1].data.get("publish", True)
 
     def _reset_iterator(self, start_from=-float("inf")):
+        self.is_running = True
         self.pair_generator = self._iterator(self.plugins,
                                              self.context,
                                              start_from)
+        self.current_pair = next(self.pair_generator, (None, None))
+        self.is_running = False
 
     def _iterator(self, plugins, context, start_from=-float("inf")):
         """Yield next plug-in and instance to process.
