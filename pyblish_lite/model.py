@@ -311,7 +311,9 @@ class Plugin(Item):
 
         index = self.items.index(item)
         index = self.createIndex(index, 0)
-        hasWarning = any([record.levelno == logging.WARNING for record in result["records"]])
+        hasWarning = self.data(index, HasWarning)
+        if not hasWarning:
+            hasWarning = any([record.levelno == logging.WARNING for record in result["records"]])
 
         self.setData(index, False, IsIdle)
         self.setData(index, False, IsProcessing)
