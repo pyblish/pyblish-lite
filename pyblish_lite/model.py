@@ -226,6 +226,10 @@ class Plugin(Item):
             for action in actions:
                 if action.on == "failed" and item._has_failed:
                     return True
+                if action.on == "warning" and item._has_warning:
+                    return True
+                if action.on == "failedOrWarning" and (item._has_failed or item._has_warning):
+                    return True
                 if action.on == "succeeded" and item._has_succeeded:
                     return True
                 if action.on == "processed" and item._has_processed:
@@ -246,6 +250,10 @@ class Plugin(Item):
             # Context specific actions
             for action in actions[:]:
                 if action.on == "failed" and not item._has_failed:
+                    actions.remove(action)
+                if action.on == "warning" and not item._has_warning:
+                    actions.remove(action)
+                if action.on == "failedOrWarning" and not (item._has_failed or item._has_warning):
                     actions.remove(action)
                 if action.on == "succeeded" and not item._has_succeeded:
                     actions.remove(action)
