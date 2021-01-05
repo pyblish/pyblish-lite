@@ -224,6 +224,8 @@ class Plugin(Item):
 
             # Context specific actions
             for action in actions:
+                if action.on == "all":
+                    return True
                 if action.on == "failed" and item._has_failed:
                     return True
                 if action.on == "warning" and item._has_warning:
