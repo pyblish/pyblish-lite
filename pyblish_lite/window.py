@@ -1069,11 +1069,12 @@ class Window(QtWidgets.QDialog):
         self.info(message)
 
     def paintEvent(self, event):
+        scale = 1.0
         if Qt.__qt_version__.startswith("5") and os.name == "nt":
             # Only tested with Windows DPI scaling
-            scale = self.window().windowHandle().screen().logicalDotsPerInch() / 96.0
-        else:
-            scale = 1.0
+            if self.window().isWindow():
+                scale = self.window().windowHandle()\
+                            .screen().logicalDotsPerInch() / 96.0
         for delegate in self._delegates:
             delegate.set_dpi_scale(scale)
         super(Window, self).paintEvent(event)
