@@ -7,7 +7,7 @@ States:
       reset
         '
         '
-        '
+        'F
      ___v__
     |      |       reset
     | Idle |--------------------.
@@ -1068,12 +1068,41 @@ class Window(QtWidgets.QDialog):
         # TODO(marcus): Implement this.
         self.info(message)
 
-    def paintEvent(self, event):
+    def _find_scale(self):
         if Qt.__qt_version__.startswith("5") and os.name == "nt":
-            # Only tested with Windows DPI scaling
-            scale = self.windowHandle().screen().logicalDotsPerInch() / 96.0
-        else:
-            scale = 1.0
+            window = self.window()
+
+            # Fail graciously
+            if not window:
+                print("WARNING: No window associated with Lite")
+                return 1.0
+
+            handle = window.windowHandle()
+
+            if not handle:
+                print(
+                    "WARNING: No handle found, could be an "
+                    "unsupported version of Qt"
+                )
+                return 1.0
+
+            screen = handle.screen()
+
+            if not screen:
+                print(
+                    "WARNING: No QScreen instance found, "
+                    "are you using Qt 5 or above?"
+                )
+                return 1.0
+
+            return screen.logicalDotsPerInch() / 96.0
+        return 1.0
+
+    def paintEvent(self, event):
+        # Compute this only once
+        self._dpi_scale = getattr(self, "_dpi_scale", self._find_scale())
+
         for delegate in self._delegates:
-            delegate.set_dpi_scale(scale)
+            delegate.set_dpi_scale(self._dpi_scale)
+
         super(Window, self).paintEvent(event)
