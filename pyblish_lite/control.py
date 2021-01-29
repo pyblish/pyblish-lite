@@ -13,6 +13,7 @@ import traceback
 from .vendor.Qt import QtCore
 
 import pyblish.api
+import pyblish.lib
 import pyblish.util
 import pyblish.logic
 
@@ -81,7 +82,14 @@ class Controller(QtCore.QObject):
     def validate(self):
         # The iterator doesn't sync with the GUI check states so
         # reset the iterator to ensure we grab the updated instances
-        self._reset_iterator(start_from=pyblish.api.ValidatorOrder)
+        # assuming the plugins are already sorted from api.Discover()
+        start_validator_from = pyblish.api.ValidatorOrder
+        for plugin in self.plugins:
+            if pyblish.lib.inrange(plugin.order, pyblish.api.ValidatorOrder):
+                start_validator_from = plugin.order
+                break
+
+        self._reset_iterator(start_from=start_validator_from)
         self._run(until=pyblish.api.ValidatorOrder,
                   on_finished=self.on_validated)
 
