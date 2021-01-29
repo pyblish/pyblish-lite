@@ -83,13 +83,7 @@ class Controller(QtCore.QObject):
         # The iterator doesn't sync with the GUI check states so
         # reset the iterator to ensure we grab the updated instances
         # assuming the plugins are already sorted from api.Discover()
-        start_validator_from = pyblish.api.ValidatorOrder
-        for plugin in self.plugins:
-            if pyblish.lib.inrange(plugin.order, pyblish.api.ValidatorOrder):
-                start_validator_from = plugin.order
-                break
-
-        self._reset_iterator(start_from=start_validator_from)
+        self._reset_iterator(start_from=pyblish.api.ValidatorOrder)
         self._run(until=pyblish.api.ValidatorOrder,
                   on_finished=self.on_validated)
 
@@ -248,9 +242,16 @@ class Controller(QtCore.QObject):
 
     def _reset_iterator(self, start_from=-float("inf")):
         self.is_running = True
-        self.pair_generator = self._iterator(self.plugins,
-                                             self.context,
-                                             start_from)
+        self.pair_generator = self._iterator(
+            self.plugins,
+            self.context,
+                                             
+            # Minus 0.5, because each order is a range of values,
+            # from -0.5 to 0.5. E.g. ExtractorOrder is 2, and spans
+            # between 1.5-2.5
+            start_from - 0.5
+        )
+
         self.current_pair = next(self.pair_generator, (None, None))
         self.is_running = False
 
