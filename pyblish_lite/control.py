@@ -9,6 +9,7 @@ import os
 import sys
 import traceback
 import inspect
+import logging
 
 from Qt import QtCore
 
@@ -31,6 +32,7 @@ class IterationBreak(Exception):
 
 
 class Controller(QtCore.QObject):
+    log = logging.getLogger("PyblishController")
     # Emitted when the GUI is about to start processing;
     # e.g. resetting, validating or publishing.
     about_to_process = QtCore.Signal(object, object)
@@ -74,6 +76,8 @@ class Controller(QtCore.QObject):
         self.instance_toggled.connect(self._on_instance_toggled)
 
     def reset_variables(self):
+        self.log.debug("Resetting pyblish context variables")
+
         # Data internal to the GUI itself
         self.is_running = False
         self.stopped = False
@@ -115,6 +119,7 @@ class Controller(QtCore.QObject):
             "nextOrder": None,
             "ordersWithError": set()
         }
+        self.log.debug("Reset of pyblish context variables done")
 
     def presets_by_hosts(self):
         # Get global filters as base
@@ -140,6 +145,8 @@ class Controller(QtCore.QObject):
         return result
 
     def reset_context(self):
+        self.log.debug("Resetting pyblish context object")
+
         self.context = pyblish.api.Context()
 
         self.context._publish_states = InstanceStates.ContextType
@@ -160,6 +167,8 @@ class Controller(QtCore.QObject):
         self.context.data["icon"] = "book"
 
         self.context.families = ("__context__",)
+
+        self.log.debug("Reset of pyblish context object done")
 
     def reset(self):
         """Discover plug-ins and run collection."""
@@ -204,6 +213,7 @@ class Controller(QtCore.QObject):
         self.was_finished.emit()
 
     def stop(self):
+        self.log.debug("Stopping")
         self.stopped = True
 
     def act(self, plugin, action):
@@ -348,27 +358,30 @@ class Controller(QtCore.QObject):
         This process don't stop on one
         """
         def on_next():
+            self.log.debug("Looking for next pair to process")
             try:
                 self.current_pair = next(self.pair_generator)
                 if isinstance(self.current_pair, IterationBreak):
                     raise self.current_pair
 
             except IterationBreak:
+                self.log.debug("Iteration break was raised")
                 self.is_running = False
                 self.was_stopped.emit()
                 return
 
             except StopIteration:
+                self.log.debug("Iteration stop was raised")
                 self.is_running = False
                 # All pairs were processed successfully!
                 return util.defer(500, on_finished)
 
-            except Exception:
-                # This is a bug
-                exc_type, exc_msg, exc_tb = sys.exc_info()
-                traceback.print_exception(exc_type, exc_msg, exc_tb)
-                self.is_running = False
-                self.was_stopped.emit()
+            except Exception as exc:
+                self.log.warning(
+                    "Unexpected exception during `on_next` happened",
+                    exc_info=True
+                )
+                exc_msg = str(exc)
                 return util.defer(
                     500, lambda: on_unexpected_error(error=exc_msg)
                 )
@@ -378,19 +391,23 @@ class Controller(QtCore.QObject):
 
         def on_process():
             try:
+                self.log.debug(
+                    "Processing pair: {}".format(str(self.current_pair))
+                )
                 result = self._process(*self.current_pair)
                 if result["error"] is not None:
+                    self.log.debug("Error happened")
                     self.errored = True
 
+                self.log.debug("Pair processed")
                 self.was_processed.emit(result)
 
-            except Exception:
-                # TODO this should be handled much differently
-                # TODO emit crash signal to show message box with traceback
-                exc_type, exc_msg, exc_tb = sys.exc_info()
-                traceback.print_exception(exc_type, exc_msg, exc_tb)
-                self.is_running = False
-                self.was_stopped.emit()
+            except Exception as exc:
+                self.log.warning(
+                    "Unexpected exception during `on_process` happened",
+                    exc_info=True
+                )
+                exc_msg = str(exc)
                 return util.defer(
                     500, lambda: on_unexpected_error(error=exc_msg)
                 )
@@ -398,6 +415,10 @@ class Controller(QtCore.QObject):
             util.defer(10, on_next)
 
         def on_unexpected_error(error):
+            # TODO this should be handled much differently
+            # TODO emit crash signal to show message box with traceback?
+            self.is_running = False
+            self.was_stopped.emit()
             util.u_print(u"An unexpected error occurred:\n %s" % error)
             return util.defer(500, on_finished)
 
@@ -448,9 +469,9 @@ class Controller(QtCore.QObject):
             try:
                 callback(instance, old_value, new_value)
             except Exception:
-                print(
+                self.log.warning(
                     "Callback for `instanceToggled` crashed. {}".format(
                         os.path.abspath(inspect.getfile(callback))
-                    )
+                    ),
+                    exc_info=True
                 )
-                traceback.print_exception(*sys.exc_info())
