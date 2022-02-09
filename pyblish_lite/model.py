@@ -1056,7 +1056,6 @@ class TerminalModel(QtGui.QStandardItemModel):
         self.reset()
 
     def reset(self):
-        self.items_to_set_widget = queue.Queue()
         self.clear()
 
     def prepare_records(self, result):
@@ -1147,7 +1146,6 @@ class TerminalModel(QtGui.QStandardItemModel):
         detail_item = QtGui.QStandardItem(detail_text)
         detail_item.setData(TerminalDetailType, Roles.TypeRole)
         top_item.appendRow(detail_item)
-        self.items_to_set_widget.put(detail_item)
 
     def update_with_result(self, result):
         for record in result["records"]:
