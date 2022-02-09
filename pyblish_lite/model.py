@@ -493,12 +493,8 @@ class PluginModel(QtGui.QStandardItemModel):
         new_records = result.get("records") or []
         if not has_warning:
             for record in new_records:
-                if not hasattr(record, "levelname"):
-                    continue
-
-                if str(record.levelname).lower() in [
-                    "warning", "critical", "error"
-                ]:
+                level_no = record.get("levelno")
+                if level_no and level_no >= 30:
                     new_flag_states[PluginStates.HasWarning] = True
                     break
 
@@ -792,12 +788,8 @@ class InstanceModel(QtGui.QStandardItemModel):
         new_records = result.get("records") or []
         if not has_warning:
             for record in new_records:
-                if not hasattr(record, "levelname"):
-                    continue
-
-                if str(record.levelname).lower() in [
-                    "warning", "critical", "error"
-                ]:
+                level_no = record.get("levelno")
+                if level_no and level_no >= 30:
                     new_flag_states[InstanceStates.HasWarning] = True
                     break
 
