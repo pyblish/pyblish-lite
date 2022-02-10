@@ -46,6 +46,7 @@ import os
 from . import delegate, model, settings, util, view, widgets
 from .awesome import tags as awesome
 
+import Qt
 from Qt import QtCore, QtGui, QtWidgets
 from .constants import (
     PluginStates, PluginActionStates, InstanceStates, GroupStates, Roles
