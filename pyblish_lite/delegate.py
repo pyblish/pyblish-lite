@@ -194,7 +194,7 @@ class PluginItemDelegate(DPIStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20 * self._dpi_scale)
 
 
-class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
+class InstanceItemDelegate(DPIStyledItemDelegate):
     """Generic delegate for model items"""
 
     def paint(self, painter, option, index):
@@ -298,7 +298,7 @@ class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20)
 
 
-class InstanceDelegate(QtWidgets.QStyledItemDelegate):
+class InstanceDelegate(DPIStyledItemDelegate):
     """Generic delegate for instance header"""
 
     radius = 8.0
@@ -455,7 +455,7 @@ class InstanceDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20)
 
 
-class PluginDelegate(QtWidgets.QStyledItemDelegate):
+class PluginDelegate(DPIStyledItemDelegate):
     """Generic delegate for plugin header"""
 
     def __init__(self, parent):
@@ -537,7 +537,7 @@ class PluginDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(option.rect.width(), 20)
 
 
-class TerminalItem(QtWidgets.QStyledItemDelegate):
+class TerminalItem(DPIStyledItemDelegate):
     """Delegate used exclusively for the Terminal"""
 
     def paint(self, painter, option, index):
