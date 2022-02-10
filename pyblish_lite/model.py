@@ -35,12 +35,6 @@ from six import text_type
 from .vendor import qtawesome
 from .constants import PluginStates, InstanceStates, GroupStates, Roles
 
-try:
-    from pypeapp import config
-    get_presets = config.get_presets
-except Exception:
-    get_presets = dict
-
 # ItemTypes
 InstanceType = QtGui.QStandardItem.UserType
 PluginType = QtGui.QStandardItem.UserType + 1
@@ -105,34 +99,6 @@ class IntentModel(QtGui.QStandardItemModel):
         self.clear()
         self._item_count = 0
         self.default_index = 0
-
-        intents_preset = (
-            get_presets()
-            .get("tools", {})
-            .get("pyblish", {})
-            .get("ui", {})
-            .get("intents", {})
-        )
-        default = intents_preset.get("default")
-        items = intents_preset.get("items", {})
-        if not items:
-            return
-
-        for idx, item_value in enumerate(items.keys()):
-            if item_value == default:
-                self.default_index = idx
-                break
-
-        self.add_items(items)
-
-    def add_items(self, items):
-        for value, label in items.items():
-            new_item = QtGui.QStandardItem()
-            new_item.setData(label, QtCore.Qt.DisplayRole)
-            new_item.setData(value, Roles.IntentItemValue)
-
-            self.setItem(self._item_count, new_item)
-            self._item_count += 1
 
 
 class PluginItem(QtGui.QStandardItem):

@@ -21,10 +21,6 @@ import pyblish.version
 
 from . import util
 from .constants import InstanceStates
-try:
-    from pypeapp.lib.config import get_presets
-except Exception:
-    get_presets = dict
 
 
 class IterationBreak(Exception):
@@ -190,29 +186,6 @@ class Controller(QtCore.QObject):
         }
         self.log.debug("Reset of pyblish context variables done")
 
-    def presets_by_hosts(self):
-        # Get global filters as base
-        presets = get_presets().get("plugins", {})
-        if not presets:
-            return {}
-
-        result = presets.get("global", {}).get("filter", {})
-        hosts = pyblish.api.registered_hosts()
-        for host in hosts:
-            host_presets = presets.get(host, {}).get("filter")
-            if not host_presets:
-                continue
-
-            for key, value in host_presets.items():
-                if value is None:
-                    if key in result:
-                        result.pop(key)
-                    continue
-
-                result[key] = value
-
-        return result
-
     def reset_context(self):
         self.log.debug("Resetting pyblish context object")
 
@@ -248,8 +221,6 @@ class Controller(QtCore.QObject):
     def _reset(self):
         self.reset_context()
         self.reset_variables()
-
-        self.possible_presets = self.presets_by_hosts()
 
         # Load plugins and set pair generator
         self.load_plugins()
