@@ -14,6 +14,7 @@ import collections
 from Qt import QtCore
 
 import pyblish.api
+import pyblish.lib
 import pyblish.util
 import pyblish.logic
 import pyblish.lib

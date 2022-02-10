@@ -7,7 +7,7 @@ States:
       reset
         '
         '
-        '
+        'F
      ___v__
     |      |       reset
     | Idle |--------------------.
@@ -41,6 +41,7 @@ Todo:
 """
 import sys
 from functools import partial
+import os
 
 from . import delegate, model, settings, util, view, widgets
 from .awesome import tags as awesome
@@ -90,6 +91,7 @@ class Window(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.controller = controller
+        self._delegates = []
 
         main_widget = QtWidgets.QWidget(self)
 
@@ -186,6 +188,7 @@ class Window(QtWidgets.QDialog):
         terminal_view.setModel(terminal_proxy)
         terminal_delegate = delegate.TerminalItem()
         terminal_view.setItemDelegate(terminal_delegate)
+        self._delegates.append(terminal_delegate)
 
         layout = QtWidgets.QVBoxLayout(terminal_container)
         layout.addWidget(terminal_view)
@@ -1340,3 +1343,42 @@ class Window(QtWidgets.QDialog):
 
         # TODO(marcus): Implement this.
         self.info(message)
+
+    def _find_scale(self):
+        if Qt.__qt_version__.startswith("5") and os.name == "nt":
+            window = self.window()
+
+            # Fail graciously
+            if not window:
+                print("WARNING: No window associated with Lite")
+                return 1.0
+
+            handle = window.windowHandle()
+
+            if not handle:
+                print(
+                    "WARNING: No handle found, could be an "
+                    "unsupported version of Qt"
+                )
+                return 1.0
+
+            screen = handle.screen()
+
+            if not screen:
+                print(
+                    "WARNING: No QScreen instance found, "
+                    "are you using Qt 5 or above?"
+                )
+                return 1.0
+
+            return screen.logicalDotsPerInch() / 96.0
+        return 1.0
+
+    def paintEvent(self, event):
+        # Compute this only once
+        self._dpi_scale = getattr(self, "_dpi_scale", self._find_scale())
+
+        for delegate in self._delegates:
+            delegate.set_dpi_scale(self._dpi_scale)
+
+        super(Window, self).paintEvent(event)

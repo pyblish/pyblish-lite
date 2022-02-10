@@ -51,7 +51,16 @@ icons = {
 }
 
 
-class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
+class DPIStyledItemDelegate(QtWidgets.QStyledItemDelegate):
+    def __init__(self, *args, **kwargs):
+        super(DPIStyledItemDelegate, self).__init__(*args, **kwargs)
+        self._dpi_scale = 1.0
+
+    def set_dpi_scale(self, scale):
+        self._dpi_scale = scale
+
+
+class PluginItemDelegate(DPIStyledItemDelegate):
     """Generic delegate for model items"""
 
     def paint(self, painter, option, index):
@@ -65,9 +74,8 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
         check_rect = QtCore.QRectF(body_rect)
         check_rect.setWidth(check_rect.height())
         check_offset = (check_rect.height() / 4) + 1
-        check_rect.adjust(
-            check_offset, check_offset, -check_offset, -check_offset
-        )
+        buffer = check_offset * self._dpi_scale
+        check_rect.adjust(buffer, buffer, -buffer, -buffer)
 
         check_color = colors["idle"]
 
@@ -98,8 +106,12 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
 
         offset = (body_rect.height() - font_metrics["h4"].height()) / 2
         label_rect = QtCore.QRectF(body_rect.adjusted(
-            check_rect.width() + 12, offset - 1, 0, 0
-        ))
+                check_rect.width() + 12 * self._dpi_scale,
+                offset - 1 * self._dpi_scale,
+                0,
+                -2 * self._dpi_scale,
+            )
+        )
 
         assert label_rect.width() > 0
 
@@ -107,7 +119,7 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
         label = font_metrics["h4"].elidedText(
             label,
             QtCore.Qt.ElideRight,
-            label_rect.width() - 20
+            label_rect.width() - 20 * self._dpi_scale
         )
 
         font_color = colors["idle"]
@@ -123,7 +135,6 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
         painter.drawText(perspective_rect, perspective_icon)
 
         # Draw label
-        painter.setFont(fonts["h4"])
         painter.setPen(QtGui.QPen(font_color))
         painter.drawText(label_rect, label)
 
@@ -145,8 +156,10 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
 
             icon_rect = QtCore.QRectF(
                 option.rect.adjusted(
-                    label_rect.width() - perspective_rect.width() / 2,
-                    label_rect.height() / 3, 0, 0
+                    label_rect.width() - (perspective_rect.width() / 2 * self._dpi_scale),
+                    label_rect.height() / (3 * self._dpi_scale),
+                    0,
+                    0,
                 )
             )
             painter.drawText(icon_rect, icons["action"])
@@ -178,7 +191,7 @@ class PluginItemDelegate(QtWidgets.QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20)
+        return QtCore.QSize(option.rect.width(), 20 * self._dpi_scale)
 
 
 class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
@@ -189,6 +202,8 @@ class InstanceItemDelegate(QtWidgets.QStyledItemDelegate):
          _
         |_|  My label    >
         """
+        # Maintain reference to state, so we can restore it once we're done
+        painter.save()
 
         body_rect = QtCore.QRectF(option.rect)
 
