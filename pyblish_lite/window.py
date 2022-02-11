@@ -152,6 +152,7 @@ class Window(QtWidgets.QDialog):
         overview_instance_delegate = delegate.InstanceDelegate(
             parent=overview_instance_view
         )
+        self._delegates.append(overview_instance_delegate)
         instance_model = model.InstanceModel(controller)
         instance_sort_proxy = model.InstanceSortProxy()
         instance_sort_proxy.setSourceModel(instance_model)
@@ -165,6 +166,7 @@ class Window(QtWidgets.QDialog):
         overview_plugin_delegate = delegate.PluginDelegate(
             parent=overview_plugin_view
         )
+        self._delegates.append(overview_plugin_delegate)
         overview_plugin_view.setItemDelegate(overview_plugin_delegate)
         plugin_model = model.PluginModel(controller)
         plugin_proxy = model.PluginFilterProxy()

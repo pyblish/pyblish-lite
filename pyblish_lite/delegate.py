@@ -72,7 +72,7 @@ class PluginItemDelegate(DPIStyledItemDelegate):
         body_rect = QtCore.QRectF(option.rect)
 
         check_rect = QtCore.QRectF(body_rect)
-        check_rect.setWidth(check_rect.height())
+        check_rect.setWidth(check_rect.height() * self._dpi_scale)
         check_offset = (check_rect.height() / 4) + 1
         buffer = check_offset * self._dpi_scale
         check_rect.adjust(buffer, buffer, -buffer, -buffer)
@@ -81,7 +81,7 @@ class PluginItemDelegate(DPIStyledItemDelegate):
 
         perspective_icon = icons["angle-right"]
         perspective_rect = QtCore.QRectF(body_rect)
-        perspective_rect.setWidth(perspective_rect.height())
+        perspective_rect.setWidth(perspective_rect.height() * self._dpi_scale)
         perspective_rect.adjust(0, 3, 0, 0)
         perspective_rect.translate(
             body_rect.width() - (perspective_rect.width() / 2 + 2),
@@ -107,7 +107,7 @@ class PluginItemDelegate(DPIStyledItemDelegate):
         offset = (body_rect.height() - font_metrics["h4"].height()) / 2
         label_rect = QtCore.QRectF(body_rect.adjusted(
                 check_rect.width() + 12 * self._dpi_scale,
-                offset - 1 * self._dpi_scale,
+                (offset - 1) * self._dpi_scale,
                 0,
                 -2 * self._dpi_scale,
             )
@@ -208,15 +208,16 @@ class InstanceItemDelegate(DPIStyledItemDelegate):
         body_rect = QtCore.QRectF(option.rect)
 
         check_rect = QtCore.QRectF(body_rect)
-        check_rect.setWidth(check_rect.height())
+        check_rect.setWidth(check_rect.height() * self._dpi_scale)
         offset = (check_rect.height() / 4) + 1
-        check_rect.adjust(offset, offset, -(offset), -(offset))
+        buffer = offset * self._dpi_scale
+        check_rect.adjust(buffer, buffer, -(buffer), -(buffer))
 
         check_color = colors["idle"]
 
         perspective_icon = icons["angle-right"]
         perspective_rect = QtCore.QRectF(body_rect)
-        perspective_rect.setWidth(perspective_rect.height())
+        perspective_rect.setWidth(perspective_rect.height() * self._dpi_scale)
         perspective_rect.adjust(0, 3, 0, 0)
         perspective_rect.translate(
             body_rect.width() - (perspective_rect.width() / 2 + 2),
@@ -241,8 +242,12 @@ class InstanceItemDelegate(DPIStyledItemDelegate):
 
         offset = (body_rect.height() - font_metrics["h4"].height()) / 2
         label_rect = QtCore.QRectF(body_rect.adjusted(
-            check_rect.width() + 12, offset - 1, 0, 0
-        ))
+                check_rect.width() + 12 * self._dpi_scale,
+                (offset - 1) * self._dpi_scale,
+                0, 
+                0
+            )
+        )
 
         assert label_rect.width() > 0
 
@@ -250,7 +255,7 @@ class InstanceItemDelegate(DPIStyledItemDelegate):
         label = font_metrics["h4"].elidedText(
             label,
             QtCore.Qt.ElideRight,
-            label_rect.width() - 20
+            label_rect.width() - 20 * self._dpi_scale
         )
 
         font_color = colors["idle"]
@@ -295,7 +300,7 @@ class InstanceItemDelegate(DPIStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20)
+        return QtCore.QSize(option.rect.width(), 20 * self._dpi_scale)
 
 
 class InstanceDelegate(DPIStyledItemDelegate):
@@ -323,17 +328,19 @@ class InstanceDelegate(DPIStyledItemDelegate):
         """
         body_rect = QtCore.QRectF(option.rect)
         bg_rect = QtCore.QRectF(
-            body_rect.left(), body_rect.top() + 1,
-            body_rect.width() - 5, body_rect.height() - 2
+            body_rect.left(), 
+            body_rect.top() + 1 * self._dpi_scale,
+            body_rect.width() - 5 * self._dpi_scale, 
+            body_rect.height() - 2 * self._dpi_scale,
         )
 
         expander_rect = QtCore.QRectF(bg_rect)
-        expander_rect.setWidth(EXPANDER_WIDTH)
+        expander_rect.setWidth(EXPANDER_WIDTH * self._dpi_scale)
 
         remainder_rect = QtCore.QRectF(
-            expander_rect.x() + expander_rect.width(),
+            expander_rect.x() + expander_rect.width() * self._dpi_scale,
             expander_rect.y(),
-            bg_rect.width() - expander_rect.width(),
+            bg_rect.width() - expander_rect.width() * self._dpi_scale,
             expander_rect.height()
         )
 
@@ -416,16 +423,22 @@ class InstanceDelegate(DPIStyledItemDelegate):
                 painter.fillPath(remainder_path, colors["group-hover"])
 
         text_height = font_metrics["awesome6"].height()
-        adjust_value = (expander_rect.height() - text_height) / 2
+        adjust_value = (expander_rect.height() - text_height) / 2 * self._dpi_scale
         expander_rect.adjust(
-            adjust_value + 1.5, adjust_value - 0.5,
-            -adjust_value + 1.5, -adjust_value - 0.5
+            adjust_value + 1.5,
+            adjust_value - 0.5,
+            -adjust_value + 1.5, 
+            -adjust_value - 0.5,
         )
 
         offset = (remainder_rect.height() - font_metrics["h5"].height()) / 2
         label_rect = QtCore.QRectF(remainder_rect.adjusted(
-            5, offset - 1, 0, 0
-        ))
+                5 * self._dpi_scale,
+                offset - 1 * self._dpi_scale,
+                0,
+                0,
+            )
+        )
 
         expander_icon = icons["plus-sign"]
 
@@ -452,7 +465,7 @@ class InstanceDelegate(DPIStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20)
+        return QtCore.QSize(option.rect.width(), 20 * self._dpi_scale)
 
 
 class PluginDelegate(DPIStyledItemDelegate):
@@ -478,8 +491,10 @@ class PluginDelegate(DPIStyledItemDelegate):
         """
         body_rect = QtCore.QRectF(option.rect)
         bg_rect = QtCore.QRectF(
-            body_rect.left(), body_rect.top() + 1,
-            body_rect.width() - 5, body_rect.height() - 2
+            body_rect.left(), 
+            body_rect.top() + 1 * self._dpi_scale,
+            body_rect.width() - 5 * self._dpi_scale,
+            body_rect.height() - 2 * self._dpi_scale,
         )
         radius = 8.0
         bg_path = QtGui.QPainterPath()
@@ -494,18 +509,24 @@ class PluginDelegate(DPIStyledItemDelegate):
             painter.fillPath(bg_path, colors["group"])
 
         expander_rect = QtCore.QRectF(bg_rect)
-        expander_rect.setWidth(expander_rect.height())
+        expander_rect.setWidth(expander_rect.height() * self._dpi_scale)
         text_height = font_metrics["awesome6"].height()
         adjust_value = (expander_rect.height() - text_height) / 2
         expander_rect.adjust(
-            adjust_value + 1.5, adjust_value - 0.5,
-            -adjust_value + 1.5, -adjust_value - 0.5
+            adjust_value + 1.5 * self._dpi_scale,
+            adjust_value - 0.5 * self._dpi_scale,
+            -adjust_value + 1.5 * self._dpi_scale, 
+            -adjust_value - 0.5 * self._dpi_scale,
         )
 
         offset = (bg_rect.height() - font_metrics["h5"].height()) / 2
         label_rect = QtCore.QRectF(bg_rect.adjusted(
-            expander_rect.width() + 12, offset - 1, 0, 0
-        ))
+                expander_rect.width() + 12 * self._dpi_scale,
+                offset - 1 * self._dpi_scale, 
+                0, 
+                0,
+            )
+        )
 
         assert label_rect.width() > 0
 
@@ -534,7 +555,7 @@ class PluginDelegate(DPIStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20)
+        return QtCore.QSize(option.rect.width(), 20 * self._dpi_scale)
 
 
 class TerminalItem(DPIStyledItemDelegate):
@@ -547,7 +568,13 @@ class TerminalItem(DPIStyledItemDelegate):
             return
 
         hover = QtGui.QPainterPath()
-        hover.addRect(QtCore.QRectF(option.rect).adjusted(0, 0, -1, -1))
+        hover.addRect(QtCore.QRectF(option.rect).adjusted(
+                0, 
+                0,
+                -1 * self._dpi_scale,
+                -1 * self._dpi_scale,
+            )
+        )
         if option.state & QtWidgets.QStyle.State_Selected:
             painter.fillPath(hover, colors["selected"])
 
