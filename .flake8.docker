@@ -1,0 +1,10 @@
+[flake8]
+extend-ignore =
+    T101
+    # Docstrings
+    D
+per-file-ignores =
+    pyblish_lite/model.py: A001,A003
+    pyblish_lite/widgets.py: A001
+
+# vim: set ts=4 sw=4 tw=0 et ft=config :

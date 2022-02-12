@@ -1,0 +1,14 @@
+[flake8]
+max-line-length=79
+docstring-convention = google
+ignore =
+    # E203 whitespace before ':' - Black does this... :/
+    E203
+    # W503 line break before binary operator - line breake before binary
+    # operator is actually the recommended way
+    W503
+    W504
+exclude =
+    pyblish_lite/vendor/
+
+# vim: set ts=4 sw=4 tw=0 et ft=config :
