@@ -2,7 +2,7 @@
 import logging
 
 from pyblish_lite import model
-from pyblish_lite.vendor import six
+import six
 
 
 def test_label_nonstring():
