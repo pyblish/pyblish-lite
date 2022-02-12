@@ -58,6 +58,7 @@ else:
 
 
 class Window(QtWidgets.QDialog):
+
     def __init__(self, controller, parent=None):
         super(Window, self).__init__(parent=parent)
 
@@ -65,10 +66,7 @@ class Window(QtWidgets.QDialog):
 
         # Use plastique style for specific ocations
         # TODO set style name via environment variable
-        low_keys = {
-            key.lower(): key
-            for key in QtWidgets.QStyleFactory.keys()
-        }
+        low_keys = {key.lower(): key for key in QtWidgets.QStyleFactory.keys()}
         if "plastique" in low_keys:
             self.setStyle(
                 QtWidgets.QStyleFactory.create(low_keys["plastique"])
@@ -81,12 +79,10 @@ class Window(QtWidgets.QDialog):
             on_top_flag = QtCore.Qt.Dialog
 
         self.setWindowFlags(
-            self.windowFlags()
-            | QtCore.Qt.WindowTitleHint
+            self.windowFlags() | QtCore.Qt.WindowTitleHint
             | QtCore.Qt.WindowMaximizeButtonHint
             | QtCore.Qt.WindowMinimizeButtonHint
-            | QtCore.Qt.WindowCloseButtonHint
-            | on_top_flag
+            | QtCore.Qt.WindowCloseButtonHint | on_top_flag,
         )
         self.setWindowIcon(icon)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -113,7 +109,7 @@ class Window(QtWidgets.QDialog):
         button_suspend_logs.setFixedWidth(7)
         button_suspend_logs.setSizePolicy(
             QtWidgets.QSizePolicy.Preferred,
-            QtWidgets.QSizePolicy.Expanding
+            QtWidgets.QSizePolicy.Expanding,
         )
         button_suspend_logs_widget_layout.addWidget(button_suspend_logs)
         header_aditional_btns = QtWidgets.QWidget(header_tab_widget)
@@ -275,7 +271,7 @@ class Window(QtWidgets.QDialog):
         closing_placeholder = QtWidgets.QWidget(main_widget)
         closing_placeholder.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
-            QtWidgets.QSizePolicy.Expanding
+            QtWidgets.QSizePolicy.Expanding,
         )
         closing_placeholder.hide()
 
@@ -331,7 +327,6 @@ class Window(QtWidgets.QDialog):
         animation_info_msg.addAnimation(on)
         animation_info_msg.addPause(2000)
         animation_info_msg.addAnimation(fade)
-
         """Setup
 
         Widgets are referred to in CSS via their object-name. We
@@ -396,7 +391,7 @@ class Window(QtWidgets.QDialog):
             footer_button_validate,
             footer_button_play,
             footer_spacer,
-            closing_placeholder
+            closing_placeholder,
         ):
             _widget.setAttribute(QtCore.Qt.WA_StyledBackground)
 
@@ -430,7 +425,7 @@ class Window(QtWidgets.QDialog):
         # NOTE: Listeners to this signal are run in the main thread
         controller.about_to_process.connect(
             self.on_about_to_process,
-            QtCore.Qt.DirectConnection
+            QtCore.Qt.DirectConnection,
         )
 
         overview_instance_view.toggled.connect(self.on_instance_toggle)
@@ -493,20 +488,16 @@ class Window(QtWidgets.QDialog):
         }
         self.pages = (
             ("overview", overview_page),
-            ("terminal", terminal_page)
+            ("terminal", terminal_page),
         )
 
         current_page = settings.InitialTab or "overview"
-        self.comment_main_widget.setVisible(
-            not current_page == "terminal"
-        )
-        self.terminal_filters_widget.setVisible(
-            current_page == "terminal"
-        )
+        self.comment_main_widget.setVisible(not current_page == "terminal")
+        self.terminal_filters_widget.setVisible(current_page == "terminal")
 
         self.state = {
             "is_closing": False,
-            "current_page": current_page
+            "current_page": current_page,
         }
 
         self.tabs[current_page].setChecked(True)
@@ -555,9 +546,7 @@ class Window(QtWidgets.QDialog):
         for plugin_item in self.plugin_model.plugin_items.values():
             plugin_item.setData(enable_value, Roles.IsEnabledRole)
 
-        for instance_item in (
-            self.instance_model.instance_items.values()
-        ):
+        for instance_item in (self.instance_model.instance_items.values()):
             instance_item.setData(enable_value, Roles.IsEnabledRole)
 
     def _add_intent_to_context(self):
@@ -645,10 +634,7 @@ class Window(QtWidgets.QDialog):
                 page.show()
                 page.hide()
 
-        if (
-            previous_page == target_page
-            or previous_page is None
-        ):
+        if (previous_page == target_page or previous_page is None):
             if not target_page.isVisible():
                 target_page.show()
             return
@@ -665,7 +651,7 @@ class Window(QtWidgets.QDialog):
             previous_page.frameGeometry().x(),
             previous_page.frameGeometry().y(),
             width,
-            previous_page.frameGeometry().height()
+            previous_page.frameGeometry().height(),
         )
         curr_pos = previous_page.pos()
 
@@ -676,7 +662,7 @@ class Window(QtWidgets.QDialog):
             target_page.frameGeometry().x(),
             target_page.frameGeometry().y(),
             target_page.frameGeometry().width(),
-            target_page.frameGeometry().height()
+            target_page.frameGeometry().height(),
         )
         previous_page.show()
 
@@ -688,17 +674,13 @@ class Window(QtWidgets.QDialog):
 
         duration = 250
 
-        anim_old = QtCore.QPropertyAnimation(
-            previous_page, b"pos", self
-        )
+        anim_old = QtCore.QPropertyAnimation(previous_page, b"pos", self)
         anim_old.setDuration(duration)
         anim_old.setStartValue(curr_pos)
         anim_old.setEndValue(curr_pos - offset)
         anim_old.setEasingCurve(QtCore.QEasingCurve.OutQuad)
 
-        anim_new = QtCore.QPropertyAnimation(
-            target_page, b"pos", self
-        )
+        anim_new = QtCore.QPropertyAnimation(target_page, b"pos", self)
         anim_new.setDuration(duration)
         anim_new.setStartValue(curr_pos + offset)
         anim_new.setEndValue(curr_pos)
@@ -718,17 +700,15 @@ class Window(QtWidgets.QDialog):
     def footer_items_visibility(
         self,
         comment_visible=None,
-        terminal_filters_visibile=None
+        terminal_filters_visibile=None,
     ):
         target = self.state["current_page"]
         comment_visibility = (
             not self.perspective_widget.isVisible()
-            and not target == "terminal"
-            and self.comment_box.isEnabled()
+            and not target == "terminal" and self.comment_box.isEnabled()
         )
         terminal_filters_visibility = (
-            target == "terminal"
-            or self.perspective_widget.isVisible()
+            target == "terminal" or self.perspective_widget.isVisible()
         )
 
         if comment_visible is not None and comment_visibility:
@@ -744,17 +724,16 @@ class Window(QtWidgets.QDialog):
 
         hiding_widgets = []
         showing_widgets = []
-        if (comment_visibility != (
-            self.comment_main_widget.isVisible()
-        )):
+        if (comment_visibility != (self.comment_main_widget.isVisible())):
             if self.comment_main_widget.isVisible():
                 hiding_widgets.append(self.comment_main_widget)
             else:
                 showing_widgets.append(self.comment_main_widget)
 
-        if (terminal_filters_visibility != (
-            self.terminal_filters_widget.isVisible()
-        )):
+        if (
+            terminal_filters_visibility !=
+            (self.terminal_filters_widget.isVisible())
+        ):
             if self.terminal_filters_widget.isVisible():
                 hiding_widgets.append(self.terminal_filters_widget)
             else:
@@ -772,7 +751,7 @@ class Window(QtWidgets.QDialog):
 
         for key in sorted(widgets_by_pos_y.keys()):
             widget = widgets_by_pos_y[key]
-            hiding_widgets_queue.put((widget, ))
+            hiding_widgets_queue.put((widget,))
 
         for widget in hiding_widgets:
             widget.hide()
@@ -807,9 +786,7 @@ class Window(QtWidgets.QDialog):
             second_rect = QtCore.QRect(widget_rect)
             second_rect.setTopLeft(second_rect.bottomLeft())
 
-            animation = QtCore.QPropertyAnimation(
-                widget, b"geometry", self
-            )
+            animation = QtCore.QPropertyAnimation(widget, b"geometry", self)
             animation.setDuration(duration)
             animation.setStartValue(second_rect)
             animation.setEndValue(widget_rect)
@@ -830,9 +807,7 @@ class Window(QtWidgets.QDialog):
                 second_rect = QtCore.QRect(widget_rect)
                 second_rect.setTopLeft(second_rect.bottomLeft())
 
-                anim = QtCore.QPropertyAnimation(
-                    widget, b"geometry", self
-                )
+                anim = QtCore.QPropertyAnimation(widget, b"geometry", self)
                 anim.setDuration(duration)
                 anim.setStartValue(widget_rect)
                 anim.setEndValue(second_rect)
@@ -897,23 +872,21 @@ class Window(QtWidgets.QDialog):
         else:
             instance_id = instance.id
 
-        instance_item = (
-            self.instance_model.instance_items[instance_id]
-        )
+        instance_item = (self.instance_model.instance_items[instance_id])
         instance_item.setData(
-            {InstanceStates.InProgress: True},
-            Roles.PublishFlagsRole
+            {InstanceStates.InProgress: True}, Roles.PublishFlagsRole
         )
 
         plugin_item = self.plugin_model.plugin_items[plugin._id]
         plugin_item.setData(
-            {PluginStates.InProgress: True},
-            Roles.PublishFlagsRole
+            {PluginStates.InProgress: True}, Roles.PublishFlagsRole
         )
 
-        self.info("{} {}".format(
-            self.tr("Processing"), plugin_item.data(QtCore.Qt.DisplayRole)
-        ))
+        self.info(
+            "{} {}".format(
+                self.tr("Processing"), plugin_item.data(QtCore.Qt.DisplayRole)
+            )
+        )
 
         visibility = True
         if hasattr(plugin, "hide_ui_on_process") and plugin.hide_ui_on_process:
@@ -1026,8 +999,7 @@ class Window(QtWidgets.QDialog):
                 continue
 
             group_item.setData(
-                {GroupStates.HasFinished: True},
-                Roles.PublishFlagsRole
+                {GroupStates.HasFinished: True}, Roles.PublishFlagsRole
             )
             self.overview_plugin_view.collapse(group_index)
 
@@ -1050,16 +1022,14 @@ class Window(QtWidgets.QDialog):
             self.footer_widget.style().polish(self.footer_widget)
 
         suspend_log_bool = (
-            self.controller.collect_state == 1
-            and not self.controller.stopped
+            self.controller.collect_state == 1 and not self.controller.stopped
         )
         self.button_suspend_logs.setEnabled(suspend_log_bool)
 
     def on_was_skipped(self, plugin):
         plugin_item = self.plugin_model.plugin_items[plugin.id]
         plugin_item.setData(
-            {PluginStates.WasSkipped: True},
-            Roles.PublishFlagsRole
+            {PluginStates.WasSkipped: True}, Roles.PublishFlagsRole
         )
 
     def on_was_finished(self):
@@ -1081,18 +1051,14 @@ class Window(QtWidgets.QDialog):
         self.footer_widget.setProperty("success", success_val)
         self.footer_widget.style().polish(self.footer_widget)
 
-        for instance_item in (
-            self.instance_model.instance_items.values()
-        ):
+        for instance_item in (self.instance_model.instance_items.values()):
             instance_item.setData(
-                {InstanceStates.HasFinished: True},
-                Roles.PublishFlagsRole
+                {InstanceStates.HasFinished: True}, Roles.PublishFlagsRole
             )
 
         for group_item in self.instance_model.group_items.values():
             group_item.setData(
-                {GroupStates.HasFinished: True},
-                Roles.PublishFlagsRole
+                {GroupStates.HasFinished: True}, Roles.PublishFlagsRole
             )
 
         self.update_compatibility()
@@ -1110,8 +1076,7 @@ class Window(QtWidgets.QDialog):
             self.instance_model.remove(instance_id)
 
         result["records"] = self.terminal_model.prepare_records(
-            result,
-            self._suspend_logs
+            result, self._suspend_logs
         )
 
         plugin_item = self.plugin_model.update_with_result(result)
@@ -1122,9 +1087,7 @@ class Window(QtWidgets.QDialog):
         self.update_compatibility()
 
         if self.perspective_widget.isVisible():
-            self.perspective_widget.update_context(
-                plugin_item, instance_item
-            )
+            self.perspective_widget.update_context(plugin_item, instance_item)
 
     # -------------------------------------------------------------------------
     #
@@ -1214,7 +1177,7 @@ class Window(QtWidgets.QDialog):
         action_state |= PluginActionStates.HasFinished
         result["records"] = self.terminal_model.prepare_records(
             result,
-            self._suspend_logs
+            self._suspend_logs,
         )
 
         if result.get("error"):
@@ -1227,9 +1190,7 @@ class Window(QtWidgets.QDialog):
         instance_item = self.instance_model.update_with_result(result)
 
         if self.perspective_widget.isVisible():
-            self.perspective_widget.update_context(
-                plugin_item, instance_item
-            )
+            self.perspective_widget.update_context(plugin_item, instance_item)
 
     def closeEvent(self, event):
         """Perform post-flight checks before closing
@@ -1313,7 +1274,7 @@ class Window(QtWidgets.QDialog):
         # Include message in terminal
         self.terminal_model.append([{
             "label": message,
-            "type": "info"
+            "type": "info",
         }])
 
         self.animation_info_msg.stop()

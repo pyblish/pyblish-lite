@@ -5,6 +5,7 @@ from .constants import PluginStates, InstanceStates, Roles
 
 
 class EllidableLabel(QtWidgets.QLabel):
+
     def __init__(self, *args, **kwargs):
         super(EllidableLabel, self).__init__(*args, **kwargs)
         self.setObjectName("EllidableLabel")
@@ -20,6 +21,7 @@ class EllidableLabel(QtWidgets.QLabel):
 
 
 class PerspectiveLabel(QtWidgets.QTextEdit):
+
     def __init__(self, parent=None):
         super(PerspectiveLabel, self).__init__(parent)
         self.setObjectName("PerspectiveLabel")
@@ -419,11 +421,14 @@ class ExpandableWidget(QtWidgets.QWidget):
 
 
 class ButtonWithMenu(QtWidgets.QWidget):
+
     def __init__(self, button_title, parent=None):
         super(ButtonWithMenu, self).__init__(parent=parent)
-        self.setSizePolicy(QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        ))
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy(
+                QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+            )
+        )
 
         self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -431,12 +436,14 @@ class ButtonWithMenu(QtWidgets.QWidget):
 
         self.menu = QtWidgets.QMenu()
         # TODO move to stylesheets
-        self.menu.setStyleSheet("""
+        self.menu.setStyleSheet(
+            """
             *{color: #fff; background-color: #555; border: 1px solid #222;}
             ::item {background-color: transparent;padding: 5px;
             padding-left: 10px;padding-right: 10px;}
             ::item:selected {background-color: #666;}
-        """)
+        """
+        )
 
         self.button = QtWidgets.QPushButton(button_title)
         self.button.setObjectName("ButtonWithMenu")
@@ -446,9 +453,9 @@ class ButtonWithMenu(QtWidgets.QWidget):
         self.button.clicked.connect(self.btn_clicked)
 
     def btn_clicked(self):
-        self.menu.popup(self.button.mapToGlobal(
-            QtCore.QPoint(0, self.button.height())
-        ))
+        self.menu.popup(
+            self.button.mapToGlobal(QtCore.QPoint(0, self.button.height()))
+        )
 
     def addItem(self, text, callback):
         self.menu.addAction(text, callback)
@@ -480,20 +487,18 @@ class CommentBox(QtWidgets.QLineEdit):
 
 
 class TerminalDetail(QtWidgets.QTextEdit):
+
     def __init__(self, text, *args, **kwargs):
         super(TerminalDetail, self).__init__(*args, **kwargs)
 
         self.setReadOnly(True)
         self.setHtml(text)
         self.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
-        self.setWordWrapMode(
-            QtGui.QTextOption.WrapAtWordBoundaryOrAnywhere
-        )
+        self.setWordWrapMode(QtGui.QTextOption.WrapAtWordBoundaryOrAnywhere)
 
     def sizeHint(self):
         content_margins = (
-            self.contentsMargins().top()
-            + self.contentsMargins().bottom()
+            self.contentsMargins().top() + self.contentsMargins().bottom()
         )
         size = self.document().documentLayout().documentSize().toSize()
         size.setHeight(size.height() + content_margins)
@@ -501,6 +506,7 @@ class TerminalDetail(QtWidgets.QTextEdit):
 
 
 class FilterButton(QtWidgets.QPushButton):
+
     def __init__(self, name, *args, **kwargs):
         self.filter_name = name
 
@@ -511,9 +517,7 @@ class FilterButton(QtWidgets.QPushButton):
         self.setProperty("type", name)
         self.setObjectName("TerminalFilerBtn")
         self.setCheckable(True)
-        self.setChecked(
-            model.TerminalProxy.filter_buttons_checks[name]
-        )
+        self.setChecked(model.TerminalProxy.filter_buttons_checks[name])
 
     def on_toggle(self, toggle_state):
         model.TerminalProxy.change_filter(self.filter_name, toggle_state)
@@ -537,7 +541,7 @@ class TerminalFilterWidget(QtWidgets.QWidget):
             FilterButton("log_warning", log_icon, self),
             FilterButton("log_error", log_icon, self),
             FilterButton("log_critical", log_icon, self),
-            FilterButton("error", error_icon, self)
+            FilterButton("error", error_icon, self),
         )
 
         layout = QtWidgets.QHBoxLayout(self)

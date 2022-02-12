@@ -44,22 +44,22 @@ Roles = roles(
     "TypeRole",
     "PublishFlagsRole",
     "LogRecordsRole",
-
+    # ---------------
     "IsOptionalRole",
     "IsEnabledRole",
-
+    # --------------
     "FamiliesRole",
-
+    # -------------
     "DocstringRole",
     "PathModuleRole",
     "PluginActionsVisibleRole",
     "PluginValidActionsRole",
     "PluginActionProgressRole",
-
+    # -------------------------
     "TerminalItemTypeRole",
-
+    # ---------------------
     "IntentItemValue",
-
+    # ----------------
     type_name="ModelRoles"
 )
 
@@ -86,12 +86,12 @@ GroupStates = flags(
     "HasWarning",
     "HasError",
     "HasFinished",
-    type_name="GroupStates"
+    type_name="GroupStates",
 )
 
 PluginActionStates = flags(
     "InProgress",
     "HasFailed",
     "HasFinished",
-    type_name="PluginActionStates"
+    type_name="PluginActionStates",
 )

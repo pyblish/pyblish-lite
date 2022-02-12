@@ -30,6 +30,7 @@ class IterationBreak(Exception):
 
 class MainThreadItem:
     """Callback with args and kwargs."""
+
     def __init__(self, callback, *args, **kwargs):
         self.callback = callback
         self.args = args
@@ -273,7 +274,10 @@ class Controller(QtCore.QObject):
 
     def _process_action(self, plugin, action):
         result = pyblish.plugin.process(
-            plugin, self.context, None, action.id
+            plugin,
+            self.context,
+            None,
+            action.id,
         )
         self.is_running = False
         self.was_acted.emit(result)
@@ -301,9 +305,12 @@ class Controller(QtCore.QObject):
                 self.processing["ordersWithError"].add(plugin.order)
 
         except Exception as exc:
-            raise Exception("Unknown error({}): {}".format(
-                plugin.__name__, str(exc)
-            ))
+            raise Exception(
+                "Unknown error({}): {}".format(
+                    plugin.__name__,
+                    str(exc),
+                )
+            )
 
         return result
 
@@ -398,7 +405,8 @@ class Controller(QtCore.QObject):
                     self.context, only_active=not in_collect_stage
                 )
                 plugins = pyblish.logic.plugins_by_families(
-                    [plugin], families
+                    [plugin],
+                    families,
                 )
                 if not plugins:
                     self.was_skipped.emit(plugin)
@@ -451,9 +459,7 @@ class Controller(QtCore.QObject):
                 return
 
             self.about_to_process.emit(*self.current_pair)
-            self._main_thread_processor.add_item(
-                MainThreadItem(on_process)
-            )
+            self._main_thread_processor.add_item(MainThreadItem(on_process))
 
         def on_process():
             try:
@@ -479,9 +485,7 @@ class Controller(QtCore.QObject):
                 )
                 return
 
-            self._main_thread_processor.add_item(
-                MainThreadItem(on_next)
-            )
+            self._main_thread_processor.add_item(MainThreadItem(on_next))
 
         def on_unexpected_error(error):
             # TODO this should be handled much differently
@@ -496,9 +500,7 @@ class Controller(QtCore.QObject):
             self._main_thread_processor.stop_if_empty()
 
         self.is_running = True
-        self._main_thread_processor.add_item(
-            MainThreadItem(on_next)
-        )
+        self._main_thread_processor.add_item(MainThreadItem(on_next))
 
     def collect(self):
         """ Iterate and process Collect plugins
@@ -542,10 +544,10 @@ class Controller(QtCore.QObject):
         """
 
         for instance in self.context:
-            del(instance)
+            del (instance)
 
         for plugin in self.plugins:
-            del(plugin)
+            del (plugin)
 
     def _on_instance_toggled(self, instance, old_value, new_value):
         callbacks = pyblish.api.registered_callbacks().get("instanceToggled")

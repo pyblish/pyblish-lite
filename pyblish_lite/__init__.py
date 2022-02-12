@@ -9,5 +9,5 @@ __all__ = [
     'show',
     'version',
     'version_info',
-    '__version__'
+    '__version__',
 ]

@@ -1,4 +1,3 @@
-
 tags = {
     "500px": u"\uf26e",
     "adjust": u"\uf042",

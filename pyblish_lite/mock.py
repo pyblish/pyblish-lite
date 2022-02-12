@@ -44,7 +44,7 @@ class MyCollector(pyblish.api.ContextPlugin):
         context.create_instance(
             "MyInstance 3",
             families=["myFamily 2"],
-            publish=False
+            publish=False,
         )
 
 
@@ -52,8 +52,10 @@ class MyValidator(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder
     active = False
     label = "My Validator"
-    actions = [MyAction,
-               MyOtherAction]
+    actions = [
+        MyAction,
+        MyOtherAction,
+    ]
 
     def process(self, instance):
         self.log.info("Validating: %s" % instance)
@@ -69,6 +71,7 @@ class MyExtractor(pyblish.api.InstancePlugin):
 
 
 class CollectRenamed(pyblish.api.Collector):
+
     def process(self, context):
         i = context.create_instance("MyInstanceXYZ", family="MyFamily")
         i.set_data("name", "My instance")
@@ -143,6 +146,7 @@ class SelectInstancesFailure(pyblish.api.Selector):
 
 
 class SelectInstances2(pyblish.api.Selector):
+
     def process(self, context):
         self.log.warning("I'm good")
 
@@ -165,14 +169,16 @@ class ValidateNamespace(pyblish.api.Validator):
 
     def process(self, instance):
         self.log.info("Validating the namespace of %s" % instance.data("name"))
-        self.log.info("""And here's another message, quite long, in fact it's
+        self.log.info(
+            """And here's another message, quite long, in fact it's
 too long to be displayed in a single row of text.
 But that's how we roll down here. It's got \nnew lines\nas well.
 
 - And lists
 - And more lists
 
-        """)
+        """
+        )
 
 
 class ValidateContext(pyblish.api.Validator):
@@ -189,10 +195,12 @@ class ValidateContextFailure(pyblish.api.Validator):
 
     def process_context(self, context):
         self.log.info("About to fail..")
-        raise AssertionError("""I was programmed to fail
+        raise AssertionError(
+            """I was programmed to fail
 
 The reason I failed was because the sun was not aligned with the tides,
-and the moon is gray; not yellow. Try again when the moon is yellow.""")
+and the moon is gray; not yellow. Try again when the moon is yellow."""
+        )
 
 
 class Validator1(pyblish.api.Validator):
@@ -232,7 +240,8 @@ class ValidateFailureMock(pyblish.api.Validator):
         self.log.info("About to fail..")
         self.log.warning("Failing.. soooon..")
         self.log.critical("Ok, you're done.")
-        raise AssertionError("""ValidateFailureMock was destined to fail..
+        raise AssertionError(
+            """ValidateFailureMock was destined to fail..
 
 Here's some extended information about what went wrong.
 
@@ -242,7 +251,8 @@ a few newlines and a list.
 - Item 1
 - Item 2
 
-""")
+"""
+        )
 
 
 class ValidateIsIncompatible(pyblish.api.Validator):
@@ -313,9 +323,7 @@ class ExtractAsMa(pyblish.api.Extractor):
     """
 
     optional = True
-    __expected__ = {
-        "logCount": ">=4"
-    }
+    __expected__ = {"logCount": ">=4"}
 
     def process_instance(self, instance):
         self.log.info("About to extract scene to .ma..")
@@ -568,6 +576,7 @@ class ValidateWithHyperlinks(pyblish.api.Validator):
 
 class LongRunningCollector(pyblish.api.Collector):
     """I will take at least 2 seconds..."""
+
     def process(self, context):
         self.log.info("Sleeping for 2 seconds..")
         time.sleep(2)
@@ -576,6 +585,7 @@ class LongRunningCollector(pyblish.api.Collector):
 
 class LongRunningValidator(pyblish.api.Validator):
     """I will take at least 2 seconds..."""
+
     def process(self, context):
         self.log.info("Sleeping for 2 seconds..")
         time.sleep(2)
@@ -591,7 +601,7 @@ class RearrangingPlugin(pyblish.api.ContextPlugin):
         context[:] = sorted(
             context,
             key=lambda i: i.data["family"],
-            reverse=True
+            reverse=True,
         )
         self.log.info("Reversed!")
 
@@ -620,55 +630,46 @@ instances = [
             "family": "A",
             "publish": False
         }
-    },
-    {
+    }, {
         "name": "Richard05",
         "data": {
             "family": "A",
         }
-    },
-    {
+    }, {
         "name": "Steven11",
         "data": {
             "family": "B",
         }
-    },
-    {
+    }, {
         "name": "Piraya12",
         "data": {
             "family": "B",
         }
-    },
-    {
+    }, {
         "name": "Marcus",
         "data": {
             "family": "C",
         }
-    },
-    {
+    }, {
         "name": "Extra1",
         "data": {
             "family": "C",
         }
-    },
-    {
+    }, {
         "name": "DependencyInstance",
         "data": {
             "family": "diFamily"
         }
-    },
-    {
+    }, {
         "name": "NoFamily",
         "data": {}
-    },
-    {
+    }, {
         "name": "Failure 1",
         "data": {
             "family": "failure",
             "fail": False
         }
-    },
-    {
+    }, {
         "name": "Failure 2",
         "data": {
             "family": "failure",
@@ -681,7 +682,7 @@ plugins = [
     MyCollector,
     MyValidator,
     MyExtractor,
-
+    # ----------
     CollectRenamed,
     CollectNegatron,
     CollectPositron,
@@ -707,24 +708,24 @@ plugins = [
     ValidateWithHyperlinks,
     ExtractAsMa,
     ConformAsset,
-
+    # -----------
     SimplePlugin1,
     SimplePlugin2,
     SimplePlugin3,
-
+    # ------------
     ValidateInstancesDI,
     ExtractInstancesDI,
     ValidateDIWithRepair,
-
+    # -------------------
     PluginWithActions,
     FailingPluginWithActions,
-
+    # -----------------------
     # LongRunningCollector,
     # LongRunningValidator,
-
+    # ---------------------
     RearrangingPlugin,
     InactiveInstanceCollectorPlugin,
-
+    # ------------------------------
     CollectComment,
     CollectWithIcon,
 ]

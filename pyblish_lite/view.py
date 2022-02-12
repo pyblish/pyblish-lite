@@ -72,6 +72,7 @@ class OverviewView(QtWidgets.QTreeView):
 
 
 class PluginView(OverviewView):
+
     def __init__(self, *args, **kwargs):
         super(PluginView, self).__init__(*args, **kwargs)
         self.clicked.connect(self.item_expand)
@@ -103,6 +104,7 @@ class PluginView(OverviewView):
 
 
 class InstanceView(OverviewView):
+
     def __init__(self, *args, **kwargs):
         super(InstanceView, self).__init__(*args, **kwargs)
         self.setSortingEnabled(True)
@@ -321,8 +323,7 @@ class TerminalView(QtWidgets.QTreeView):
     def sizeHint(self):
         size = super(TerminalView, self).sizeHint()
         height = (
-            self.contentsMargins().top()
-            + self.contentsMargins().bottom()
+            self.contentsMargins().top() + self.contentsMargins().bottom()
         )
         for idx_i in range(self.model().rowCount()):
             index = self.model().index(idx_i, 0)

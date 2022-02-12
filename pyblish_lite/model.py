@@ -64,7 +64,7 @@ class QAwesomeIconFactory:
         if icon_color not in cls.icons[icon_name]:
             cls.icons[icon_name][icon_color] = qtawesome.icon(
                 icon_name,
-                color=icon_color
+                color=icon_color,
             )
         return cls.icons[icon_name][icon_color]
 
@@ -142,9 +142,7 @@ class PluginItem(QtGui.QStandardItem):
             Roles.ObjectUIdRole
         )
 
-        self.setFlags(
-            QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-        )
+        self.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
 
     def type(self):
         return PluginType
@@ -326,19 +324,20 @@ class PluginItem(QtGui.QStandardItem):
                 if self.parent():
                     self.parent().setData(
                         {GroupStates.HasWarning: True},
-                        Roles.PublishFlagsRole
+                        Roles.PublishFlagsRole,
                     )
             if value & PluginStates.HasError:
                 if self.parent():
                     self.parent().setData(
                         {GroupStates.HasError: True},
-                        Roles.PublishFlagsRole
+                        Roles.PublishFlagsRole,
                     )
 
         return super(PluginItem, self).setData(value, role)
 
 
 class GroupItem(QtGui.QStandardItem):
+
     def __init__(self, *args, **kwargs):
         self.order = kwargs.pop("order", None)
         self.publish_states = 0
@@ -383,6 +382,7 @@ class GroupItem(QtGui.QStandardItem):
 
 
 class PluginModel(QtGui.QStandardItemModel):
+
     def __init__(self, controller, *args, **kwargs):
         super(PluginModel, self).__init__(*args, **kwargs)
 
@@ -516,13 +516,12 @@ class PluginModel(QtGui.QStandardItemModel):
                 (is_compatible and not current_is_compatible)
                 or (not is_compatible and current_is_compatible)
             ):
-                new_flag = {
-                    PluginStates.IsCompatible: is_compatible
-                }
+                new_flag = {PluginStates.IsCompatible: is_compatible}
                 plugin_item.setData(new_flag, Roles.PublishFlagsRole)
 
 
 class PluginFilterProxy(QtCore.QSortFilterProxyModel):
+
     def filterAcceptsRow(self, source_row, source_parent):
         index = self.sourceModel().index(source_row, 0, source_parent)
         item_type = index.data(Roles.TypeRole)
@@ -555,8 +554,7 @@ class InstanceItem(QtGui.QStandardItem):
         instance.optional = getattr(instance, "optional", True)
         instance.data["publish"] = instance.data.get("publish", True)
         instance.data["label"] = (
-            instance.data.get("label")
-            or getattr(instance, "label", None)
+            instance.data.get("label") or getattr(instance, "label", None)
             or instance.data["name"]
         )
 
@@ -650,13 +648,13 @@ class InstanceItem(QtGui.QStandardItem):
                 if self.parent():
                     self.parent().setData(
                         {GroupStates.HasWarning: True},
-                        Roles.PublishFlagsRole
+                        Roles.PublishFlagsRole,
                     )
             if value & InstanceStates.HasError:
                 if self.parent():
                     self.parent().setData(
                         {GroupStates.HasError: True},
-                        Roles.PublishFlagsRole
+                        Roles.PublishFlagsRole,
                     )
 
             self.instance._publish_states = value
@@ -748,9 +746,7 @@ class InstanceModel(QtGui.QStandardItemModel):
         if not item:
             return
 
-        new_flag_states = {
-            InstanceStates.InProgress: False
-        }
+        new_flag_states = {InstanceStates.InProgress: False}
 
         publish_states = item.data(Roles.PublishFlagsRole)
         has_warning = publish_states & InstanceStates.HasWarning
@@ -819,6 +815,7 @@ class InstanceModel(QtGui.QStandardItemModel):
 
 
 class InstanceSortProxy(QtCore.QSortFilterProxyModel):
+
     def __init__(self, *args, **kwargs):
         super(InstanceSortProxy, self).__init__(*args, **kwargs)
         # Do not care about lower/upper case
@@ -844,7 +841,7 @@ class TerminalDetailItem(QtGui.QStandardItem):
         ("traceback", "Traceback"),
         ("levelname", "Level"),
         ("threadName", "Thread"),
-        ("msecs", "Millis")
+        ("msecs", "Millis"),
     )
 
     def __init__(self, record_item):
@@ -873,11 +870,9 @@ class TerminalDetailItem(QtGui.QStandardItem):
                 continue
             value = item_data[key]
             text = (
-                str(value)
-                .replace("<", "&#60;")
-                .replace(">", "&#62;")
-                .replace('\n', '<br/>')
-                .replace(' ', '&nbsp;')
+                str(value).replace("<", "&#60;").replace(">", "&#62;").replace(
+                    '\n', '<br/>'
+                ).replace(' ', '&nbsp;')
             )
 
             title_tag = (
@@ -920,8 +915,7 @@ class TerminalModel(QtGui.QStandardItemModel):
         (20, "log_info"),
         (30, "log_warning"),
         (40, "log_error"),
-        (50, "log_critical")
-
+        (50, "log_critical"),
     )
 
     def __init__(self, *args, **kwargs):

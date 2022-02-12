@@ -2,7 +2,7 @@ from __future__ import (
     absolute_import,
     division,
     print_function,
-    unicode_literals
+    unicode_literals,
 )
 
 import os
@@ -133,7 +133,10 @@ class OrderGroups:
     _group_range = None
 
     def __init__(
-        self, group_str=None, group_range=None, validation_order=None
+        self,
+        group_str=None,
+        group_range=None,
+        validation_order=None,
     ):
         super(OrderGroups, self).__init__()
         # Override class methods with object methods
@@ -144,14 +147,10 @@ class OrderGroups:
 
         # set
         if group_range is not None:
-            self._group_range = self.parse_group_range(
-                group_range
-            )
+            self._group_range = self.parse_group_range(group_range)
 
         if group_str is not None:
-            self._groups = self.parse_group_str(
-                group_str
-            )
+            self._groups = self.parse_group_str(group_str)
 
         if validation_order is not None:
             self._validation_order = self.parse_validation_order(
@@ -161,9 +160,7 @@ class OrderGroups:
     @staticmethod
     def _groups_method(obj):
         if obj._groups is None:
-            obj._groups = obj.parse_group_str(
-                group_range=obj.group_range()
-            )
+            obj._groups = obj.parse_group_str(group_range=obj.group_range())
         return obj._groups
 
     @staticmethod
@@ -264,10 +261,12 @@ class OrderGroups:
                     order = float(order) + float(group_range) / 2
 
             if order in groups:
-                print((
-                    "Order \"{}\" is registered more than once."
-                    " Using first found."
-                ).format(str(order)))
+                print(
+                    (
+                        "Order \"{}\" is registered more than once."
+                        " Using first found."
+                    ).format(str(order))
+                )
                 continue
 
             groups[order] = label
@@ -296,8 +295,7 @@ class OrderGroups:
             )
         else:
             validation_order_value = (
-                float(validation_order_value)
-                + group_range_half
+                float(validation_order_value) + group_range_half
             )
         return validation_order_value
 

@@ -52,6 +52,7 @@ icons = {
 
 
 class DPIStyledItemDelegate(QtWidgets.QStyledItemDelegate):
+
     def __init__(self, *args, **kwargs):
         super(DPIStyledItemDelegate, self).__init__(*args, **kwargs)
         self._dpi_scale = 1.0
@@ -85,7 +86,7 @@ class PluginItemDelegate(DPIStyledItemDelegate):
         perspective_rect.adjust(0, 3, 0, 0)
         perspective_rect.translate(
             body_rect.width() - (perspective_rect.width() / 2 + 2),
-            0
+            0,
         )
 
         publish_states = index.data(Roles.PublishFlagsRole)
@@ -105,7 +106,8 @@ class PluginItemDelegate(DPIStyledItemDelegate):
             check_color = colors["inactive"]
 
         offset = (body_rect.height() - font_metrics["h4"].height()) / 2
-        label_rect = QtCore.QRectF(body_rect.adjusted(
+        label_rect = QtCore.QRectF(
+            body_rect.adjusted(
                 check_rect.width() + 12 * self._dpi_scale,
                 (offset - 1) * self._dpi_scale,
                 0,
@@ -117,8 +119,7 @@ class PluginItemDelegate(DPIStyledItemDelegate):
 
         label = index.data(QtCore.Qt.DisplayRole)
         label = font_metrics["h4"].elidedText(
-            label,
-            QtCore.Qt.ElideRight,
+            label, QtCore.Qt.ElideRight,
             label_rect.width() - 20 * self._dpi_scale
         )
 
@@ -156,7 +157,8 @@ class PluginItemDelegate(DPIStyledItemDelegate):
 
             icon_rect = QtCore.QRectF(
                 option.rect.adjusted(
-                    label_rect.width() - (perspective_rect.width() / 2 * self._dpi_scale),
+                    label_rect.width() -
+                    (perspective_rect.width() / 2 * self._dpi_scale),
                     label_rect.height() / (3 * self._dpi_scale),
                     0,
                     0,
@@ -221,7 +223,7 @@ class InstanceItemDelegate(DPIStyledItemDelegate):
         perspective_rect.adjust(0, 3, 0, 0)
         perspective_rect.translate(
             body_rect.width() - (perspective_rect.width() / 2 + 2),
-            0
+            0,
         )
 
         publish_states = index.data(Roles.PublishFlagsRole)
@@ -241,11 +243,12 @@ class InstanceItemDelegate(DPIStyledItemDelegate):
             check_color = colors["inactive"]
 
         offset = (body_rect.height() - font_metrics["h4"].height()) / 2
-        label_rect = QtCore.QRectF(body_rect.adjusted(
+        label_rect = QtCore.QRectF(
+            body_rect.adjusted(
                 check_rect.width() + 12 * self._dpi_scale,
                 (offset - 1) * self._dpi_scale,
-                0, 
-                0
+                0,
+                0,
             )
         )
 
@@ -255,7 +258,7 @@ class InstanceItemDelegate(DPIStyledItemDelegate):
         label = font_metrics["h4"].elidedText(
             label,
             QtCore.Qt.ElideRight,
-            label_rect.width() - 20 * self._dpi_scale
+            label_rect.width() - 20 * self._dpi_scale,
         )
 
         font_color = colors["idle"]
@@ -313,9 +316,8 @@ class InstanceDelegate(DPIStyledItemDelegate):
         self.item_delegate = InstanceItemDelegate(parent)
 
     def paint(self, painter, option, index):
-        if index.data(Roles.TypeRole) in (
-            model.InstanceType, model.PluginType
-        ):
+        if index.data(Roles.TypeRole
+                      ) in (model.InstanceType, model.PluginType):
             self.item_delegate.paint(painter, option, index)
             return
 
@@ -328,9 +330,9 @@ class InstanceDelegate(DPIStyledItemDelegate):
         """
         body_rect = QtCore.QRectF(option.rect)
         bg_rect = QtCore.QRectF(
-            body_rect.left(), 
+            body_rect.left(),
             body_rect.top() + 1 * self._dpi_scale,
-            body_rect.width() - 5 * self._dpi_scale, 
+            body_rect.width() - 5 * self._dpi_scale,
             body_rect.height() - 2 * self._dpi_scale,
         )
 
@@ -358,17 +360,23 @@ class InstanceDelegate(DPIStyledItemDelegate):
         expander_path = QtGui.QPainterPath()
         expander_path.moveTo(x_pos, y_pos + y_radius)
         expander_path.arcTo(
-            x_pos, y_pos,
-            x_radius2, y_radius2,
-            180.0, -90.0
+            x_pos,
+            y_pos,
+            x_radius2,
+            y_radius2,
+            180.0,
+            -90.0,
         )
         expander_path.lineTo(x_pos + width, y_pos)
         expander_path.lineTo(x_pos + width, y_pos + height)
         expander_path.lineTo(x_pos + x_radius, y_pos + height)
         expander_path.arcTo(
-            x_pos, y_pos + height - y_radius2,
-            x_radius2, y_radius2,
-            270.0, -90.0
+            x_pos,
+            y_pos + height - y_radius2,
+            x_radius2,
+            y_radius2,
+            270.0,
+            -90.0,
         )
         expander_path.closeSubpath()
 
@@ -385,17 +393,23 @@ class InstanceDelegate(DPIStyledItemDelegate):
         remainder_path = QtGui.QPainterPath()
         remainder_path.moveTo(x_pos + width, y_pos + height - y_radius)
         remainder_path.arcTo(
-            x_pos + width - x_radius2, y_pos + height - y_radius2,
-            x_radius2, y_radius2,
-            0.0, -90.0
+            x_pos + width - x_radius2,
+            y_pos + height - y_radius2,
+            x_radius2,
+            y_radius2,
+            0.0,
+            -90.0,
         )
         remainder_path.lineTo(x_pos, y_pos + height)
         remainder_path.lineTo(x_pos, y_pos)
         remainder_path.lineTo(x_pos + width - x_radius, y_pos)
         remainder_path.arcTo(
-            x_pos + width - x_radius2, y_pos,
-            x_radius2, y_radius2,
-            90.0, -90.0
+            x_pos + width - x_radius2,
+            y_pos,
+            x_radius2,
+            y_radius2,
+            90.0,
+            -90.0,
         )
         remainder_path.closeSubpath()
 
@@ -423,16 +437,19 @@ class InstanceDelegate(DPIStyledItemDelegate):
                 painter.fillPath(remainder_path, colors["group-hover"])
 
         text_height = font_metrics["awesome6"].height()
-        adjust_value = (expander_rect.height() - text_height) / 2 * self._dpi_scale
+        adjust_value = (
+            expander_rect.height() - text_height
+        ) / 2 * self._dpi_scale
         expander_rect.adjust(
             adjust_value + 1.5,
             adjust_value - 0.5,
-            -adjust_value + 1.5, 
+            -adjust_value + 1.5,
             -adjust_value - 0.5,
         )
 
         offset = (remainder_rect.height() - font_metrics["h5"].height()) / 2
-        label_rect = QtCore.QRectF(remainder_rect.adjusted(
+        label_rect = QtCore.QRectF(
+            remainder_rect.adjusted(
                 5 * self._dpi_scale,
                 offset - 1 * self._dpi_scale,
                 0,
@@ -476,9 +493,8 @@ class PluginDelegate(DPIStyledItemDelegate):
         self.item_delegate = PluginItemDelegate(parent)
 
     def paint(self, painter, option, index):
-        if index.data(Roles.TypeRole) in (
-            model.InstanceType, model.PluginType
-        ):
+        if index.data(Roles.TypeRole
+                      ) in (model.InstanceType, model.PluginType):
             self.item_delegate.paint(painter, option, index)
             return
 
@@ -491,7 +507,7 @@ class PluginDelegate(DPIStyledItemDelegate):
         """
         body_rect = QtCore.QRectF(option.rect)
         bg_rect = QtCore.QRectF(
-            body_rect.left(), 
+            body_rect.left(),
             body_rect.top() + 1 * self._dpi_scale,
             body_rect.width() - 5 * self._dpi_scale,
             body_rect.height() - 2 * self._dpi_scale,
@@ -515,15 +531,16 @@ class PluginDelegate(DPIStyledItemDelegate):
         expander_rect.adjust(
             adjust_value + 1.5 * self._dpi_scale,
             adjust_value - 0.5 * self._dpi_scale,
-            -adjust_value + 1.5 * self._dpi_scale, 
+            -adjust_value + 1.5 * self._dpi_scale,
             -adjust_value - 0.5 * self._dpi_scale,
         )
 
         offset = (bg_rect.height() - font_metrics["h5"].height()) / 2
-        label_rect = QtCore.QRectF(bg_rect.adjusted(
+        label_rect = QtCore.QRectF(
+            bg_rect.adjusted(
                 expander_rect.width() + 12 * self._dpi_scale,
-                offset - 1 * self._dpi_scale, 
-                0, 
+                offset - 1 * self._dpi_scale,
+                0,
                 0,
             )
         )
@@ -568,8 +585,9 @@ class TerminalItem(DPIStyledItemDelegate):
             return
 
         hover = QtGui.QPainterPath()
-        hover.addRect(QtCore.QRectF(option.rect).adjusted(
-                0, 
+        hover.addRect(
+            QtCore.QRectF(option.rect).adjusted(
+                0,
                 0,
                 -1 * self._dpi_scale,
                 -1 * self._dpi_scale,

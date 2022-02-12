@@ -33,8 +33,7 @@ def application():
 
 def install_translator(app):
     translator = QtCore.QTranslator(app)
-    translator.load(QtCore.QLocale.system(), "i18n/",
-                    directory=util.root)
+    translator.load(QtCore.QLocale.system(), "i18n/", directory=util.root)
     app.installTranslator(translator)
     print("Installed translator")
 
@@ -52,7 +51,7 @@ def install_fonts():
         "opensans/OpenSans-Regular.ttf",
         "opensans/OpenSans-Semibold.ttf",
         "opensans/OpenSans-SemiboldItalic.ttf",
-        "fontawesome/fontawesome-webfont.ttf"
+        "fontawesome/fontawesome-webfont.ttf",
     ]
 
     for font in fonts:
