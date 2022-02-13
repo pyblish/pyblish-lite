@@ -4,23 +4,28 @@
 # docker run --rm -v $(pwd):/pyblish-lite pyblish/pyblish-lite
 
 
-FROM ubuntu:14.04
+FROM ubuntu:20.04 AS base
 
 MAINTAINER marcus@abstractfactory.io
 
-RUN apt-get update && apt-get install -y \
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+RUN apt-get update && apt-get install -yq \
     build-essential \
+    python3-pip \
     git \
-    python-pyside \
-    python-pip \
-    python-nose
+    libgl1 \
+    libglib2.0-0
 
-RUN mkdir /deps && cd /deps && \
-    git clone https://github.com/pyblish/pyblish-base
+FROM base AS final
 
-ENV PYTHONPATH=/deps/pyblish-base
+COPY ./requirements.txt ./dev-requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r dev-requirements.txt
 
 WORKDIR /pyblish-lite
+# ENTRYPOINT flake8 --append-config .flake8.docker pyblish_lite
+# ENTRYPOINT mypy
 ENTRYPOINT nosetests \
     --verbose \
     --with-doctest \
