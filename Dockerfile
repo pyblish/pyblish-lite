@@ -14,8 +14,10 @@ RUN apt-get update && apt-get install -yq \
     build-essential \
     python3-pip \
     git \
+    # Libraries need by Qt
     libgl1 \
-    libglib2.0-0
+    libglib2.0-0 \
+    libpulse-mainloop-glib0
 
 FROM base AS final
 
