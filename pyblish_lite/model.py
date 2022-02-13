@@ -29,7 +29,6 @@ import pyblish
 
 from . import settings, util
 from .awesome import tags as awesome
-import Qt
 from Qt import QtCore, QtGui
 from six import text_type
 from .vendor import qtawesome
