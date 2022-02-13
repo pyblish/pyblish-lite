@@ -1342,7 +1342,7 @@ class Window(QtWidgets.QDialog):
         # Compute this only once
         self._dpi_scale = getattr(self, "_dpi_scale", self._find_scale())
 
-        for delegate in self._delegates:
-            delegate.set_dpi_scale(self._dpi_scale)
+        for delegate_ in self._delegates:
+            delegate_._set_dpi_scale(self._dpi_scale)
 
         super(Window, self).paintEvent(event)
