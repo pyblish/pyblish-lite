@@ -238,7 +238,7 @@ $ nosetests --verbose --with-doctext --exclude=vendor
 ```bash
 $ cd pyblish-lite
 $ docker build -t pyblish/pyblish-lite .
-$ docker run --rm -v $(pwd):/pyblish-lite pyblish/pyblish-lite
+$ docker run --rm -v -t pyblish/pyblish-lite
 ```
 
 **Example output**

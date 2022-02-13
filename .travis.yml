@@ -1,14 +1,14 @@
 language: python
 
 python:
-- "3.8"
+  - "3.8"
 
 services:
   - docker
 
 script:
   - docker build -t pyblish/pyblish-lite .
-  - docker run --rm -v $(pwd):/pyblish-lite pyblish/pyblish-lite
+  - docker run --rm -v -t pyblish/pyblish-lite
 
   # Test setup.py
   - sudo pip install --upgrade --force-reinstall file://$(pwd)

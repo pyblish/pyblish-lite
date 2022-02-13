@@ -24,10 +24,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r dev-requirements.txt
 
 WORKDIR /pyblish-lite
+COPY . .
+
 # ENTRYPOINT flake8 --append-config .flake8.docker pyblish_lite
 # ENTRYPOINT mypy
-ENTRYPOINT nosetests \
-    --verbose \
-    --with-doctest \
-    --exe \
-    --exclude=vendor
+CMD [ "nosetests", \
+    "--verbose", \
+    "--with-doctest", \
+    "--exe", \
+    "--exclude=vendor"]
