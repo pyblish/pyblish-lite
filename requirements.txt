@@ -1,2 +1,4 @@
 pyblish-base>=1.4
 PySide2>=1
+Qt.py>=1
+six>=1.16
