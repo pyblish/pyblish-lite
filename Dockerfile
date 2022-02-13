@@ -23,13 +23,10 @@ COPY ./requirements.txt ./dev-requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r dev-requirements.txt
 
+COPY docker-entrypoint.sh /root/docker-entrypoint.sh
+RUN chmod +x /root/docker-entrypoint.sh
+
 WORKDIR /pyblish-lite
 COPY . .
 
-# ENTRYPOINT flake8 --append-config .flake8.docker pyblish_lite
-# ENTRYPOINT mypy
-CMD [ "nosetests", \
-    "--verbose", \
-    "--with-doctest", \
-    "--exe", \
-    "--exclude=vendor"]
+CMD ["/root/docker-entrypoint.sh"]
