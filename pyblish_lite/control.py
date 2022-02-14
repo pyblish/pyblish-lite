@@ -1,10 +1,12 @@
-"""The Controller in a Model/View/Controller-based application
+"""The Controller in a Model/View/Controller-based application.
+
 The graphical components of Pyblish Lite use this object to perform
 publishing. It communicates via the Qt Signals/Slots mechanism
 and has no direct connection to any graphics. This is important,
 because this is how unittests are able to run without requiring
 an active window manager; such as via Travis-CI.
 """
+
 import os
 import sys
 import inspect
@@ -531,7 +533,8 @@ class Controller(QtCore.QObject):
         self.iterate_and_process(self.on_published)
 
     def cleanup(self):
-        """Forcefully delete objects from memory
+        """Forcefully delete objects from memory.
+
         In an ideal world, this shouldn't be necessary. Garbage
         collection guarantees that anything without reference
         is automatically removed.
@@ -542,7 +545,6 @@ class Controller(QtCore.QObject):
         may still be referenced in the form of an error. No errors
         means this was unnecessary, but that's ok.
         """
-
         for instance in self.context:
             del (instance)
 
