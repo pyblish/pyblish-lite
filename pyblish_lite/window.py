@@ -115,12 +115,6 @@ class Window(QtWidgets.QDialog):
         button_suspend_logs_widget_layout.addWidget(button_suspend_logs)
         header_aditional_btns = QtWidgets.QWidget(header_tab_widget)
 
-        aditional_btns_layout = QtWidgets.QHBoxLayout(header_aditional_btns)
-
-        presets_button = widgets.ButtonWithMenu(awesome["filter"])
-        presets_button.setEnabled(False)
-        aditional_btns_layout.addWidget(presets_button)
-
         layout_tab = QtWidgets.QHBoxLayout(header_tab_widget)
         layout_tab.setContentsMargins(0, 0, 0, 0)
         layout_tab.setSpacing(0)
@@ -467,8 +461,6 @@ class Window(QtWidgets.QDialog):
         self.plugin_proxy = plugin_proxy
         self.instance_model = instance_model
         self.instance_sort_proxy = instance_sort_proxy
-
-        self.presets_button = presets_button
 
         self.animation_info_msg = animation_info_msg
 
@@ -940,14 +932,6 @@ class Window(QtWidgets.QDialog):
         self.overview_instance_view.expandAll()
         self.overview_plugin_view.expandAll()
 
-        self.presets_button.clearMenu()
-        if self.controller.possible_presets:
-            self.presets_button.setEnabled(True)
-            for key in self.controller.possible_presets:
-                self.presets_button.addItem(
-                    key, partial(self.set_presets, key)
-                )
-
         self.instance_model.restore_checkstates()
         self.plugin_model.restore_checkstates()
 
@@ -1100,7 +1084,6 @@ class Window(QtWidgets.QDialog):
         """Prepare GUI for reset"""
         self.info(self.tr("About to reset.."))
 
-        self.presets_button.setEnabled(False)
         self.footer_widget.setProperty("success", -1)
         self.footer_widget.style().polish(self.footer_widget)
 
