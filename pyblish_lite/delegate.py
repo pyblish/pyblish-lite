@@ -29,11 +29,11 @@ record_colors = {
 scale_factors = {"darwin": 1.5}
 scale_factor = scale_factors.get(platform.system().lower(), 1.0)
 fonts = {
-    "h3": QtGui.QFont("Open Sans", 10 * scale_factor, 900),
-    "h4": QtGui.QFont("Open Sans", 8 * scale_factor, 400),
-    "h5": QtGui.QFont("Open Sans", 8 * scale_factor, 800),
-    "smallAwesome": QtGui.QFont("FontAwesome", 8 * scale_factor),
-    "largeAwesome": QtGui.QFont("FontAwesome", 16 * scale_factor),
+    "h3": QtGui.QFont("Open Sans", int(10 * scale_factor), 900),
+    "h4": QtGui.QFont("Open Sans", int(8 * scale_factor), 400),
+    "h5": QtGui.QFont("Open Sans", int(8 * scale_factor), 800),
+    "smallAwesome": QtGui.QFont("FontAwesome", int(8 * scale_factor)),
+    "largeAwesome": QtGui.QFont("FontAwesome", int(16 * scale_factor)),
 }
 
 icons = {
@@ -95,10 +95,10 @@ class Item(DPIStyledItemDelegate):
 
         label_rect = QtCore.QRectF(
             option.rect.adjusted(
-                check_rect.width() + 12 * self._dpi_scale,
-                2 * self._dpi_scale,
+                int(check_rect.width() + 12 * self._dpi_scale),
+                int(2 * self._dpi_scale),
                 0,
-                -2 * self._dpi_scale,
+                int(-2 * self._dpi_scale),
             )
         )
 
@@ -106,7 +106,7 @@ class Item(DPIStyledItemDelegate):
 
         label = index.data(model.Label)
         label = metrics.elidedText(
-            label, QtCore.Qt.ElideRight, label_rect.width() - 20 * self._dpi_scale
+            label, QtCore.Qt.ElideRight, int(label_rect.width() - 20 * self._dpi_scale)
         )
 
         font_color = colors["idle"]
@@ -135,8 +135,8 @@ class Item(DPIStyledItemDelegate):
 
             icon_rect = QtCore.QRectF(
                 option.rect.adjusted(
-                    label_rect.width() + 1 * self._dpi_scale,
-                    label_rect.height() / (3 * self._dpi_scale),
+                    int(label_rect.width() + 1 * self._dpi_scale),
+                    int(label_rect.height() / (3 * self._dpi_scale)),
                     0,
                     0,
                 )
@@ -168,7 +168,7 @@ class Item(DPIStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20 * self._dpi_scale)
+        return QtCore.QSize(option.rect.width(), int(20 * self._dpi_scale))
 
 
 class Artist(DPIStyledItemDelegate):
@@ -191,18 +191,20 @@ class Artist(DPIStyledItemDelegate):
         spacing = 10 * self._dpi_scale
 
         body_rect = QtCore.QRectF(option.rect).adjusted(
-            2 * self._dpi_scale,
-            2 * self._dpi_scale,
-            -8 * self._dpi_scale,
-            -2 * self._dpi_scale,
+            int(2 * self._dpi_scale),
+            int(2 * self._dpi_scale),
+            int(-8 * self._dpi_scale),
+            int(-2 * self._dpi_scale),
         )
-        buffer = 5 * self._dpi_scale
+        buffer = int(5 * self._dpi_scale)
         content_rect = body_rect.adjusted(buffer, buffer, -buffer, -buffer)
 
         toggle_rect = QtCore.QRectF(body_rect)
         toggle_rect.setWidth(7 * self._dpi_scale)
-        toggle_rect.adjust(
-            1 * self._dpi_scale, 1 * self._dpi_scale, 0, -1 * self._dpi_scale
+        toggle_rect.adjust(int(1 * self._dpi_scale),
+                           int(1 * self._dpi_scale),
+                           0,
+                           int(-1 * self._dpi_scale)
         )
 
         icon_rect = QtCore.QRectF(content_rect)
@@ -243,13 +245,13 @@ class Artist(DPIStyledItemDelegate):
 
         # Elide
         label = label_metrics.elidedText(
-            label, QtCore.Qt.ElideRight, label_rect.width()
+            label, QtCore.Qt.ElideRight, int(label_rect.width())
         )
 
         family_font = fonts["h5"]
         family_metrics = QtGui.QFontMetrics(family_font)
         families = family_metrics.elidedText(
-            families, QtCore.Qt.ElideRight, label_rect.width()
+            families, QtCore.Qt.ElideRight, int(label_rect.width())
         )
 
         font_color = colors["idle"]
@@ -298,7 +300,7 @@ class Artist(DPIStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 80 * self._dpi_scale)
+        return QtCore.QSize(option.rect.width(), int(80 * self._dpi_scale))
 
 
 class Terminal(DPIStyledItemDelegate):
@@ -307,7 +309,7 @@ class Terminal(DPIStyledItemDelegate):
     def paint(self, painter, option, index):
         """Paint text"""
 
-        buffer = 3 * self._dpi_scale
+        buffer = int(3 * self._dpi_scale)
         icon_rect = QtCore.QRectF(option.rect).adjusted(
             buffer, buffer, -buffer, -buffer
         )
@@ -326,10 +328,10 @@ class Terminal(DPIStyledItemDelegate):
 
         label_rect = QtCore.QRectF(
             option.rect.adjusted(
-                icon_rect.width() + 12 * self._dpi_scale,
-                2 * self._dpi_scale,
+                int(icon_rect.width() + 12 * self._dpi_scale),
+                int(2 * self._dpi_scale),
                 0,
-                -2 * self._dpi_scale,
+                int(-2 * self._dpi_scale),
             )
         )
 
@@ -339,7 +341,7 @@ class Terminal(DPIStyledItemDelegate):
         label_metrics = QtGui.QFontMetrics(label_font)
         label = index.data(model.Label)
         label = label_metrics.elidedText(
-            label, QtCore.Qt.ElideRight, label_rect.width() - 20 * self._dpi_scale
+            label, QtCore.Qt.ElideRight, int(label_rect.width() - 20 * self._dpi_scale)
         )
 
         font_color = colors["idle"]
@@ -347,7 +349,7 @@ class Terminal(DPIStyledItemDelegate):
         hover = QtGui.QPainterPath()
         hover.addRect(
             QtCore.QRectF(option.rect).adjusted(
-                0, 0, -1 * self._dpi_scale, -1 * self._dpi_scale
+                0, 0, int(-1 * self._dpi_scale), int(-1 * self._dpi_scale)
             )
         )
 
@@ -374,4 +376,4 @@ class Terminal(DPIStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        return QtCore.QSize(option.rect.width(), 20 * self._dpi_scale)
+        return QtCore.QSize(option.rect.width(), int(20 * self._dpi_scale))
