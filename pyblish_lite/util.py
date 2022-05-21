@@ -41,7 +41,7 @@ def defer(delay, func):
 
     delay *= float(os.getenv("PYBLISH_DELAY", 1))
     if delay > 0:
-        return QtCore.QTimer.singleShot(delay, func)
+        return QtCore.QTimer.singleShot(int(delay), func)
     else:
         return func()
 

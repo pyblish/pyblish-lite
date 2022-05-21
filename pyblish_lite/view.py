@@ -191,7 +191,7 @@ class Details(QtWidgets.QDialog):
             if key != "text":
                 value = widget.fontMetrics().elidedText(value,
                                                         QtCore.Qt.ElideRight,
-                                                        widget.width())
+                                                        int(widget.width()))
             widget.setText(value)
             widget.updateGeometry()
 
