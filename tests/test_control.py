@@ -360,3 +360,47 @@ def test_controller_signals():
         "was_published": 1,
         "was_finished": 3,
     })
+
+
+def test_continue_publish_with_mixed_offsets():
+    """Ensure continuing a publish with mixed offsets doesn't run any Plug-Ins twice."""
+
+    count = {"#": 0}
+
+    class MyCollector(pyblish.api.ContextPlugin):
+        order = pyblish.api.CollectorOrder
+
+        def process(self, context):
+            count["#"] += 1
+
+    class MyCollectorPosOffset(pyblish.api.ContextPlugin):
+        order = pyblish.api.CollectorOrder + 0.4
+
+        def process(self, context):
+            count["#"] += 1
+
+    class MyValidatorNegOffset(pyblish.api.ContextPlugin):
+        order = pyblish.api.ValidatorOrder - 0.4
+
+        def process(self, context):
+            count["#"] += 10
+
+    class MyValidator(pyblish.api.ContextPlugin):
+        order = pyblish.api.ValidatorOrder
+
+        def process(self, context):
+            count["#"] += 10
+
+    test_plugins = (
+        MyCollector, MyCollectorPosOffset, MyValidatorNegOffset,
+        MyValidator
+    )
+    for plugin in test_plugins:
+        pyblish.api.register_plugin(plugin)
+
+    ctrl = control.Controller()
+    ctrl.reset()
+    assert count["#"] == 2, count
+
+    ctrl.publish()
+    assert count["#"] == 22, count

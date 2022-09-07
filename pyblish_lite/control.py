@@ -92,7 +92,7 @@ class Controller(QtCore.QObject):
         if plugin:
             # The iterator doesn't sync with the GUI check states so
             # reset the iterator to ensure we grab the updated instances
-            self._reset_iterator(start_from=plugin.order)
+            self._reset_iterator(start_from=plugin.order, subtract_offset=False)
         self._run(on_finished=self.on_published)
 
     def on_validated(self):
@@ -240,16 +240,16 @@ class Controller(QtCore.QObject):
     def _current_pair_is_active(self):
         return self.current_pair[1] is None or self.current_pair[1].data.get("publish", True)
 
-    def _reset_iterator(self, start_from=-float("inf")):
+    def _reset_iterator(self, start_from=-float("inf"), subtract_offset=True):
+        # In most cases when passed the int value of an order, we need to subtract
+        # 0.5, because each order is a range of values, from -0.5 to 0.5.
+        # E.g. ExtractorOrder is 2, and spans between 1.5-2.5
+        start_from = start_from - 0.5 if subtract_offset else start_from
         self.is_running = True
         self.pair_generator = self._iterator(
             self.plugins,
             self.context,
-                                             
-            # Minus 0.5, because each order is a range of values,
-            # from -0.5 to 0.5. E.g. ExtractorOrder is 2, and spans
-            # between 1.5-2.5
-            start_from - 0.5
+            start_from
         )
 
         self.current_pair = next(self.pair_generator, (None, None))
