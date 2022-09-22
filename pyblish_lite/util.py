@@ -59,11 +59,11 @@ def u_print(msg, **kwargs):
     """
 
     if isinstance(msg, text_type):
-        encoding = None
         try:
-            encoding = os.getenv('PYTHONIOENCODING', sys.stdout.encoding)
+            encoding = sys.stdout.encoding
         except AttributeError:
             # `sys.stdout.encoding` may not exists.
-            pass
+            encoding = None
+        encoding = os.getenv('PYTHONIOENCODING', encoding)
         msg = msg.encode(encoding or 'utf-8', 'replace')
     print(msg, **kwargs)
