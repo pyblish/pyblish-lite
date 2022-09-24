@@ -57,13 +57,13 @@ def u_print(msg, **kwargs):
         msg (unicode): Message to print.
         **kwargs: Keyword argument for `print` function.
     """
-
-    if isinstance(msg, text_type):
-        encoding = None
-        try:
-            encoding = os.getenv('PYTHONIOENCODING', sys.stdout.encoding)
-        except AttributeError:
-            # `sys.stdout.encoding` may not exists.
-            pass
-        msg = msg.encode(encoding or 'utf-8', 'replace')
+    if os.getenv('PYBLISH_DISABLE_IO_ENCODING', 'no').lower() != 'yes':
+        if isinstance(msg, text_type):
+            try:
+                encoding = sys.stdout.encoding
+            except AttributeError:
+                # `sys.stdout.encoding` may not exists.
+                encoding = None
+            encoding = os.getenv('PYTHONIOENCODING', encoding)
+            msg = msg.encode(encoding or 'utf-8', 'replace')
     print(msg, **kwargs)
