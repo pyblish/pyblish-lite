@@ -7,7 +7,7 @@ States:
       reset
         '
         '
-        'F
+        '
      ___v__
     |      |       reset
     | Idle |--------------------.
@@ -40,12 +40,11 @@ Todo:
 
 """
 from functools import partial
-import os
 
 from . import delegate, model, settings, util, view
 from .awesome import tags as awesome
 
-from .vendor.Qt import QtCore, QtGui, QtWidgets, Qt
+from .vendor.Qt import QtCore, QtGui, QtWidgets
 
 
 class Window(QtWidgets.QDialog):
@@ -61,7 +60,6 @@ class Window(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.controller = controller
-        self._delegates = []
 
         """General layout
          __________________       _____________________
@@ -116,7 +114,6 @@ class Window(QtWidgets.QDialog):
 
         artist_delegate = delegate.Artist()
         artist_view.setItemDelegate(artist_delegate)
-        self._delegates.append(artist_delegate)
 
         layout = QtWidgets.QVBoxLayout(artist_page)
         layout.addWidget(artist_view)
@@ -141,9 +138,9 @@ class Window(QtWidgets.QDialog):
         right_view = view.Item()
 
         item_delegate = delegate.Item()
+
         left_view.setItemDelegate(item_delegate)
         right_view.setItemDelegate(item_delegate)
-        self._delegates.append(item_delegate)
 
         layout = QtWidgets.QHBoxLayout(overview_page)
         layout.addWidget(left_view, 1)
@@ -169,7 +166,6 @@ class Window(QtWidgets.QDialog):
         terminal_delegate = delegate.Terminal()
         terminal_view = view.LogView()
         terminal_view.setItemDelegate(terminal_delegate)
-        self._delegates.append(terminal_delegate)
 
         layout = QtWidgets.QVBoxLayout(terminal_container)
         layout.addWidget(terminal_view)
@@ -517,6 +513,8 @@ class Window(QtWidgets.QDialog):
         artist_view.toggled.connect(self.on_item_toggled)
         left_view.toggled.connect(self.on_item_toggled)
         right_view.toggled.connect(self.on_item_toggled)
+        left_view.clicked.connect(self.on_item_clicked)
+        right_view.clicked.connect(self.on_item_clicked)
 
         artist_view.inspected.connect(self.on_item_inspected)
         left_view.inspected.connect(self.on_item_inspected)
@@ -562,6 +560,24 @@ class Window(QtWidgets.QDialog):
 
         index.model().setData(index, state, model.Expanded)
 
+    def on_item_clicked(self, index, state):
+        if not index.data(model.IsExpandable):
+            return
+
+        if state is None:
+            state = not index.data(model.Clicked)
+
+        index.model().setData(index, state, model.Clicked)
+
+        # Open message box
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Information)
+        msg.setText(repr(index.data(model.FormattedError)))
+        msg.setWindowTitle("FormattedError traceback")
+        msg.setDetailedText(str(index.data(model.Traceback)))
+        msg.setStandardButtons(QtWidgets.QMessageBox.Close)
+        msg.exec_()
+
     def on_item_inspected(self, index):
         details = self.data["modals"]["details"]
         details.move(QtGui.QCursor.pos())
@@ -605,6 +621,8 @@ class Window(QtWidgets.QDialog):
                 "text": text,
                 "timestamp": "",
             })
+            self.setData(index, text, model.FormattedError)
+            self.setData(index, text, model.Traceback)
 
         elif index.data(model.Type) == "plugin":
             details.show({
@@ -855,6 +873,7 @@ class Window(QtWidgets.QDialog):
         models["terminal"].update_with_result(result)
 
     def on_was_acted(self, result):
+
         buttons = self.data["buttons"]
         buttons["reset"].show()
         buttons["stop"].hide()
@@ -1067,42 +1086,3 @@ class Window(QtWidgets.QDialog):
 
         # TODO(marcus): Implement this.
         self.info(message)
-
-    def _find_scale(self):
-        if Qt.__qt_version__.startswith("5") and os.name == "nt":
-            window = self.window()
-
-            # Fail graciously
-            if not window:
-                print("WARNING: No window associated with Lite")
-                return 1.0
-
-            handle = window.windowHandle()
-
-            if not handle:
-                print(
-                    "WARNING: No handle found, could be an "
-                    "unsupported version of Qt"
-                )
-                return 1.0
-
-            screen = handle.screen()
-
-            if not screen:
-                print(
-                    "WARNING: No QScreen instance found, "
-                    "are you using Qt 5 or above?"
-                )
-                return 1.0
-
-            return screen.logicalDotsPerInch() / 96.0
-        return 1.0
-
-    def paintEvent(self, event):
-        # Compute this only once
-        self._dpi_scale = getattr(self, "_dpi_scale", self._find_scale())
-
-        for delegate in self._delegates:
-            delegate.set_dpi_scale(self._dpi_scale)
-
-        super(Window, self).paintEvent(event)

@@ -2,7 +2,7 @@
 
 name = 'pyblish_lite'
 
-version = '0.8.12.dev'
+version = '0.8.13'
 
 description = \
     """

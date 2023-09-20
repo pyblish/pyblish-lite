@@ -13,7 +13,6 @@ import traceback
 from .vendor.Qt import QtCore
 
 import pyblish.api
-import pyblish.lib
 import pyblish.util
 import pyblish.logic
 
@@ -80,19 +79,10 @@ class Controller(QtCore.QObject):
                   on_finished=self.was_reset.emit)
 
     def validate(self):
-        # The iterator doesn't sync with the GUI check states so
-        # reset the iterator to ensure we grab the updated instances
-        # assuming the plugins are already sorted from api.Discover()
-        self._reset_iterator(start_from=pyblish.api.ValidatorOrder)
         self._run(until=pyblish.api.ValidatorOrder,
                   on_finished=self.on_validated)
 
     def publish(self):
-        plugin = self.current_pair[0]
-        if plugin:
-            # The iterator doesn't sync with the GUI check states so
-            # reset the iterator to ensure we grab the updated instances
-            self._reset_iterator(start_from=plugin.order)
         self._run(on_finished=self.on_published)
 
     def on_validated(self):
@@ -147,7 +137,7 @@ class Controller(QtCore.QObject):
 
         else:
             # Make note of the order at which the
-            # potential error error occured.
+            # potential error occured.
             has_error = result["error"] is not None
             if has_error:
                 self.processing["ordersWithError"].add(plugin.order)
@@ -181,24 +171,20 @@ class Controller(QtCore.QObject):
             if order > (until + 0.5):
                 return util.defer(100, on_finished_)
 
-            # The instance may have been disabled, check because the iterator will
-            # have already provided it
-            if self._current_pair_is_active():
-                self.about_to_process.emit(*self.current_pair)
+            self.about_to_process.emit(*self.current_pair)
 
             util.defer(10, on_process)
 
         def on_process():
             try:
-                if self._current_pair_is_active():
-                    result = self._process(*self.current_pair)
+                result = self._process(*self.current_pair)
+                if result["error"] is not None:
+                    self.current_error = result["error"]
 
-                    if result["error"] is not None:
-                        self.current_error = result["error"]
-
-                    self.was_processed.emit(result)
+                self.was_processed.emit(result)
 
             except Exception as e:
+                # ZAG: modification on the format_exc() to remove wrong argument
                 stack = traceback.format_exc()
                 return util.defer(
                     500, lambda: on_unexpected_error(error=stack))
@@ -219,6 +205,7 @@ class Controller(QtCore.QObject):
 
             except Exception as e:
                 # This is a bug
+                # ZAG: modification on the format_exc() to remove wrong argument
                 stack = traceback.format_exc()
                 self.current_pair = (None, None)
                 return util.defer(
@@ -237,25 +224,7 @@ class Controller(QtCore.QObject):
         self.is_running = True
         util.defer(10, on_next)
 
-    def _current_pair_is_active(self):
-        return self.current_pair[1] is None or self.current_pair[1].data.get("publish", True)
-
-    def _reset_iterator(self, start_from=-float("inf")):
-        self.is_running = True
-        self.pair_generator = self._iterator(
-            self.plugins,
-            self.context,
-                                             
-            # Minus 0.5, because each order is a range of values,
-            # from -0.5 to 0.5. E.g. ExtractorOrder is 2, and spans
-            # between 1.5-2.5
-            start_from - 0.5
-        )
-
-        self.current_pair = next(self.pair_generator, (None, None))
-        self.is_running = False
-
-    def _iterator(self, plugins, context, start_from=-float("inf")):
+    def _iterator(self, plugins, context):
         """Yield next plug-in and instance to process.
 
         Arguments:
@@ -263,12 +232,11 @@ class Controller(QtCore.QObject):
             context (pyblish.api.Context): Context to process
 
         """
+
         test = pyblish.logic.registered_test()
 
         for plug, instance in pyblish.logic.Iterator(plugins, context):
-            order = plug.order
-
-            if order < start_from or not plug.active:
+            if not plug.active:
                 continue
 
             if instance is not None and instance.data.get("publish") is False:
