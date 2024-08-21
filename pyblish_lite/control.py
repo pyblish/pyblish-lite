@@ -27,13 +27,13 @@ class Controller(QtCore.QObject):
     about_to_process = QtCore.Signal(object, object)
 
     # Emitted for each process
-    was_processed = QtCore.Signal(dict)
+    was_processed = QtCore.Signal(object)
 
     was_discovered = QtCore.Signal()
     was_reset = QtCore.Signal()
     was_validated = QtCore.Signal()
     was_published = QtCore.Signal()
-    was_acted = QtCore.Signal(dict)
+    was_acted = QtCore.Signal(object)
 
     # Emitted when processing has finished
     was_finished = QtCore.Signal()
