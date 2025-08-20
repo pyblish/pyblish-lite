@@ -50,7 +50,7 @@ class Item(QtWidgets.QListView):
         super(Item, self).leaveEvent(event)
 
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.MidButton:
+        if event.button() == QtCore.Qt.MiddleButton:
             index = self.indexAt(event.pos())
             self.inspected.emit(index) if index.isValid() else None
 
@@ -81,7 +81,7 @@ class LogView(QtWidgets.QListView):
         self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
 
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.MidButton:
+        if event.button() == QtCore.Qt.MiddleButton:
             index = self.indexAt(event.pos())
             self.inspected.emit(index) if index.isValid() else None
 
