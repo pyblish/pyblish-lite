@@ -45,7 +45,10 @@ import os
 from . import delegate, model, settings, util, view
 from .awesome import tags as awesome
 
-from .vendor.Qt import QtCore, QtGui, QtWidgets, Qt
+try:
+    from Qt import QtCore, QtGui, QtWidgets, Qt
+except ImportError:
+    from .vendor.Qt import QtCore, QtGui, QtWidgets, Qt
 
 
 class Window(QtWidgets.QDialog):

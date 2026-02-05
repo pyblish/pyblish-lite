@@ -1,10 +1,15 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+from cmath import exp
 
 import os
 import sys
 
-from .vendor.Qt import QtCore
+try:
+    from Qt import QtCore
+except ImportError:
+    from .vendor.Qt import QtCore
+
 from .vendor.six import text_type
 
 root = os.path.dirname(__file__)

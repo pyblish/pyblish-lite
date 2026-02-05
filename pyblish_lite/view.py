@@ -1,4 +1,7 @@
-from .vendor.Qt import QtCore, QtWidgets
+try:
+    from Qt import QtCore, QtWidgets
+except ImportError:
+    from .vendor.Qt import QtCore, QtWidgets
 
 
 class Item(QtWidgets.QListView):

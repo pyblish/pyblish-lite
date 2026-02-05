@@ -1,6 +1,9 @@
 import platform
 
-from .vendor.Qt import QtWidgets, QtGui, QtCore
+try:
+    from Qt import QtWidgets, QtGui, QtCore
+except ImportError:
+    from .vendor.Qt import QtWidgets, QtGui, QtCore
 
 from . import model
 from .awesome import tags as awesome

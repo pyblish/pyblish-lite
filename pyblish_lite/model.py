@@ -29,7 +29,12 @@ import logging
 
 from . import settings
 from .awesome import tags as awesome
-from .vendor.Qt import QtCore, __binding__
+
+try:
+    from Qt import QtCore, __binding__
+except ImportError:
+    from .vendor.Qt import QtCore, __binding__
+
 from .vendor.six import text_type
 
 # GENERAL
