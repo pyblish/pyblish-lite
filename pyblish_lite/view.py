@@ -1,5 +1,8 @@
 from .vendor.Qt import QtCore, QtWidgets
 
+# Qt6 renamed MidButton -> MiddleButton; Qt4/5 still expose MidButton.
+_MID_BUTTON = getattr(QtCore.Qt, "MidButton", QtCore.Qt.MiddleButton)
+
 
 class Item(QtWidgets.QListView):
     # An item is requesting to be toggled, with optional forced-state
@@ -50,7 +53,7 @@ class Item(QtWidgets.QListView):
         super(Item, self).leaveEvent(event)
 
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.MidButton:
+        if event.button() == _MID_BUTTON:
             index = self.indexAt(event.pos())
             self.inspected.emit(index) if index.isValid() else None
 
@@ -81,7 +84,7 @@ class LogView(QtWidgets.QListView):
         self.setVerticalScrollMode(QtWidgets.QListView.ScrollPerPixel)
 
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.MidButton:
+        if event.button() == _MID_BUTTON:
             index = self.indexAt(event.pos())
             self.inspected.emit(index) if index.isValid() else None
 

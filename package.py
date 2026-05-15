@@ -12,6 +12,5 @@ build_system = "cmake"
 
 
 def commands():
-    env.QT_PREFERRED_BINDING = "PySide6"
     env.PYTHONPATH.prepend("{root}")
 
