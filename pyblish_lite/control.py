@@ -238,7 +238,10 @@ class Controller(QtCore.QObject):
         util.defer(10, on_next)
 
     def _current_pair_is_active(self):
-        return self.current_pair[1] is None or self.current_pair[1].data.get("publish", True)
+        plug, instance = self.current_pair
+        if not util.plugin_active_for_instance(plug, instance):
+            return False
+        return instance is None or instance.data.get("publish", True)
 
     def _reset_iterator(self, start_from=-float("inf")):
         self.is_running = True
@@ -268,7 +271,8 @@ class Controller(QtCore.QObject):
         for plug, instance in pyblish.logic.Iterator(plugins, context):
             order = plug.order
 
-            if order < start_from or not plug.active:
+            if order < start_from or not util.plugin_active_for_instance(
+                    plug, instance):
                 continue
 
             if instance is not None and instance.data.get("publish") is False:

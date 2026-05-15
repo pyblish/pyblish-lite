@@ -138,6 +138,8 @@ class Window(QtWidgets.QDialog):
         overview_page = QtWidgets.QWidget()
 
         left_view = view.Item()
+        left_view.clear_on_focus_out = False
+        left_view.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         right_view = view.Item()
 
         item_delegate = delegate.Item()
@@ -471,6 +473,7 @@ class Window(QtWidgets.QDialog):
 
             "state": {
                 "is_closing": False,
+                "selected_instance": None,
             }
         }
 
@@ -515,6 +518,9 @@ class Window(QtWidgets.QDialog):
                                             QtCore.Qt.DirectConnection)
 
         artist_view.toggled.connect(self.on_item_toggled)
+        left_view.selectionModel().currentChanged.connect(
+            self.on_instance_selected)
+
         left_view.toggled.connect(self.on_item_toggled)
         right_view.toggled.connect(self.on_item_toggled)
 
@@ -623,6 +629,27 @@ class Window(QtWidgets.QDialog):
                 "text": "",
                 "timestamp": str(index.data(model.Duration) or 0) + " ms",
             })
+
+    def on_instance_selected(self, current, _previous):
+        """Show plugins for the selected instance on the right."""
+        if not current.isValid():
+            return
+
+        instance_model = self.data["models"]["instances"]
+        instance = instance_model.items[current.row()]
+        self.data["state"]["selected_instance"] = instance
+
+        plugin_model = self.data["models"]["plugins"]
+        plugin_model.set_current_instance(instance)
+
+        families = current.data(model.Families) or []
+        rules = [("families", "*")]
+        for family in families:
+            if family:
+                rules.append(("families", family))
+
+        filter_model = self.data["models"]["filter"]
+        filter_model.set_inclusion(rules)
 
     def on_item_toggled(self, index, state=None):
         """An item is requesting to be toggled"""
@@ -780,6 +807,15 @@ class Window(QtWidgets.QDialog):
         models["instances"].restore_checkstate()
         models["plugins"].restore_checkstate()
 
+        left_view = self.data["views"]["left"]
+        if models["instances"].rowCount():
+            index = models["instances"].index(0, 0)
+            left_view.setCurrentIndex(index)
+            self.on_instance_selected(index, QtCore.QModelIndex())
+        else:
+            models["plugins"].set_current_instance(None)
+            models["filter"].set_inclusion([("families", "*")])
+
         # Append placeholder comment from Context
         # This allows users to inject a comment from elsewhere,
         # or to perhaps provide a placeholder comment/template
@@ -839,16 +875,15 @@ class Window(QtWidgets.QDialog):
             if instance.id not in models["instances"].ids:
                 models["instances"].append(instance)
 
-            family = instance.data["family"]
-            if family:
-                plugins_filter = self.data["models"]["filter"]
-                plugins_filter.add_inclusion(role="families", value=family)
-
-            families = instance.data.get("families")
-            if families:
-                for f in families:
-                    plugins_filter = self.data["models"]["filter"]
-                    plugins_filter.add_inclusion(role="families", value=f)
+        selected = self.data["state"]["selected_instance"]
+        if selected is not None:
+            try:
+                row = models["instances"].items.index(selected)
+            except ValueError:
+                pass
+            else:
+                index = models["instances"].createIndex(row, 0)
+                self.on_instance_selected(index, QtCore.QModelIndex())
 
         models["plugins"].update_with_result(result)
         models["instances"].update_with_result(result)

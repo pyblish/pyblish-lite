@@ -27,7 +27,7 @@ from __future__ import unicode_literals
 
 import logging
 
-from . import settings
+from . import settings, util
 from .awesome import tags as awesome
 from .vendor.Qt import QtCore, __binding__
 from .vendor.six import text_type
@@ -173,6 +173,7 @@ class Item(Abstract):
 class Plugin(Item):
     def __init__(self):
         super(Plugin, self).__init__()
+        self.current_instance = None
 
         self.schema.update({
             IsChecked: "active",
@@ -205,8 +206,23 @@ class Plugin(Item):
 
         return super(Plugin, self).append(item)
 
+    def set_current_instance(self, instance):
+        self.current_instance = instance
+        if not self.items:
+            return
+
+        top = self.createIndex(0, 0)
+        bottom = self.createIndex(len(self.items) - 1, 0)
+        if __binding__ in ("PyQt4", "PySide"):
+            self.dataChanged.emit(top, bottom)
+        else:
+            self.dataChanged.emit(top, bottom, [IsChecked])
+
     def data(self, index, role):
         item = self.items[index.row()]
+
+        if role == IsChecked and self.current_instance is not None:
+            return util.plugin_active_for_instance(item, self.current_instance)
 
         if role == Data:
             return {}
@@ -217,7 +233,7 @@ class Plugin(Item):
         if role == ActionIconVisible:
 
             # Can only run actions on active plug-ins.
-            if not item.active:
+            if not util.plugin_active_for_instance(item, self.current_instance):
                 return
 
             actions = list(item.actions)
@@ -244,7 +260,7 @@ class Plugin(Item):
         if role == Actions:
 
             # Can only run actions on active plug-ins.
-            if not item.active:
+            if not util.plugin_active_for_instance(item, self.current_instance):
                 return
 
             actions = list(item.actions)
@@ -304,6 +320,16 @@ class Plugin(Item):
 
     def setData(self, index, value, role):
         item = self.items[index.row()]
+
+        if role == IsChecked and self.current_instance is not None:
+            util.set_plugin_active_for_instance(
+                item, self.current_instance, value)
+            if __binding__ in ("PyQt4", "PySide"):
+                self.dataChanged.emit(index, index)
+            else:
+                self.dataChanged.emit(index, index, [role])
+            return True
+
         key = self.schema.get(role)
 
         if key is None:
@@ -315,6 +341,8 @@ class Plugin(Item):
             self.dataChanged.emit(index, index)
         else:
             self.dataChanged.emit(index, index, [role])
+
+        return True
 
     def update_with_result(self, result, action=False):
         item = result["plugin"]

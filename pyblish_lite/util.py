@@ -26,6 +26,27 @@ def get_asset(*path):
     return os.path.join(root, *path)
 
 
+def plugin_active_for_instance(plugin, instance):
+    """Return whether `plugin` is active for `instance`."""
+    if instance is None or not getattr(plugin, "__instanceEnabled__", False):
+        return getattr(plugin, "active", True)
+
+    overrides = instance.data.get("plugins", {})
+    if plugin.id in overrides:
+        return overrides[plugin.id]
+
+    return getattr(plugin, "active", True)
+
+
+def set_plugin_active_for_instance(plugin, instance, active):
+    """Enable or disable `plugin` for `instance`."""
+    if instance is None or not getattr(plugin, "__instanceEnabled__", False):
+        plugin.active = active
+        return
+
+    instance.data.setdefault("plugins", {})[plugin.id] = active
+
+
 def defer(delay, func):
     """Append artificial delay to `func`
 

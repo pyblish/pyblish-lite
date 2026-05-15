@@ -46,7 +46,8 @@ class Item(QtWidgets.QListView):
         return super(Item, self).event(event)
 
     def focusOutEvent(self, event):
-        self.selectionModel().clear()
+        if getattr(self, "clear_on_focus_out", True):
+            self.selectionModel().clear()
 
     def leaveEvent(self, event):
         self._inspecting = False
