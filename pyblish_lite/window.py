@@ -42,7 +42,7 @@ Todo:
 from functools import partial
 import os
 
-from . import delegate, instance_widget, model, settings, util, view
+from . import delegate, instance_options, instance_widget, model, settings, util, view
 from .awesome import tags as awesome
 
 from .vendor.Qt import QtCore, QtGui, QtWidgets, Qt
@@ -114,6 +114,9 @@ class Window(QtWidgets.QDialog):
         # artist_page.setAttribute(QtCore.Qt.WA_StyledBackground)
 
         artist_panel = instance_widget.ArtistInstancesPanel()
+        artist_panel.set_field_options(
+            instance_options.query_instance_field_options()
+        )
 
         layout = QtWidgets.QVBoxLayout(artist_page)
         layout.addWidget(artist_panel)

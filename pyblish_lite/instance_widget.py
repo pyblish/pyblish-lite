@@ -12,15 +12,39 @@ def _read_only_label(text):
     return label
 
 
+def _field_combobox(options, value):
+    combo = QtWidgets.QComboBox()
+    combo.setObjectName("InstanceValue")
+
+    items = list(options or [])
+    if value and value not in items:
+        items.insert(0, value)
+
+    combo.addItems(items)
+
+    index = combo.findText(value or "")
+    if index >= 0:
+        combo.setCurrentIndex(index)
+
+    return combo
+
+
 class InstanceWidget(QtWidgets.QWidget):
     """Form panel for a single publish instance."""
 
     publish_changed = QtCore.Signal(object, bool)
 
-    def __init__(self, instance, instance_model=None, parent=None):
+    def __init__(
+        self,
+        instance,
+        instance_model=None,
+        field_options=None,
+        parent=None,
+    ):
         super(InstanceWidget, self).__init__(parent)
         self.instance = instance
         self.instance_model = instance_model
+        self.field_options = field_options or {}
         self.setObjectName("InstanceWidget")
 
         data = instance.data
@@ -44,10 +68,41 @@ class InstanceWidget(QtWidgets.QWidget):
         form.setSpacing(4)
         form.setLabelAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-        form.addRow("Asset Type:", _read_only_label(data.get("asset_type")))
-        form.addRow("Entity Name:", _read_only_label(data.get("entity_name")))
-        form.addRow("Asset Name:", _read_only_label(data.get("asset_name")))
-        form.addRow("Entity Variant:", _read_only_label(data.get("entity_variant")))
+        self.asset_type = _field_combobox(
+            self.field_options.get("asset_type"),
+            data.get("asset_type"),
+        )
+        self.asset_type.currentTextChanged.connect(
+            lambda text: self._on_field_changed("asset_type", text)
+        )
+        form.addRow("Asset Type:", self.asset_type)
+
+        self.entity_name = _field_combobox(
+            self.field_options.get("entity_name"),
+            data.get("entity_name"),
+        )
+        self.entity_name.currentTextChanged.connect(
+            lambda text: self._on_field_changed("entity_name", text)
+        )
+        form.addRow("Entity Name:", self.entity_name)
+
+        self.asset_name = _field_combobox(
+            self.field_options.get("asset_name"),
+            data.get("asset_name"),
+        )
+        self.asset_name.currentTextChanged.connect(
+            lambda text: self._on_field_changed("asset_name", text)
+        )
+        form.addRow("Asset Name:", self.asset_name)
+
+        self.entity_variant = _field_combobox(
+            self.field_options.get("entity_variant"),
+            data.get("entity_variant"),
+        )
+        self.entity_variant.currentTextChanged.connect(
+            lambda text: self._on_field_changed("entity_variant", text)
+        )
+        form.addRow("Entity Variant:", self.entity_variant)
         form.addRow(
             "LOD Template Path:",
             _read_only_label(data.get("lod_template_path")),
@@ -86,6 +141,9 @@ class InstanceWidget(QtWidgets.QWidget):
         self._sync_model_publish(checked)
         self.publish_changed.emit(self.instance, checked)
 
+    def _on_field_changed(self, field, value):
+        self.instance.data[field] = value
+
     def _on_override_toggled(self, checked):
         self.instance.data["override_shape_attributes"] = checked
 
@@ -102,6 +160,7 @@ class ArtistInstancesPanel(QtWidgets.QWidget):
         super(ArtistInstancesPanel, self).__init__(parent)
         self.setObjectName("ArtistInstancesPanel")
         self.instance_model = None
+        self.field_options = {}
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -129,6 +188,9 @@ class ArtistInstancesPanel(QtWidgets.QWidget):
     def set_instance_model(self, instance_model):
         self.instance_model = instance_model
 
+    def set_field_options(self, field_options):
+        self.field_options = field_options or {}
+
     def clear(self):
         while self.instances_layout.count():
             item = self.instances_layout.takeAt(0)
@@ -152,6 +214,7 @@ class ArtistInstancesPanel(QtWidgets.QWidget):
             widget = InstanceWidget(
                 instance,
                 instance_model=self.instance_model,
+                field_options=self.field_options,
                 parent=self.scroll_widget,
             )
             widget.publish_changed.connect(self.publish_changed.emit)

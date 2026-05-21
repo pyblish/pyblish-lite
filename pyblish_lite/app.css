@@ -272,7 +272,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 	padding: 0 4px;
 }
 
-#InstanceWidget QLabel, #InstanceWidget QLineEdit {
+#InstanceWidget QLabel, #InstanceWidget QLineEdit, #InstanceWidget QComboBox {
 	font-size: 9pt;
 }
 
