@@ -249,3 +249,39 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 	font-family: "FontAwesome";
 	font-size: 15pt;
 }
+
+#ArtistInstancesPanel, #ArtistInstancesScroll {
+	background: transparent;
+	border: none;
+}
+
+#InstanceWidget {
+	background: transparent;
+}
+
+#InstanceGroup {
+	border: 1px solid #333;
+	margin-top: 8px;
+	padding-top: 8px;
+	font-weight: bold;
+}
+
+#InstanceGroup::title {
+	subcontrol-origin: margin;
+	left: 8px;
+	padding: 0 4px;
+}
+
+#InstanceWidget QLabel, #InstanceWidget QLineEdit {
+	font-size: 9pt;
+}
+
+#InstanceValue {
+	color: #CCC;
+}
+
+#InstanceWidget QCheckBox::indicator:checked,
+#InstanceGroup::indicator:checked {
+	background: #4CAF50;
+	border: 1px solid #3E8E41;
+}

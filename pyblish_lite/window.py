@@ -42,7 +42,7 @@ Todo:
 from functools import partial
 import os
 
-from . import delegate, model, settings, util, view
+from . import delegate, instance_widget, model, settings, util, view
 from .awesome import tags as awesome
 
 from .vendor.Qt import QtCore, QtGui, QtWidgets, Qt
@@ -111,15 +111,12 @@ class Window(QtWidgets.QDialog):
         """
 
         artist_page = QtWidgets.QWidget()
+        # artist_page.setAttribute(QtCore.Qt.WA_StyledBackground)
 
-        artist_view = view.Item()
-
-        artist_delegate = delegate.Artist()
-        artist_view.setItemDelegate(artist_delegate)
-        self._delegates.append(artist_delegate)
+        artist_panel = instance_widget.ArtistInstancesPanel()
 
         layout = QtWidgets.QVBoxLayout(artist_page)
-        layout.addWidget(artist_view)
+        layout.addWidget(artist_panel)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(0)
 
@@ -367,7 +364,7 @@ class Window(QtWidgets.QDialog):
 
         filter_model = model.ProxyModel(plugin_model)
 
-        artist_view.setModel(instance_model)
+        artist_panel.set_instance_model(instance_model)
         left_view.setModel(instance_model)
         right_view.setModel(filter_model)
         terminal_view.setModel(terminal_model)
@@ -428,7 +425,7 @@ class Window(QtWidgets.QDialog):
 
         self.data = {
             "views": {
-                "artist": artist_view,
+                "artist": artist_panel,
                 "left": left_view,
                 "right": right_view,
                 "terminal": terminal_view,
@@ -517,14 +514,13 @@ class Window(QtWidgets.QDialog):
         controller.about_to_process.connect(self.on_about_to_process,
                                             QtCore.Qt.DirectConnection)
 
-        artist_view.toggled.connect(self.on_item_toggled)
+        artist_panel.publish_changed.connect(self.on_artist_publish_changed)
         left_view.selectionModel().currentChanged.connect(
             self.on_instance_selected)
 
         left_view.toggled.connect(self.on_item_toggled)
         right_view.toggled.connect(self.on_item_toggled)
 
-        artist_view.inspected.connect(self.on_item_inspected)
         left_view.inspected.connect(self.on_item_inspected)
         right_view.inspected.connect(self.on_item_inspected)
         terminal_view.inspected.connect(self.on_item_inspected)
@@ -665,12 +661,7 @@ class Window(QtWidgets.QDialog):
         index.model().setData(index, state, model.IsChecked)
 
         # Withdraw option to publish if no instances are toggled
-        play = self.findChild(QtWidgets.QWidget, "Play")
-        validate = self.findChild(QtWidgets.QWidget, "Validate")
-        any_instances = any(index.data(model.IsChecked)
-                            for index in self.data["models"]["instances"])
-        play.setEnabled(any_instances)
-        validate.setEnabled(any_instances)
+        self._update_publish_buttons()
 
         # Emit signals
         if index.data(model.Type) == "instance":
@@ -689,6 +680,36 @@ class Window(QtWidgets.QDialog):
                     kwargs={"new_value": state,
                             "old_value": not state,
                             "plugin": index.data(model.Object)}))
+
+    def _update_publish_buttons(self):
+        play = self.findChild(QtWidgets.QWidget, "Play")
+        validate = self.findChild(QtWidgets.QWidget, "Validate")
+        any_instances = any(
+            index.data(model.IsChecked)
+            for index in self.data["models"]["instances"]
+        )
+        play.setEnabled(any_instances)
+        validate.setEnabled(any_instances)
+
+    def on_artist_publish_changed(self, instance, checked):
+        """An instance publish checkbox changed on the Artist page."""
+        self._update_publish_buttons()
+        util.defer(
+            100,
+            lambda: self.controller.emit_(
+                signal="instanceToggled",
+                kwargs={
+                    "new_value": checked,
+                    "old_value": not checked,
+                    "instance": instance,
+                },
+            ),
+        )
+
+    def _refresh_artist_panel(self):
+        instances = list(self.controller.context)
+        self.data["views"]["artist"].refresh(instances)
+        self._update_publish_buttons()
 
     def on_tab_changed(self, target):
         for page in self.data["pages"].values():
@@ -826,6 +847,8 @@ class Window(QtWidgets.QDialog):
         comment_box.setText(comment or None)
         comment_box.setEnabled(comment is not None)
 
+        self._refresh_artist_panel()
+
         # Refresh tab
         self.on_tab_changed(self.data["tabs"]["current"])
 
@@ -874,6 +897,7 @@ class Window(QtWidgets.QDialog):
         for instance in self.controller.context:
             if instance.id not in models["instances"].ids:
                 models["instances"].append(instance)
+                self._refresh_artist_panel()
 
         selected = self.data["state"]["selected_instance"]
         if selected is not None:
