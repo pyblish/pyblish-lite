@@ -1035,6 +1035,8 @@ class Window(QtWidgets.QDialog):
             # Explicitly clear potentially referenced data
             self.info(self.tr("Cleaning up models.."))
             for v in self.data["views"].values():
+                if not hasattr(v, "model") or not hasattr(v, "setModel"):
+                    continue
                 v.model().deleteLater()
                 v.setModel(None)
 
