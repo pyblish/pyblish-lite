@@ -113,7 +113,9 @@ class Window(QtWidgets.QDialog):
         artist_page = QtWidgets.QWidget()
         # artist_page.setAttribute(QtCore.Qt.WA_StyledBackground)
 
+        # Create the artist panel with the instance model and field options
         artist_panel = instance_widget.ArtistInstancesPanel()
+        # Fill it with SG entries
         artist_panel.set_field_options(
             instance_options.query_instance_field_options()
         )

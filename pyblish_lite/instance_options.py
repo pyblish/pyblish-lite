@@ -1,5 +1,3 @@
-"""Query selectable options for Artist page instance fields."""
-
 
 def query_instance_field_options():
     # TODO: Replace with pipeline

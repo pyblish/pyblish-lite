@@ -32,8 +32,8 @@ def plugin_active_for_instance(plugin, instance):
         return getattr(plugin, "active", True)
 
     overrides = instance.data.get("plugins", {})
-    if plugin.id in overrides:
-        return overrides[plugin.id]
+    if plugin.label in overrides:
+        return overrides[plugin.label]
 
     return getattr(plugin, "active", True)
 
@@ -44,7 +44,7 @@ def set_plugin_active_for_instance(plugin, instance, active):
         plugin.active = active
         return
 
-    instance.data.setdefault("plugins", {})[plugin.id] = active
+    instance.data.setdefault("plugins", {})[plugin.label] = active
 
 
 def defer(delay, func):
