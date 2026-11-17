@@ -36,7 +36,7 @@ def install_translator(app):
 
 
 def install_fonts():
-    database = QtGui.QFontDatabase()
+    database = QtGui.QFontDatabase
 
     for font in (os.path.join("opensans", "OpenSans-Regular.ttf"),
                  os.path.join("opensans", "OpenSans-Semibold.ttf"),

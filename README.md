@@ -8,12 +8,13 @@ A lightweight alternative to [pyblish-qml](https://github.com/pyblish/pyblish-qm
 
 **Supports**
 
-Python 2.6+ and Python 3.x
+Python 2.6+ and Python 3.x, on Qt 4, Qt 5 and Qt 6
 
 - PySide
 - PySide2
 - PyQt4
 - PyQt5
+- PySide6
 
 <br>
 <br>
@@ -260,3 +261,7 @@ $ docker run --rm -v $(pwd):/pyblish-lite pyblish/pyblish-lite
 #
 # OK
 ```
+
+### AI-assisted contribution disclosure
+
+The compatibility changes in [PR #139](https://github.com/pyblish/pyblish-lite/pull/139) were developed with AI assistance. AI helped compare this repository with a local project copy, identify Python 3 and Qt 6 API differences, prepare the patch and draft its description. The contributor reviewed the changed files and patch scope before submission. No GUI or host runtime tests were run on the updated upstream branch; the proposed compatibility has not been runtime-verified.

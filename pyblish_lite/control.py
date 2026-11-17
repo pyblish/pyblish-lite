@@ -277,11 +277,10 @@ class Controller(QtCore.QObject):
             self.processing["nextOrder"] = plug.order
 
             if not self.is_running:
-                raise StopIteration("Stopped")
+                return
 
             if test(**self.processing):
-                raise StopIteration("Stopped due to %s" % test(
-                    **self.processing))
+                return
 
             yield plug, instance
 

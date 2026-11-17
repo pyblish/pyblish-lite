@@ -658,10 +658,14 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         item = model.items[source_row]
         key = getattr(item, "filter", None)
         if key is not None:
-            regex = self.filterRegExp()
-            if regex.pattern():
-                match = regex.indexIn(key)
-                return False if match == -1 else True
+            if hasattr(self, "filterRegularExpression"):
+                regex = self.filterRegularExpression()
+                if regex.pattern():
+                    return regex.match(key).hasMatch()
+            else:
+                regex = self.filterRegExp()
+                if regex.pattern():
+                    return regex.indexIn(key) != -1
 
         # --- Check if any family assigned to the plugin is in allowed families
         for role, values in self.includes.items():
