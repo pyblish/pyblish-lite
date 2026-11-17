@@ -8,12 +8,13 @@ A lightweight alternative to [pyblish-qml](https://github.com/pyblish/pyblish-qm
 
 **Supports**
 
-Python 2.6+ and Python 3.x
+Python 2.6+ and Python 3.x, on Qt 4, Qt 5 and Qt 6
 
 - PySide
 - PySide2
 - PyQt4
 - PyQt5
+- PySide6
 
 <br>
 <br>
